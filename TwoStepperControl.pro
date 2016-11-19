@@ -15,15 +15,19 @@ TEMPLATE = app
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    qencoderphidgets.cpp \
     qstepperphidgets.cpp \
-    alccd5_client.cpp
+    alccd5_client.cpp \
+    currentObjectCatalog.cpp \
+    QDisplay2D.cpp \
+    tsc_globaldata.cpp
 
 HEADERS  += \
     mainwindow.h \
-    qencoderphidgets.h \
     qstepperphidgets.h \
-    alccd5_client.h
+    alccd5_client.h \
+    currentObjectCatalog.h \
+    QDisplay2D.h \
+    tsc_globaldata.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/

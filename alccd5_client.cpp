@@ -17,23 +17,32 @@
 #include "indibase/baseclient.h"
 #include "indibase/basedevice.h"
 #include "indibase/indiproperty.h"
-/* INDI Common Library Routines */
 #include "indicom.h"
 
+#include "tsc_globaldata.h"
 #include "alccd5_client.h"
 
 using namespace std;
 
 #define MYCCD "QHY CCD QHY5-0-M-"
 
+extern TSC_GlobalData *g_AllData;
+
 //------------------------------------------
 alccd5_client::alccd5_client() {
+    QRgb cval;
+
     alccd5 = NULL;
     fitsqimage = NULL;
     displayPMap = new QPixmap();
-    this->imgwidth = 1280;
-    this->imgheight = 1024;
     newCameraImageAvailable = false;
+
+    myVec =new QVector<QRgb>(256);
+    for(int i=0;i<256;i++) {
+        cval = qRgb(i,i,i);
+        myVec->insert(i, cval);
+    }
+    // setting colortable for grayscale QImages
 }
 
 //------------------------------------------
@@ -74,9 +83,12 @@ void alccd5_client::takeExposure(int expTime) {
 
 //------------------------------------------
 void alccd5_client::newDevice(INDI::BaseDevice *dp) {
-    if (!strcmp(dp->getDeviceName(), MYCCD))
+    if (!strcmp(dp->getDeviceName(), MYCCD)) {
         qDebug() << "Receiving Device:" << dp->getDeviceName();
+    }
     alccd5 = dp;
+    g_AllData->setCameraParameters(5.4,5.4,1280,1024);
+    // setting pixelsize and chipsize as the camera is now connected
 }
 
 //------------------------------------------
@@ -85,7 +97,6 @@ void alccd5_client::newProperty(INDI::Property *property) {
         connectDevice(MYCCD);
         return;
     }
-      return;
 }
 
 //------------------------------------------
@@ -97,7 +108,7 @@ void alccd5_client::newNumber(INumberVectorProperty *nvp) {
 void alccd5_client::newMessage(INDI::BaseDevice *dp, int messageID) {
      if (strcmp(dp->getDeviceName(), MYCCD))
          return;
-     qDebug() << "Recveing message from Server: " << dp->messageQueue(messageID).c_str();
+     qDebug() << "Receiving message from Server: " << dp->messageQueue(messageID).c_str();
 }
 
 //------------------------------------------
@@ -107,6 +118,8 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     char *fitsdata;
     QImage *smallQImage, *mimage;
     ofstream fitsfile;
+    int imgwidth, imgheight,widgetWidth,widgetHeight;
+    float sfw,sfh;
 
     fitsdata = static_cast<char *>(bp->blob);
     // casting the INDI-BLOB containing the image data in FITS to an array of uints ...
@@ -114,25 +127,36 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     fitsdata=fitsdata+2880;
     // skipping the header which is 2880 bytes for the fits from the QHY5
 
-    QVector<QRgb> colorTable(256);
-    for(int i=0;i<256;i++) {
-        colorTable[i] = qRgb(i,i,i);
-    }
-    // setting colortable for grayscale QImages
+    imgwidth = g_AllData->getCameraChipPixels(0);
+    imgheight = g_AllData->getCameraChipPixels(1);
+    //retrieving the number of pixels on the chip
 
-    fitsqimage = new QImage((uchar*)fitsdata, this->imgwidth,this->imgheight, QImage::Format_Indexed8);
-    fitsqimage->setColorTable(colorTable);
+    fitsqimage = new QImage((uchar*)fitsdata, imgwidth, imgheight, QImage::Format_Indexed8);
+    fitsqimage->setColorTable(*myVec);
     mimage = new QImage(fitsqimage->mirrored(0,1));
     // read the image data into a QImage, set a grayscale LUT, and mirror the image ...
-
-//    mimage->save("TestCameraImage.jpg",0,-1);
+    //mimage->save("TestCameraImage.jpg",0,-1);
     // uncomment if you want to see the QImage ...
-    smallQImage = new QImage(mimage->scaled(225,180,Qt::KeepAspectRatio,Qt::FastTransformation));
+
+    widgetWidth=g_AllData->getCameraDisplaySize(0);
+    widgetHeight=g_AllData->getCameraDisplaySize(1);
+    sfw = widgetWidth/(float)imgwidth;
+    sfh = widgetHeight/(float)imgheight;
+    if (sfw > sfh) {
+        g_AllData->setCameraImageScalingFactor(sfw);
+    } else {
+        g_AllData->setCameraImageScalingFactor(sfh);
+    }
+    // get the scaling factor for scaling the QImage to the QPixmap
+
+    smallQImage = new QImage(mimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));
+    //smallQImage->save("SmallTestCameraImage.jpg",0,-1);
+    // uncomment if you want to see the QImage ...
+
     displayPMap->convertFromImage(*smallQImage,0);
     delete smallQImage;
     delete mimage;
     newCameraImageAvailable = true;
-
 //    fitsfile.open ("alccd5.fits", ios::out | ios::binary);
 //    fitsfile.write(static_cast<char *> (bp->blob), bp->bloblen);
 //    fitsfile.close();
@@ -156,8 +180,14 @@ bool alccd5_client::newImageArrived(void) {
 //------------------------------------------
 
 void alccd5_client::newImageUsedAsPixmap(void) {
-    // allow other classes to set the state to flase if the pixmap was already used
+    // allow other classes to set the state to false if the pixmap was already used
     newCameraImageAvailable = false;
+}
+
+//------------------------------------------
+
+void alccd5_client::sayGoodbyeToINDIServer(void) {
+    this->disconnectServer();
 }
 
 //------------------------------------------

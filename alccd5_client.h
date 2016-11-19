@@ -4,6 +4,7 @@
 #include <QString>
 #include <QImage>
 #include <QPixmap>
+#include <QVector>
 
 class alccd5_client : public INDI::BaseClient {
  public:
@@ -14,6 +15,7 @@ class alccd5_client : public INDI::BaseClient {
     QPixmap* getScaledPixmapFromCamera(void);
     bool newImageArrived(void);
     void newImageUsedAsPixmap(void);
+    void sayGoodbyeToINDIServer(void);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);
@@ -33,7 +35,6 @@ private:
    INDI::BaseDevice * alccd5;
    QImage* fitsqimage;
    QPixmap* displayPMap;
-   int imgwidth;
-   int imgheight;
-   bool newCameraImageAvailable;
+   bool newCameraImageAvailable;  
+   QVector<QRgb> *myVec;
 };
