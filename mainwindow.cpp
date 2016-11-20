@@ -214,7 +214,7 @@ void MainWindow::syncMount(void) {
 
 //------------------------------------------------------------------
 void MainWindow::storeGearData(void) {
-    float pgra,ogra,ssra,pgdec,ogdec,ssdec;
+    float pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec;
     QString *leEntry;
 
     leEntry = new QString(ui->leRAPlanetary->text());
@@ -222,6 +222,9 @@ void MainWindow::storeGearData(void) {
     leEntry->clear();
     leEntry->append(ui->leRAGear->text());
     ogra=leEntry->toFloat();
+    leEntry->clear();
+    leEntry->append(ui->leRAWorm->text());
+    wormra=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leRAStepsize->text());
     ssra=leEntry->toFloat();
@@ -232,8 +235,11 @@ void MainWindow::storeGearData(void) {
     leEntry->append(ui->leDeclGear->text());
     ogdec=leEntry->toFloat();
     leEntry->clear();
+    leEntry->append(ui->leDeclWorm->text());
+    wormdec=leEntry->toFloat();
+    leEntry->clear();
     leEntry->append(ui->leDeclStepSize->text());
     ssdec=leEntry->toFloat();
-    g_AllData->setGearData(pgra,ogra,ssra,pgdec,ogdec,ssdec);
+    g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec);
     // store all gear data in global struct
 }

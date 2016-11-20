@@ -636,82 +636,43 @@
       <property name="flat">
        <bool>false</bool>
       </property>
-      <widget class="QLabel" name="labelPGRA">
+      <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>20</y>
-         <width>91</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Planetary ratio:</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="labelGRA">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>80</y>
-         <width>68</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Other gears:</string>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget_3">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>100</y>
          <width>141</width>
-         <height>32</height>
+         <height>140</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_5">
-        <item>
-         <widget class="QLabel" name="labelRA2">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0" colspan="2">
+         <widget class="QLabel" name="labelPGRA">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="font">
            <font>
-            <weight>75</weight>
-            <bold>true</bold>
+            <weight>50</weight>
+            <bold>false</bold>
            </font>
           </property>
           <property name="text">
-           <string>1:</string>
+           <string>Planetary:</string>
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QLineEdit" name="leRAGear">
-          <property name="text">
-           <string>1</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>40</y>
-         <width>141</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
-        <item>
+        <item row="0" column="2" colspan="2">
          <widget class="QLabel" name="labelRA1">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="font">
            <font>
             <weight>75</weight>
@@ -723,26 +684,104 @@
           </property>
          </widget>
         </item>
-        <item>
+        <item row="0" column="4" colspan="2">
          <widget class="QLineEdit" name="leRAPlanetary">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>9</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelGRA">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Gears:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="labelRA2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>1:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" colspan="4">
+         <widget class="QLineEdit" name="leRAGear">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>1</string>
           </property>
          </widget>
         </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="">
-       <property name="geometry">
-        <rect>
-         <x>1</x>
-         <y>131</y>
-         <width>141</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="labelWRA">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Worm:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>13</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="2" colspan="4">
+         <widget class="QLineEdit" name="leRAWorm">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>288</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0" rowspan="2" colspan="4">
          <widget class="QLabel" name="labelRA3">
           <property name="font">
            <font>
@@ -755,12 +794,25 @@
           </property>
          </widget>
         </item>
-        <item>
+        <item row="3" column="5" rowspan="2">
          <widget class="QLineEdit" name="leRAStepsize">
           <property name="text">
            <string>1.8</string>
           </property>
          </widget>
+        </item>
+        <item row="4" column="3" colspan="2">
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>13</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
@@ -768,7 +820,7 @@
      <widget class="QGroupBox" name="gbDeklGear">
       <property name="geometry">
        <rect>
-        <x>150</x>
+        <x>160</x>
         <y>0</y>
         <width>151</width>
         <height>171</height>
@@ -780,81 +832,30 @@
       <property name="flat">
        <bool>false</bool>
       </property>
-      <widget class="QLabel" name="labelPGDecl">
+      <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>20</y>
-         <width>91</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <weight>50</weight>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Planetary ratio:</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="labelGDecl">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>80</y>
-         <width>68</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Other gears:</string>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget_4">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>100</y>
          <width>141</width>
-         <height>32</height>
+         <height>140</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_7">
-        <item>
-         <widget class="QLabel" name="labelDecl2">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0" colspan="2">
+         <widget class="QLabel" name="labelPGDecl">
           <property name="font">
            <font>
-            <weight>75</weight>
-            <bold>true</bold>
+            <weight>50</weight>
+            <bold>false</bold>
            </font>
           </property>
           <property name="text">
-           <string>1:</string>
+           <string>Planetary:</string>
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QLineEdit" name="leDeclGear">
-          <property name="text">
-           <string>1</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget_5">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>40</y>
-         <width>141</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_8">
-        <item>
+        <item row="0" column="2">
          <widget class="QLabel" name="labelDecl1">
           <property name="font">
            <font>
@@ -867,26 +868,80 @@
           </property>
          </widget>
         </item>
-        <item>
+        <item row="0" column="3" colspan="2">
          <widget class="QLineEdit" name="leDeclPlanetary">
+          <property name="text">
+           <string>9</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelGDecl">
+          <property name="text">
+           <string>Gears:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="labelDecl2">
+          <property name="font">
+           <font>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>1:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" colspan="3">
+         <widget class="QLineEdit" name="leDeclGear">
           <property name="text">
            <string>1</string>
           </property>
          </widget>
         </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget_6">
-       <property name="geometry">
-        <rect>
-         <x>1</x>
-         <y>131</y>
-         <width>141</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_9">
-        <item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="labelWDecl">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Worm:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <spacer name="horizontalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>13</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="2" column="2" colspan="3">
+         <widget class="QLineEdit" name="leDeclWorm">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>213</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0" colspan="3">
          <widget class="QLabel" name="labelDecl3">
           <property name="font">
            <font>
@@ -899,7 +954,20 @@
           </property>
          </widget>
         </item>
-        <item>
+        <item row="3" column="3">
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>13</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="3" column="4">
          <widget class="QLineEdit" name="leDeclStepSize">
           <property name="text">
            <string>1.8</string>

@@ -206,12 +206,14 @@ qint64 TSC_GlobalData::getTimeSinceLastSync(void) {
 };
 //-----------------------------------------------
 
-void TSC_GlobalData::setGearData(float pgra,float ogra,float stepsizera,float pgdecl,float ogdecl,float stepsizedecl) {
+void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float stepsizera,float pgdecl,float ogdecl, float wormdecl, float stepsizedecl) {
     this->gearData.planetaryRatioRA=pgra;
     this->gearData.gearRatioRA=ogra;
+    this->gearData.wormSizeRA=wormra;
     this->gearData.stepSizeRA=stepsizera;
     this->gearData.planetaryRatioDecl=pgdecl;
     this->gearData.gearRatioDecl=ogdecl;
+    this->gearData.wormSizeDecl=wormdecl;
     this->gearData.stepSizeDecl=stepsizedecl;
 }
 
@@ -227,15 +229,21 @@ float TSC_GlobalData::getGearData(short what) {
         retval = this->gearData.gearRatioRA;
         break;
     case 2:
-        retval = this->gearData.stepSizeRA;
+        retval = this->gearData.wormSizeRA;
         break;
     case 3:
-        retval = this->gearData.planetaryRatioDecl;
+        retval = this->gearData.stepSizeRA;
         break;
     case 4:
-        retval = this->gearData.gearRatioDecl;
+        retval = this->gearData.planetaryRatioDecl;
         break;
     case 5:
+        retval = this->gearData.gearRatioDecl;
+        break;
+    case 6:
+        retval = this->gearData.wormSizeDecl;
+        break;
+    case 6:
         retval = this->gearData.stepSizeDecl;
         break;
     default:
