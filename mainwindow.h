@@ -25,7 +25,8 @@ public:
 
 private slots:
     void updateReadings(void);
-    void executeSteps(void);
+    void startRATracking(void);
+    void stopRATracking(void);
     void shutDownProgram(void);
     void setMaxStepperAcc(void);
     void setMaxStepperVel(void);
@@ -38,7 +39,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QStepperPhidgets *StepperDriveOne;
+    QStepperPhidgets *StepperDriveRA;
     QTimer *timer;
     QFuture<void> futureStepperBehaviour;
     alccd5_client *camera_client;
@@ -46,6 +47,7 @@ private:
     currentObjectCatalog *objCatalog;
     void updateCameraImage(void);
     QDisplay2D *camView;
+    bool trackingIsOn;
     float ra; // right ascension of a current object
     float decl;// declination of a current object
 };

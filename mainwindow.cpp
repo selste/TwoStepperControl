@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "qstepperphidgets.h"
 #include <qtimer.h>
@@ -20,22 +20,17 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     g_AllData =new TSC_GlobalData(); // instantiate the global class with paraemters
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+    g_AllData->monotonicGlobalTimer->start();
 
     QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    timer->start(100); // check all 100 ms for events
+    timer->start(50); // check all 50 ms for events
 
-    StepperDriveOne = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
-    serNo = StepperDriveOne->retrievePhidgetStepperData(1);
-    verNo = StepperDriveOne->retrievePhidgetStepperData(2);
-    maa = StepperDriveOne->getKinetics(2);
-    ui->sbSteps->setValue(10000);
-    ui->sbMaxAccRA->setValue(maa);
-    ui->sbMaxAccRA->setMaximum(maa);
-    ui->sbMaxAccRA->setMinimum(maa*0.0001);
-    mav=StepperDriveOne->getKinetics(3);
-    ui->sbMaxVelRA->setMaximum(mav);
-    ui->sbMaxVelRA->setMinimum(StepperDriveOne->getKinetics(4));
-    ui->sbMaxVelRA->setValue(mav);
+    StepperDriveRA = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+    serNo = StepperDriveRA->retrievePhidgetStepperData(1);
+    verNo = StepperDriveRA->retrievePhidgetStepperData(2);
+    futureStepperBehaviour = QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgets::startTracking,0);
+    // just initialize the queue for the motor thread
+    this->trackingIsOn=false;
 
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
 
@@ -54,9 +49,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0),g_AllData->getCameraDisplaySize(1)); // store the size of the scene view in the global parameter class
 
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
-    connect(ui->pushButtonGo, SIGNAL(clicked()), this, SLOT(executeSteps()));
-    connect(ui->sbMaxAccRA, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAcc()));
-    connect(ui->sbMaxVelRA, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperVel()));
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram()));
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort()));
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(takeSingleCamShot()));
@@ -65,13 +57,15 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)));
     connect(ui->pbSync, SIGNAL(clicked()), this, SLOT(syncMount()));
     connect(ui->pbStoreGears, SIGNAL(clicked()), this, SLOT(storeGearData()));
+    connect(ui->pbStartTracking, SIGNAL(clicked()),this,SLOT(startRATracking()));
+    connect(ui->pbStopTracking, SIGNAL(clicked()),this,SLOT(stopRATracking()));
 }
 
 //------------------------------------------------------------------
 
 MainWindow::~MainWindow() {
 
-    delete StepperDriveOne;
+    delete StepperDriveRA;
     delete timer;
     delete ui;
     exit(0);
@@ -80,6 +74,11 @@ MainWindow::~MainWindow() {
 //------------------------------------------------------------------
 
 void MainWindow::updateReadings() {
+    if (futureStepperBehaviour.isFinished()) {
+        if (this->trackingIsOn == true) {
+            futureStepperBehaviour = QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgets::startTracking,(g_AllData->getTimeSinceLastSync()));
+        }
+    }
     if (g_AllData->getINDIState() == true) {
         if (camera_client->newImageArrived() ==true) {
             this->updateCameraImage();
@@ -93,27 +92,28 @@ void MainWindow::updateReadings() {
 
 //------------------------------------------------------------------
 
-void MainWindow::executeSteps() {
-    int stepsSet;
+void MainWindow::startRATracking(void) {
 
-    ui->pushButtonGo->setEnabled(0);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
-    stepsSet=ui->sbSteps->value();
-    futureStepperBehaviour = QtConcurrent::run(this->StepperDriveOne, &QStepperPhidgets::sendSteps,(round(stepsSet)));
-    while (!futureStepperBehaviour.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-    }
-    ui->pushButtonGo->setEnabled(1);
+    ui->pbStartTracking->setEnabled(0);
+    this->trackingIsOn=true;
+    ui->pbStopTracking->setEnabled(1);
 }
 
+//------------------------------------------------------------------
+
+void MainWindow::stopRATracking(void) {
+
+    ui->pbStartTracking->setEnabled(1);
+    this->trackingIsOn=false;
+    ui->pbStopTracking->setEnabled(0);
+}
 //------------------------------------------------------------------
 
 void MainWindow::shutDownProgram() {
     ui->cbContinuous->setChecked(false);
     sleep(ui->sbExposureTime->value());
     camera_client->sayGoodbyeToINDIServer();
-    this->StepperDriveOne->shutDownDrive();
-    delete StepperDriveOne;
+    delete StepperDriveRA;
     exit(0);
 }
 
@@ -122,8 +122,8 @@ void MainWindow::shutDownProgram() {
 void MainWindow::setMaxStepperAcc(void) {
     double val;
 
-    val = (double)(ui->sbMaxAccRA->value());
-    StepperDriveOne->setKinetics(val, 1);
+//    val = (double)(ui->sbMaxAccRA->value());
+//    StepperDriveOne->setKinetics(val, 1);
 }
 
 //------------------------------------------------------------------
@@ -131,8 +131,8 @@ void MainWindow::setMaxStepperAcc(void) {
 void MainWindow::setMaxStepperVel(void) {
     double val;
 
-    val = (double)(ui->sbMaxVelRA->value());
-    StepperDriveOne->setKinetics(val, 2);
+//    val = (double)(ui->sbMaxVelRA->value());
+//    StepperDriveOne->setKinetics(val, 2);
 }
 
 //------------------------------------------------------------------
@@ -214,7 +214,7 @@ void MainWindow::syncMount(void) {
 
 //------------------------------------------------------------------
 void MainWindow::storeGearData(void) {
-    float pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec;
+    float pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps;
     QString *leEntry;
 
     leEntry = new QString(ui->leRAPlanetary->text());
@@ -240,6 +240,9 @@ void MainWindow::storeGearData(void) {
     leEntry->clear();
     leEntry->append(ui->leDeclStepSize->text());
     ssdec=leEntry->toFloat();
-    g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec);
+    leEntry->clear();
+    leEntry->append(ui->leMicrosteps->text());
+    microsteps=leEntry->toFloat();
+    g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps);
     // store all gear data in global struct
 }

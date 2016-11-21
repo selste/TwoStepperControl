@@ -5,6 +5,7 @@
 
 class TSC_GlobalData {
 public:
+    QElapsedTimer *monotonicGlobalTimer;
     TSC_GlobalData(void);
     ~TSC_GlobalData(void);
     bool getStarSelectionState(void); // true if a guidestar was found in the CCCD-camera
@@ -25,11 +26,10 @@ public:
     void setSyncPosition(float, float); // when syncing, set RA and decl in decimal format (degrees)
     float getSyncPositionCoords(short); // 0 for decimal RA, 1 for declination- the monotonic timer "monotonicGlobalTimer" starts
     qint64 getTimeSinceLastSync(void); // get time in milliseconds since last sync
-    void setGearData(float,float,float,float,float,float,float,float); // store data on stepper gears and stepsize
-    float getGearData(short); //0 for planetary ratio for RA, 1 for other in RA, 2 for # of wormwheels, 3 for stepsize in RA, 4,5,6 and 7 for declination
+    void setGearData(float,float,float,float,float,float,float,float,float); // store data on stepper gears and stepsize
+    float getGearData(short); //0 for planetary ratio for RA, 1 for other in RA, 2 for # of wormwheels, 3 for stepsize in RA, 4,5,6 and 7 for declination, 8 for microstep-resolution
 
 private:
-    QElapsedTimer *monotonicGlobalTimer;
     bool guideStarSelected;
     bool guidingIsOn;
     bool INDIServerIsConnected;
@@ -65,6 +65,7 @@ private:
         float gearRatioDecl;
         float wormSizeDecl;
         float stepSizeDecl;
+        float microsteps;
     };
 
     struct initialStarPosStruct initialStarPos;

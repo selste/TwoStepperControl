@@ -21,6 +21,15 @@ TSC_GlobalData::TSC_GlobalData() {
     syncPosition.timeSinceSyncInMS=this->monotonicGlobalTimer->elapsed();
     syncPosition.rightAscension=0.0;
     syncPosition.declination=0.0;
+    gearData.planetaryRatioRA=9;
+    gearData.gearRatioRA=1;
+    gearData.wormSizeRA=288;
+    gearData.stepSizeRA=1.8;
+    gearData.planetaryRatioDecl=9;
+    gearData.gearRatioDecl=1;
+    gearData.wormSizeDecl=213;
+    gearData.stepSizeDecl=1.8;
+    gearData.microsteps=16;
     qDebug() << "Is timer monotonic:" << monotonicGlobalTimer->isMonotonic();
 }
 
@@ -171,7 +180,6 @@ int TSC_GlobalData::getCameraChipPixels(short what) {
 void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->syncPosition.rightAscension=ra;
     this->syncPosition.declination=dec;
-    this->monotonicGlobalTimer->start();
 }
 
 //-----------------------------------------------
@@ -197,16 +205,15 @@ qint64 TSC_GlobalData::getTimeSinceLastSync(void) {
     qint64 mselapsed;
 
     if (this->monotonicGlobalTimer->isValid()==true) {
-        mselapsed=this->monotonicGlobalTimer->elapsed();
+        mselapsed=this->monotonicGlobalTimer->restart();
     } else {
         mselapsed=-1;
     }
-    qDebug() << "Milliseconds since last sync" << mselapsed;
     return mselapsed;
 };
 //-----------------------------------------------
 
-void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float stepsizera,float pgdecl,float ogdecl, float wormdecl, float stepsizedecl) {
+void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float stepsizera,float pgdecl,float ogdecl, float wormdecl, float stepsizedecl, float msteps) {
     this->gearData.planetaryRatioRA=pgra;
     this->gearData.gearRatioRA=ogra;
     this->gearData.wormSizeRA=wormra;
@@ -215,6 +222,7 @@ void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float step
     this->gearData.gearRatioDecl=ogdecl;
     this->gearData.wormSizeDecl=wormdecl;
     this->gearData.stepSizeDecl=stepsizedecl;
+    this->gearData.microsteps=msteps;
 }
 
 //-----------------------------------------------
@@ -243,8 +251,11 @@ float TSC_GlobalData::getGearData(short what) {
     case 6:
         retval = this->gearData.wormSizeDecl;
         break;
-    case 6:
+    case 7:
         retval = this->gearData.stepSizeDecl;
+        break;
+    case 8:
+        retval = this->gearData.microsteps;
         break;
     default:
         retval=-1;
