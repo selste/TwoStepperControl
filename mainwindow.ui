@@ -332,10 +332,10 @@
      <widget class="QGroupBox" name="gbRAGear">
       <property name="geometry">
        <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>151</width>
-        <height>161</height>
+        <x>10</x>
+        <y>10</y>
+        <width>141</width>
+        <height>141</height>
        </rect>
       </property>
       <property name="title">
@@ -347,20 +347,26 @@
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>0</x>
+         <x>1</x>
          <y>20</y>
-         <width>197</width>
-         <height>140</height>
+         <width>132</width>
+         <height>120</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0" colspan="2">
+        <item row="0" column="0">
          <widget class="QLabel" name="labelPGRA">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
           </property>
           <property name="font">
            <font>
@@ -369,30 +375,11 @@
            </font>
           </property>
           <property name="text">
-           <string>Planetary:</string>
+           <string>Planetary: 1:</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="2" colspan="2">
-         <widget class="QLabel" name="labelRA1">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>1:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="4" colspan="2">
+        <item row="0" column="1">
          <widget class="QLineEdit" name="leRAPlanetary">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -400,8 +387,14 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
           <property name="text">
-           <string>9</string>
+           <string>1</string>
           </property>
          </widget>
         </item>
@@ -413,37 +406,36 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
           <property name="text">
-           <string>Gears:</string>
+           <string>Gears: 1:</string>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLabel" name="labelRA2">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>1:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2" colspan="4">
          <widget class="QLineEdit" name="leRAGear">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
           </property>
           <property name="text">
            <string>1</string>
@@ -458,25 +450,24 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
           <property name="text">
            <string>Worm:</string>
           </property>
          </widget>
         </item>
         <item row="2" column="1">
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>13</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="2" column="2" colspan="4">
          <widget class="QLineEdit" name="leRAWorm">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -484,173 +475,25 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="text">
-           <string>288</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" rowspan="2" colspan="4">
-         <widget class="QLabel" name="labelRA3">
-          <property name="font">
-           <font>
-            <weight>50</weight>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Step size [°]:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="5" rowspan="2">
-         <widget class="QLineEdit" name="leRAStepsize">
-          <property name="text">
-           <string>1.8</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="4">
-         <spacer name="horizontalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
+          <property name="maximumSize">
            <size>
-            <width>13</width>
-            <height>20</height>
+            <width>50</width>
+            <height>25</height>
            </size>
           </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="gbDeklGear">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>0</y>
-        <width>151</width>
-        <height>161</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Declination</string>
-      </property>
-      <property name="flat">
-       <bool>false</bool>
-      </property>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>20</y>
-         <width>180</width>
-         <height>140</height>
-        </rect>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0" colspan="2">
-         <widget class="QLabel" name="labelPGDecl">
-          <property name="font">
-           <font>
-            <weight>50</weight>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>Planetary:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="labelDecl1">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>1:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3" colspan="2">
-         <widget class="QLineEdit" name="leDeclPlanetary">
-          <property name="text">
-           <string>9</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="labelGDecl">
-          <property name="text">
-           <string>Gears:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLabel" name="labelDecl2">
-          <property name="font">
-           <font>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string>1:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="2" colspan="3">
-         <widget class="QLineEdit" name="leDeclGear">
           <property name="text">
            <string>1</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="labelWDecl">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Worm:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <spacer name="horizontalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
+        <item row="3" column="0">
+         <widget class="QLabel" name="labelRA3">
+          <property name="maximumSize">
            <size>
-            <width>13</width>
-            <height>20</height>
+            <width>73</width>
+            <height>25</height>
            </size>
           </property>
-         </spacer>
-        </item>
-        <item row="2" column="2" colspan="3">
-         <widget class="QLineEdit" name="leDeclWorm">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>213</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="3">
-         <widget class="QLabel" name="labelDecl3">
           <property name="font">
            <font>
             <weight>50</weight>
@@ -662,23 +505,16 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="3">
-         <spacer name="horizontalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="leRAStepsize">
+          <property name="maximumSize">
            <size>
-            <width>13</width>
-            <height>20</height>
+            <width>50</width>
+            <height>25</height>
            </size>
           </property>
-         </spacer>
-        </item>
-        <item row="3" column="4">
-         <widget class="QLineEdit" name="leDeclStepSize">
           <property name="text">
-           <string>1.8</string>
+           <string>1</string>
           </property>
          </widget>
         </item>
@@ -696,13 +532,6 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
-        <widget class="QLabel" name="lmsteps">
-         <property name="text">
-          <string>Microsteps:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QLineEdit" name="leMicrosteps">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -710,8 +539,21 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="maximumSize">
+          <size>
+           <width>50</width>
+           <height>25</height>
+          </size>
+         </property>
          <property name="text">
-          <string>16</string>
+          <string>1</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lmsteps">
+         <property name="text">
+          <string>Microsteps</string>
          </property>
         </widget>
        </item>
@@ -724,57 +566,722 @@
        </item>
       </layout>
      </widget>
+     <widget class="QGroupBox" name="gbDeklGear">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>10</y>
+        <width>151</width>
+        <height>151</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Declination</string>
+      </property>
+      <property name="flat">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>20</y>
+         <width>141</width>
+         <height>121</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelPGDecl_2">
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Planetary: 1:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="leDeclPlanetary">
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>1</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelGDecl_2">
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Gears: 1:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="leDeclGear">
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>1</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="labelWDecl_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Worm:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="leDeclWorm">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>1</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="labelDecl3_2">
+          <property name="maximumSize">
+           <size>
+            <width>73</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>Step size [°]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="leDeclStepSize">
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>26</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>1</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </widget>
     <widget class="QWidget" name="drivetab">
      <attribute name="title">
       <string>Drive</string>
      </attribute>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>161</width>
+        <height>171</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>RA</string>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>1</x>
+         <y>20</y>
+         <width>157</width>
+         <height>89</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelContr1">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>V [mstps/s]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="leVMaxRA">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelContr3">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Amax [mstps/s²]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="leAMaxRA">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="labelContr4">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Max. Current [A]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="leCurrMaxRA">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QPushButton" name="pbRATest">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>140</y>
+         <width>151</width>
+         <height>28</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Test</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>2</x>
+         <y>111</y>
+         <width>151</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>ID: </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLCDNumber" name="lcdRAID">
+          <property name="digitCount">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>0</y>
+        <width>161</width>
+        <height>171</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Declination</string>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>1</x>
+         <y>20</y>
+         <width>157</width>
+         <height>89</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="QLabel" name="labelContr1_2">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>V [mstps/s]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="leVMaxDecl">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="labelContr3_2">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Amax [mstps/s²]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="leAMaxDecl">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="labelContr4_2">
+          <property name="maximumSize">
+           <size>
+            <width>99</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Max. Current [A]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="leCurrMaxDecl">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>1</x>
+         <y>111</y>
+         <width>151</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>ID: </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLCDNumber" name="lcdDeclID">
+          <property name="digitCount">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QPushButton" name="pbStoreDrive">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>170</y>
+        <width>311</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Store</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="ctrlTab">
      <attribute name="title">
       <string>Control</string>
      </attribute>
-     <widget class="QPushButton" name="pbExit">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>270</x>
+        <x>0</x>
         <y>160</y>
-        <width>41</width>
-        <height>31</height>
+        <width>311</width>
+        <height>30</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Exit</string>
-      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <item>
+        <widget class="QPushButton" name="pbStartTracking">
+         <property name="text">
+          <string>Tracking on</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pbStopTracking">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Tracking off</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pbExit">
+         <property name="text">
+          <string>Exit</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
-     <widget class="QPushButton" name="pbStartTracking">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>101</width>
-        <height>31</height>
+        <x>10</x>
+        <y>10</y>
+        <width>163</width>
+        <height>131</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Tracking on</string>
-      </property>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetFixedSize</enum>
+       </property>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="pbDeclUp">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Dec +</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="pbRAMinus">
+         <property name="minimumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>RA -</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QPushButton" name="pbRAPlus">
+         <property name="minimumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>RA +</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="pbDeclDown">
+         <property name="minimumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Dec -</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
-     <widget class="QPushButton" name="pbStopTracking">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
+     <widget class="QWidget" name="">
       <property name="geometry">
        <rect>
-        <x>0</x>
-        <y>30</y>
-        <width>101</width>
-        <height>31</height>
+        <x>180</x>
+        <y>10</y>
+        <width>123</width>
+        <height>98</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Tracking off</string>
-      </property>
+      <layout class="QGridLayout" name="gridLayout_6">
+       <item row="0" column="0">
+        <widget class="QRadioButton" name="rbGotoSpeed">
+         <property name="minimumSize">
+          <size>
+           <width>70</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>70</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>V-Goto</string>
+         </property>
+         <property name="autoExclusive">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QSpinBox" name="sbGoToSpeed">
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="value">
+          <number>75</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QRadioButton" name="rbMoveSpeed">
+         <property name="minimumSize">
+          <size>
+           <width>70</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>70</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>V-Move</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="sbMoveSpeed">
+         <property name="maximumSize">
+          <size>
+           <width>45</width>
+           <height>28</height>
+          </size>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="value">
+          <number>4</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QRadioButton" name="rbCorrSpeed">
+         <property name="minimumSize">
+          <size>
+           <width>70</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>70</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>V-Corr</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </widget>

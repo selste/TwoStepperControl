@@ -11,26 +11,91 @@
 TSC_GlobalData *g_AllData;
 
 //------------------------------------------------------------------
-
 MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWindow) {
-    int serNo,verNo;
-    double maa, mav;
+    int serNo;
+    double maa, mav, RAStepperSpeed;
+    QString *textEntry;
 
     ui->setupUi(this); // making the widget
 
     g_AllData =new TSC_GlobalData(); // instantiate the global class with paraemters
-    g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
-    g_AllData->monotonicGlobalTimer->start();
+
+    this->RATrackingIsOn=false;
 
     QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    timer->start(50); // check all 50 ms for events
+    timer->start(100); // check all 100 ms for events
 
-    StepperDriveRA = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
-    serNo = StepperDriveRA->retrievePhidgetStepperData(1);
-    verNo = StepperDriveRA->retrievePhidgetStepperData(2);
-    futureStepperBehaviour = QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgets::startTracking,0);
-    // just initialize the queue for the motor thread
-    this->trackingIsOn=false;
+    if (g_AllData->getDriveID(0) == -1) { //no driver boards are assigned to drives
+        StepperDriveRA = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+        serNo = StepperDriveRA->retrievePhidgetStepperData(1);
+        g_AllData->setDriveData(0,serNo);
+
+        StepperDriveDecl = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+        serNo = StepperDriveDecl->retrievePhidgetStepperData(1);
+        g_AllData->setDriveData(1,serNo);
+
+        ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
+        ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
+        this->StepperDriveDecl->setStopped(0);
+    } else {
+        dummyDrive = new QStepperPhidgets(); // call the first phidget interface to the board of the stepper
+        serNo = dummyDrive->retrievePhidgetStepperData(1);
+        if (serNo != g_AllData->getDriveID(0)) { // dummy drive is NOT the designatedRA Drive
+            StepperDriveRA = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+            serNo =StepperDriveRA->retrievePhidgetStepperData(1);
+            g_AllData->setDriveData(0,serNo);
+            this->StepperDriveRA->setStopped(0);
+            ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
+            delete dummyDrive; // set the other board to RA
+
+            StepperDriveDecl = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+            serNo = StepperDriveDecl->retrievePhidgetStepperData(1);
+            g_AllData->setDriveData(1,serNo);
+            this->StepperDriveDecl->setStopped(0);
+            ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
+        } else {
+            StepperDriveDecl = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+            serNo = StepperDriveDecl->retrievePhidgetStepperData(1);
+            g_AllData->setDriveData(1,serNo);
+            ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
+            this->StepperDriveDecl->setStopped(0);
+            delete dummyDrive; // set the other board to Decl
+
+            StepperDriveRA = new QStepperPhidgets(); // call the phidget interface to the board of the stepper
+            serNo =StepperDriveRA->retrievePhidgetStepperData(1);
+            g_AllData->setDriveData(0,serNo);
+            this->StepperDriveRA->setStopped(0);
+            ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
+        }
+    }
+    textEntry = new QString();
+    RAStepperSpeed=(this->StepperDriveRA->getKinetics(3));
+    ui->leVMaxRA->setText(textEntry->number(RAStepperSpeed,'f',2));
+    textEntry->clear();
+    ui->leAMaxRA->setText(textEntry->number(this->StepperDriveRA->getKinetics(2)));
+    textEntry->clear();
+    ui->leCurrMaxRA->setText(textEntry->number(this->StepperDriveRA->getKinetics(1)));
+    textEntry->clear();
+
+    ui->leRAPlanetary->setText(textEntry->number(g_AllData->getGearData(0)));
+    textEntry->clear();
+    ui->leRAGear->setText(textEntry->number(g_AllData->getGearData(1)));
+    textEntry->clear();
+    ui->leRAWorm->setText(textEntry->number(g_AllData->getGearData(2)));
+    textEntry->clear();
+    ui->leRAStepsize->setText(textEntry->number(g_AllData->getGearData(3)));
+    textEntry->clear();
+    ui->leDeclPlanetary->setText(textEntry->number(g_AllData->getGearData(4)));
+    textEntry->clear();
+    ui->leDeclGear->setText(textEntry->number(g_AllData->getGearData(5)));
+    textEntry->clear();
+    ui->leDeclWorm->setText(textEntry->number(g_AllData->getGearData(6)));
+    textEntry->clear();
+    ui->leDeclStepSize->setText(textEntry->number(g_AllData->getGearData(7)));
+    textEntry->clear();
+    ui->leMicrosteps->setText(textEntry->number(g_AllData->getGearData(8)));
+    textEntry->clear();
+    delete textEntry;
 
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
 
@@ -59,10 +124,19 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStoreGears, SIGNAL(clicked()), this, SLOT(storeGearData()));
     connect(ui->pbStartTracking, SIGNAL(clicked()),this,SLOT(startRATracking()));
     connect(ui->pbStopTracking, SIGNAL(clicked()),this,SLOT(stopRATracking()));
+    connect(ui->pbDeclUp, SIGNAL(pressed()),this,SLOT(declinationMoveHandboxUp()));
+    connect(ui->pbDeclUp, SIGNAL(released()),this,SLOT(declinationMoveHandboxStop()));
+    connect(ui->pbDeclDown, SIGNAL(pressed()),this,SLOT(declinationMoveHandboxDown()));
+    connect(ui->pbDeclDown, SIGNAL(pressed()),this,SLOT(declinationMoveHandboxStop()));
+
+    g_AllData->storeGlobalData();
+    g_AllData->setDriveSpeeds(0,this->StepperDriveRA->getKinetics(3));
+    g_AllData->setDriveSpeeds(1,this->StepperDriveDecl->getKinetics(3));
+    g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+    this->startRATracking(); // start the RA Drive to keep track of the RA motion ...
 }
 
 //------------------------------------------------------------------
-
 MainWindow::~MainWindow() {
 
     delete StepperDriveRA;
@@ -72,12 +146,16 @@ MainWindow::~MainWindow() {
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::updateReadings() {
-    if (futureStepperBehaviour.isFinished()) {
-        if (this->trackingIsOn == true) {
-            futureStepperBehaviour = QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgets::startTracking,(g_AllData->getTimeSinceLastSync()));
-        }
+    qint64 topicalTime;
+    float relativeTravel;
+
+    if (RATrackingIsOn == true) {
+        topicalTime = g_AllData->getTimeSinceLastSync() - this->RAtrackingElapsedTimeInMS;
+        this->RAtrackingElapsedTimeInMS=topicalTime;
+        relativeTravel= 0.0041780742*topicalTime/(1000.0*
+                        (g_AllData->getGearData(0))*(g_AllData->getGearData(1))*
+                        (g_AllData->getGearData(2))); // total of RA-travel in degrees
     }
     if (g_AllData->getINDIState() == true) {
         if (camera_client->newImageArrived() ==true) {
@@ -87,38 +165,42 @@ void MainWindow::updateReadings() {
                 this->takeSingleCamShot();
             }
         }
-    }  
+    }
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::startRATracking(void) {
 
     ui->pbStartTracking->setEnabled(0);
-    this->trackingIsOn=true;
     ui->pbStopTracking->setEnabled(1);
+    this->StepperDriveRA->setStopped(0);
+    this->RATrackingIsOn = true;
+    this->RAtrackingElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
+    this->futureStepperBehaviourRA=QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgets::startTracking);
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::stopRATracking(void) {
 
+    RATrackingIsOn = false;
     ui->pbStartTracking->setEnabled(1);
-    this->trackingIsOn=false;
     ui->pbStopTracking->setEnabled(0);
+    this->StepperDriveRA->setStopped(1);
+    this->StepperDriveRA->stopDrive();
+    while (!this->futureStepperBehaviourRA.isFinished()) {
+    } // wait till the RA-tracking thread has died ...
 }
 //------------------------------------------------------------------
-
 void MainWindow::shutDownProgram() {
     ui->cbContinuous->setChecked(false);
     sleep(ui->sbExposureTime->value());
     camera_client->sayGoodbyeToINDIServer();
     delete StepperDriveRA;
+    delete StepperDriveDecl;
     exit(0);
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::setMaxStepperAcc(void) {
     double val;
 
@@ -136,7 +218,6 @@ void MainWindow::setMaxStepperVel(void) {
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::setINDISAddrAndPort(void) {
     QString saddr;
     int sport;
@@ -153,7 +234,6 @@ void MainWindow::setINDISAddrAndPort(void) {
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::takeSingleCamShot(void) {
    int exptime;
 
@@ -179,6 +259,7 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName) {
     ui->pbSync->setEnabled(false);
     catalogPath = new QString(catalogName->text());
     catalogPath->append(QString(".csv"));
+
     this->objCatalog = new currentObjectCatalog(*catalogPath);
     maxObj = this->objCatalog->getNumberOfObjects();
     ui->listWidgetObject->clear();
@@ -207,9 +288,13 @@ void MainWindow::catalogObjectChosen(QListWidgetItem* catalogObject) {
 
 //------------------------------------------------------------------
 void MainWindow::syncMount(void) {
+    if (this->StepperDriveRA->getStopped() == false) {
+        this->stopRATracking();
+    }
     g_AllData->setSyncPosition(this->ra, this->decl);
     // convey right ascension and declination to the global parameters;
     // a microtimer starts ...
+    this->startRATracking();
 }
 
 //------------------------------------------------------------------
@@ -245,4 +330,51 @@ void MainWindow::storeGearData(void) {
     microsteps=leEntry->toFloat();
     g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps);
     // store all gear data in global struct
+    g_AllData->storeGlobalData();
+    if (this->StepperDriveRA->getStopped() == false) {
+        this->stopRATracking();
+    }
+    this->startRATracking();
 }
+
+//--------------------------------------------------------------
+void MainWindow::declinationMoveHandboxUp(void) {
+    long maxDeclSteps;
+
+    ui->pbDeclDown->setEnabled(0);
+
+    maxDeclSteps=180/g_AllData->getGearData(7)*g_AllData->getGearData(8)*
+            g_AllData->getGearData(4)*g_AllData->getGearData(5)*
+            g_AllData->getGearData(6); // travel 180° at most
+    futureStepperBehaviourDecl =
+            QtConcurrent::run(this->StepperDriveDecl,
+            &QStepperPhidgets::travelForNSteps,maxDeclSteps,1,1);
+    while (!futureStepperBehaviourDecl.isFinished()) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    }
+    ui->pbDeclDown->setEnabled(1);
+}
+
+//--------------------------------------------------------------
+void MainWindow::declinationMoveHandboxDown(void) {
+    long maxDeclSteps;
+
+    ui->pbDeclUp->setEnabled(0);
+    maxDeclSteps=180/g_AllData->getGearData(7)*g_AllData->getGearData(8)*
+            g_AllData->getGearData(4)*g_AllData->getGearData(5)*
+            g_AllData->getGearData(6); // travel 180° at most
+    futureStepperBehaviourDecl =
+            QtConcurrent::run(this->StepperDriveDecl,
+            &QStepperPhidgets::travelForNSteps,maxDeclSteps,-1,1);
+    while (!futureStepperBehaviourDecl.isFinished()) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    }
+    ui->pbDeclUp->setEnabled(1);
+}
+
+//--------------------------------------------------------------
+void MainWindow::declinationMoveHandboxStop(void) {
+    this->StepperDriveDecl->setStopped(true);
+}
+
+//--------------------------------------------------------------

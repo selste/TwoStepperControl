@@ -2,11 +2,9 @@
 #define QSTEPPERPHIDGETS_H
 
 #include <phidget21.h>
-#include <QElapsedTimer>
 
 class QStepperPhidgets {
 private:
-    QElapsedTimer *RATrackingTimer; // this one must not be reset
     CPhidgetStepperHandle SH;
     int errorOpen;
     int errorCreate;
@@ -18,17 +16,20 @@ private:
     double accMax;
     double currMax;
     int stopped;
-    double stepsPerMSInRA;
+    double stepsPerSInRA;
 
 public:
     QStepperPhidgets(void);
     ~QStepperPhidgets(void);
-    void startTracking(qint64);
+    void startTracking(void);
+    bool travelForNSteps(long,short,int);
     int retrievePhidgetStepperData (int);
     double getKinetics(short);
     void setKinetics(double, short);
     void shutDownDrive(void);
-    void setDriveToStopped(bool);
-    void setTrackingOnOff(bool);
+    void setStopped(bool);
+    bool getStopped(void);
+    void stopDrive(void);
+    void engageDrive(void);
 };
 #endif // QSTEPPERPHIDGETS_H

@@ -11,10 +11,12 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = TwoStepperControl
 TEMPLATE = app
 
+CONFIG += c++11
 
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
+    qencoderphidgets.cpp \
     qstepperphidgets.cpp \
     alccd5_client.cpp \
     currentObjectCatalog.cpp \
@@ -23,6 +25,7 @@ SOURCES += \
 
 HEADERS  += \
     mainwindow.h \
+    qencoderphidgets.h \
     qstepperphidgets.h \
     alccd5_client.h \
     currentObjectCatalog.h \
@@ -41,8 +44,6 @@ else:unix: LIBS += -L$$PWD/../../../usr/lib/ -lphidget21
 
 INCLUDEPATH += $$PWD/../../../usr/include
 DEPENDPATH += $$PWD/../../../usr/include
-
-
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/release/ -lindiclient
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/debug/ -lindiclient

@@ -2,12 +2,19 @@
 #define TSC_GLOBALDATA_H
 
 #include <QElapsedTimer>
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <stdlib.h>
+#include <string.h>
+#include <sstream>
 
 class TSC_GlobalData {
 public:
-    QElapsedTimer *monotonicGlobalTimer;
     TSC_GlobalData(void);
     ~TSC_GlobalData(void);
+    void storeGlobalData(void);
+    bool loadGlobalData(void); // trying to load a "TSC_Preferences.tsc" datafile in the home directory
     bool getStarSelectionState(void); // true if a guidestar was found in the CCCD-camera
     void setStarSelectionState(bool);
     void setGuidingOn(bool); // true if guiding routiones are running
@@ -28,8 +35,15 @@ public:
     qint64 getTimeSinceLastSync(void); // get time in milliseconds since last sync
     void setGearData(float,float,float,float,float,float,float,float,float); // store data on stepper gears and stepsize
     float getGearData(short); //0 for planetary ratio for RA, 1 for other in RA, 2 for # of wormwheels, 3 for stepsize in RA, 4,5,6 and 7 for declination, 8 for microstep-resolution
+    void setDriveData(short, int); // 0 for controller ID of RA, 1 for ID of Decl
+    int getDriveID(short); // 0 for controller ID of RA, 1 for ID of Decl
+    void setDriveSpeeds(short, double); // 0 for drivespeed in RA, 1 for decl
+    double getDriveSpeeds(short); // 0 for RA, 1 for decl
+    double getActualScopePosition(short); // 0 for RA, 1 for decl
+    void incrementActualScopePosition(double, double); // add ra and decl increments
 
 private:
+    QElapsedTimer *monotonicGlobalTimer;
     bool guideStarSelected;
     bool guidingIsOn;
     bool INDIServerIsConnected;
@@ -68,11 +82,25 @@ private:
         float microsteps;
     };
 
+    struct driveDataStruct {
+        int RAControllerID;
+        int DeclControllerID;
+        double actualRASpeed;
+        double actualDeclSpeed;
+    };
+
+    struct actualScopePositionStruct {
+        double actualRA;
+        double actualDecl;
+    };
+
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
     struct cameraParametersStruct cameraParameters;
     struct syncPositionStruct syncPosition;
     struct gearDataStruct gearData;
+    struct driveDataStruct driveData;
+    struct actualScopePositionStruct actualScopePosition;
 };
 
 #endif // TSC_GLOBALDATA_H

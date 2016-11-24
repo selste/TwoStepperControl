@@ -29,20 +29,21 @@ QStepperPhidgets::QStepperPhidgets(void){
     CPhidgetStepper_getVelocityMax((CPhidgetStepperHandle)SH,0,&smax);
     CPhidgetStepper_getVelocityMin((CPhidgetStepperHandle)SH,0,&smin);
     CPhidgetStepper_getAccelerationMax((CPhidgetStepperHandle)SH,0,&amax);
-    this->speedMax=smax/500;
     this->speedMin=smin;
-    this->accMax=amax/500;
-    this->currMax=2.5;
+    this->accMax=1000;
+    this->currMax=1;
+    CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->accMax);
     CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
+    this->stopped=true;
 
-    this->RATrackingTimer = new QElapsedTimer();
-    this->stepsPerMSInRA=0.0041780746*
+    this->stepsPerSInRA=0.0041780746*
             (g_AllData->getGearData(0))*
             (g_AllData->getGearData(1))*
             (g_AllData->getGearData(2))*
-            (g_AllData->getGearData(8))/(g_AllData->getGearData(3))/1000.0;
-    qDebug() << "microsteps per second" << stepsPerMSInRA;
-    // 360°/sidereal day in seconds*gear ratios*microsteps/steps in ms
+            (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
+    this->speedMax=stepsPerSInRA;
+    CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    // 360°/sidereal day in seconds*gear ratios*microsteps/steps
 }
 
 //-----------------------------------------------------------------------------
@@ -57,16 +58,39 @@ QStepperPhidgets::~QStepperPhidgets(void){
 
 //-----------------------------------------------------------------------------
 
-void QStepperPhidgets::startTracking(qint64 timeElapsed) {
-    long stepsAhead;
-
-    stepsAhead=round(timeElapsed*this->stepsPerMSInRA);
-    qDebug() << stepsAhead;
-
+void QStepperPhidgets::startTracking(void) {
+    CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
+    CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
+    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, (60*60*24*this->stepsPerSInRA));
+    // one day is maximum tracking time
+    this->stopped = false;
+    while (this->stopped == false) {
+        CPhidgetStepper_getStopped((CPhidgetStepperHandle)SH, 0, &stopped);
+    }
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
 }
 
 //-----------------------------------------------------------------------------
+bool QStepperPhidgets::travelForNSteps(long steps,short direction, int factor) {
+    if (direction < 0) {
+        direction = -1;
+    } else {
+        direction = 1;
+    }
+    CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
+    CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
+    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, factor*direction*steps);
+    this->stopped = false;
+    while (this->stopped == false) {
+        CPhidgetStepper_getStopped((CPhidgetStepperHandle)SH, 0, &stopped);
+    }
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
+    return true;
+}
 
+//-----------------------------------------------------------------------------
 int QStepperPhidgets::retrievePhidgetStepperData(int what) {
     int retval;
 
@@ -137,12 +161,28 @@ void QStepperPhidgets::shutDownDrive(void) {
 
 //-----------------------------------------------------------------------------
 
-void QStepperPhidgets::setDriveToStopped(bool isStop) {
+void QStepperPhidgets::setStopped(bool isStop) {
     this->stopped=isStop;
 }
 
 //-----------------------------------------------------------------------------
 
-void QStepperPhidgets::setTrackingOnOff(bool isOn) {
-    this->setTrackingOnOff(isOn);
+bool QStepperPhidgets::getStopped(void) {
+    return (this->stopped);
+}
+
+//------------------------------------------------------------------------------
+
+void QStepperPhidgets::stopDrive(void) {
+    this->stopped=true;
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
+    CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
+    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, 0);
+}
+
+//-------------------------------------------------------------------------------
+
+void QStepperPhidgets::engageDrive(void) {
+    this->stopped=false;
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
 }

@@ -21,16 +21,23 @@ TSC_GlobalData::TSC_GlobalData() {
     syncPosition.timeSinceSyncInMS=this->monotonicGlobalTimer->elapsed();
     syncPosition.rightAscension=0.0;
     syncPosition.declination=0.0;
-    gearData.planetaryRatioRA=9;
-    gearData.gearRatioRA=1;
-    gearData.wormSizeRA=288;
-    gearData.stepSizeRA=1.8;
-    gearData.planetaryRatioDecl=9;
-    gearData.gearRatioDecl=1;
-    gearData.wormSizeDecl=213;
-    gearData.stepSizeDecl=1.8;
-    gearData.microsteps=16;
-    qDebug() << "Is timer monotonic:" << monotonicGlobalTimer->isMonotonic();
+    actualScopePosition.actualRA=0.0;
+    actualScopePosition.actualDecl=0.0;
+    if (this->loadGlobalData() == false) {
+        gearData.planetaryRatioRA=1;
+        gearData.gearRatioRA=1;
+        gearData.wormSizeRA=1;
+        gearData.stepSizeRA=1.8;
+        gearData.planetaryRatioDecl=1;
+        gearData.gearRatioDecl=1;
+        gearData.wormSizeDecl=1;
+        gearData.stepSizeDecl=1.8;
+        gearData.microsteps=16;
+        driveData.RAControllerID=-1;
+        driveData.DeclControllerID=-1;
+    }
+    this->driveData.actualRASpeed=0;
+    this->driveData.actualDeclSpeed=0;
 }
 
 //-----------------------------------------------
@@ -180,6 +187,9 @@ int TSC_GlobalData::getCameraChipPixels(short what) {
 void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->syncPosition.rightAscension=ra;
     this->syncPosition.declination=dec;
+    this->actualScopePosition.actualRA=ra;
+    this->actualScopePosition.actualDecl=dec;
+    this->monotonicGlobalTimer->restart();
 }
 
 //-----------------------------------------------
@@ -205,7 +215,7 @@ qint64 TSC_GlobalData::getTimeSinceLastSync(void) {
     qint64 mselapsed;
 
     if (this->monotonicGlobalTimer->isValid()==true) {
-        mselapsed=this->monotonicGlobalTimer->restart();
+        mselapsed=this->monotonicGlobalTimer->elapsed();
     } else {
         mselapsed=-1;
     }
@@ -262,3 +272,196 @@ float TSC_GlobalData::getGearData(short what) {
     }
     return retval;
 }
+
+//-----------------------------------------------
+
+void TSC_GlobalData::setDriveData(short what, int ID) {
+    switch (what) {
+    case 0:
+        this->driveData.RAControllerID = ID;
+        break;
+    case 1:
+        this->driveData.DeclControllerID = ID;
+        break;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setDriveSpeeds(short what, double speed) {
+    switch (what) {
+    case 0:
+        this->driveData.actualRASpeed = speed;
+        break;
+    case 1:
+        this->driveData.actualDeclSpeed = speed;
+        break;
+    }
+}
+
+//-----------------------------------------------
+double TSC_GlobalData::getDriveSpeeds(short what) {
+    switch (what) {
+    case 0:
+        return this->driveData.actualRASpeed;
+    case 1:
+        return this->driveData.actualDeclSpeed;
+    }
+}
+
+
+//-----------------------------------------------
+
+int TSC_GlobalData::getDriveID(short what) {
+    int retval;
+
+    switch (what) {
+    case 0:
+        retval = this->driveData.RAControllerID;
+        break;
+    case 1:
+        retval = this->driveData.DeclControllerID;
+        break;
+    default:
+        retval=-1;
+    }
+    return retval;
+}
+
+//-----------------------------------------------
+
+void TSC_GlobalData::storeGlobalData(void) {
+    std::ofstream outfile("TSC_Preferences.tsc");
+
+    std::string ostr = std::to_string(this->driveData.RAControllerID);
+    ostr.append("// Phidget 1067 Board Serial Number for RA.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->driveData.DeclControllerID);
+    ostr.append("// Phidget 1067 Board Serial Number for Declination.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.planetaryRatioRA);
+    ostr.append("// Gear ratio for planetary connected to RA-stepper.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.gearRatioRA);
+    ostr.append("// Gear ratio of non planetary/non worm gear in RA.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.wormSizeRA);
+    ostr.append("// Number of teeth of the RA-worm.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.stepSizeRA);
+    ostr.append("// Size of the full step for RA-Stepper in degrees.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.planetaryRatioDecl);
+    ostr.append("// Gear ratio for planetary connected to Declination-stepper.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.gearRatioDecl);
+    ostr.append("// Gear ratio of non planetary/non worm gear in Declination.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.wormSizeDecl);
+    ostr.append("// Number of teeth of the RA-worm.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.stepSizeDecl);
+    ostr.append("// Size of the full step for Declination-Stepper in degrees.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.microsteps);
+    ostr.append("// Number of microsteps your drive can do - 16 for the 1067-board.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    outfile.close();
+}
+
+//-----------------------------------------------
+
+bool TSC_GlobalData::loadGlobalData(void) {
+    std::string line;   // define a line that is read until \n is encountered
+
+    char delimiter('/');    // data are separated from comments by c++ - style comments
+    std::ifstream infile("TSC_Preferences.tsc");  // read that preferences file ...
+    if (infile == NULL) {
+        return false;
+    }
+
+    std::getline(infile, line, delimiter);
+    std::istringstream isRAID(line);   // convert 'line' to a stream so that the first line
+    isRAID >> this->driveData.RAControllerID;
+    qDebug() << "TSC_GlobalData -> RAID is:" << this->driveData.RAControllerID;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isDeclID(line);
+    isDeclID >> this->driveData.DeclControllerID;
+    qDebug() << "TSC_GlobalData -> DeclID is:" << this->driveData.DeclControllerID;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream ispRatRA(line);
+    ispRatRA >> this->gearData.planetaryRatioRA;
+    qDebug() << "TSC_GlobalData -> pRatioRA is:" << this->gearData.planetaryRatioRA;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isgRatRA(line);
+    isgRatRA >> this->gearData.gearRatioRA;
+    qDebug() << "TSC_GlobalData -> gearRatioRA is:" << this->gearData.gearRatioRA;;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isWSRA(line);
+    isWSRA >> this->gearData.wormSizeRA;
+    qDebug() << "TSC_GlobalData -> wormsizeRA is:" << this->gearData.wormSizeRA;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isSSRA(line);
+    isSSRA >> this->gearData.stepSizeRA;
+    qDebug() << "TSC_GlobalData -> stepSizeRA is:" << this->gearData.stepSizeRA;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream ispRatDecl(line);
+    ispRatDecl >> this->gearData.planetaryRatioDecl;
+    qDebug() << "TSC_GlobalData -> planetaryRatioDecl is:" << this->gearData.planetaryRatioDecl;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isgRatDecl(line);
+    isgRatDecl>> this->gearData.gearRatioDecl;
+    qDebug() << "TSC_GlobalData -> gearRatioDecl is:" << this->gearData.gearRatioDecl;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isWSDecl(line);
+    isWSDecl >> this->gearData.wormSizeDecl;
+    qDebug() << "TSC_GlobalData -> wormSizeDecl is:" << this->gearData.wormSizeDecl;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isSSDecl(line);
+    isSSDecl >> this->gearData.stepSizeDecl;
+    qDebug() << "TSC_GlobalData -> stepSizeDecl is:" << this->gearData.stepSizeDecl;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isms(line);
+    isms >> this->gearData.microsteps;
+    qDebug() << "TSC_GlobalData -> microsteps is:" << this->gearData.microsteps;
+    infile.close(); // close the reading file for preference
+    return true;
+}
+
+//-----------------------------------------------------------------
+double TSC_GlobalData::getActualScopePosition(short what) {
+    if (what == 0) {
+        return this->actualScopePosition.actualRA;
+    } else {
+        return this->actualScopePosition.actualDecl;
+    }
+}
+
+//-----------------------------------------------------------------
+void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
+    this->actualScopePosition.actualRA += deltaRA;
+    this->actualScopePosition.actualDecl += deltaDec;
+}
+
+//-----------------------------------------------------------------
+
