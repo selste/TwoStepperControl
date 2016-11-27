@@ -37,8 +37,8 @@ public:
     float getGearData(short); //0 for planetary ratio for RA, 1 for other in RA, 2 for # of wormwheels, 3 for stepsize in RA, 4,5,6 and 7 for declination, 8 for microstep-resolution
     void setDriveData(short, int); // 0 for controller ID of RA, 1 for ID of Decl
     int getDriveID(short); // 0 for controller ID of RA, 1 for ID of Decl
-    void setDriveSpeeds(short, double); // 0 for drivespeed in RA, 1 for decl
-    double getDriveSpeeds(short); // 0 for RA, 1 for decl
+    void setDriveParams(short, short, double); // 0 for  RA, 1 for decl, 0 for speed, 1 for Acc, 2 for Current, and the value
+    double getDriveParams(short, short); // 0 for RA, 1 for decl and 0 for speed, 1, for Acc and 2 for current
     double getActualScopePosition(short); // 0 for RA, 1 for decl
     void incrementActualScopePosition(double, double); // add ra and decl increments
 
@@ -87,6 +87,10 @@ private:
         int DeclControllerID;
         double actualRASpeed;
         double actualDeclSpeed;
+        double driveAccRA;
+        double driveAccDecl;
+        double driveCurrRA;
+        double driveCurrDecl;
     };
 
     struct actualScopePositionStruct {

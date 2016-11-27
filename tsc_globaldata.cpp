@@ -23,21 +23,25 @@ TSC_GlobalData::TSC_GlobalData() {
     syncPosition.declination=0.0;
     actualScopePosition.actualRA=0.0;
     actualScopePosition.actualDecl=0.0;
+    this->driveData.actualRASpeed=0;
+    this->driveData.actualDeclSpeed=0;
     if (this->loadGlobalData() == false) {
-        gearData.planetaryRatioRA=1;
+        gearData.planetaryRatioRA=9;
         gearData.gearRatioRA=1;
-        gearData.wormSizeRA=1;
+        gearData.wormSizeRA=288;
         gearData.stepSizeRA=1.8;
-        gearData.planetaryRatioDecl=1;
+        gearData.planetaryRatioDecl=9;
         gearData.gearRatioDecl=1;
-        gearData.wormSizeDecl=1;
+        gearData.wormSizeDecl=213;
         gearData.stepSizeDecl=1.8;
         gearData.microsteps=16;
         driveData.RAControllerID=-1;
         driveData.DeclControllerID=-1;
+        this->driveData.driveAccRA=1000;
+        this->driveData.driveAccDecl=1000;
+        this->driveData.driveCurrRA=1.0;
+        this->driveData.driveCurrDecl=0.5;
     }
-    this->driveData.actualRASpeed=0;
-    this->driveData.actualDeclSpeed=0;
 }
 
 //-----------------------------------------------
@@ -287,27 +291,61 @@ void TSC_GlobalData::setDriveData(short what, int ID) {
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setDriveSpeeds(short what, double speed) {
-    switch (what) {
-    case 0:
-        this->driveData.actualRASpeed = speed;
-        break;
-    case 1:
-        this->driveData.actualDeclSpeed = speed;
-        break;
+void TSC_GlobalData::setDriveParams(short which, short what, double val) {
+    if (which == 0) {
+        switch (what) {
+        case 0:
+            this->driveData.actualRASpeed = val;
+            break;
+        case 1:
+            this->driveData.driveAccRA = val;
+            break;
+        case 2:
+            this->driveData.driveCurrRA = val;
+            break;
+        }
+    } else {
+        switch (what) {
+        case 0:
+            this->driveData.actualDeclSpeed = val;
+            break;
+        case 1:
+            this->driveData.driveAccDecl = val;
+            break;
+        case 2:
+            this->driveData.driveCurrDecl = val;
+            break;
+        }
     }
 }
 
 //-----------------------------------------------
-double TSC_GlobalData::getDriveSpeeds(short what) {
-    switch (what) {
-    case 0:
-        return this->driveData.actualRASpeed;
-    case 1:
-        return this->driveData.actualDeclSpeed;
-    }
-}
+double TSC_GlobalData::getDriveParams(short whichDrive, short what) {
+    double val;
 
+    if (whichDrive == 0) {
+       switch (what) {
+        case 0: val = this->driveData.actualRASpeed;
+            break;
+        case 1: val = this->driveData.driveAccRA;
+            break;
+        case 2: val = this->driveData.driveCurrRA;
+            break;
+        default: val = -1;
+       }
+    } else {
+        switch (what) {
+         case 0: val = this->driveData.actualDeclSpeed;
+             break;
+         case 1: val = this->driveData.driveAccDecl;
+             break;
+         case 2: val = this->driveData.driveCurrDecl;
+             break;
+         default: val = -1;
+        }
+    }
+    return val;
+}
 
 //-----------------------------------------------
 
@@ -374,6 +412,22 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.clear();
     ostr = std::to_string(this->gearData.microsteps);
     ostr.append("// Number of microsteps your drive can do - 16 for the 1067-board.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->driveData.driveAccRA);
+    ostr.append("// Acceleration in Microsteps/s^2 for Right Ascension Drive.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->driveData.driveAccDecl);
+    ostr.append("// Acceleration in Microsteps/s^2 for Declination Drive.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->driveData.driveCurrRA);
+    ostr.append("// Maximum Current in A for RA-Drive.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->driveData.driveCurrDecl);
+    ostr.append("// Maximum Current in A for Declination Drive.\n");
     outfile << ostr.data();
     ostr.clear();
     outfile.close();
@@ -444,6 +498,26 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::istringstream isms(line);
     isms >> this->gearData.microsteps;
     qDebug() << "TSC_GlobalData -> microsteps is:" << this->gearData.microsteps;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isdara(line);
+    isdara >> this->driveData.driveAccRA;
+    qDebug() << "TSC_GlobalData -> Acceleration in RA is:" << this->driveData.driveAccRA;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream isdadec(line);
+    isdadec >> this->driveData.driveAccDecl;
+    qDebug() << "TSC_GlobalData -> Acceleration in Decl is:" << this->driveData.driveAccDecl;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream iscra(line);
+    iscra >> this->driveData.driveCurrRA;
+    qDebug() << "TSC_GlobalData -> Max. current in RA is:" << this->driveData.driveCurrRA;
+    std::getline(infile, line, '\n'); // read the comment ...
+    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::istringstream iscdec(line);
+    iscdec >> this->driveData.driveCurrDecl;
+    qDebug() << "TSC_GlobalData -> Max. current in Declination is:" << this->driveData.driveCurrDecl;
     infile.close(); // close the reading file for preference
     return true;
 }

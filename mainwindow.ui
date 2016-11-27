@@ -394,7 +394,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>9</string>
           </property>
          </widget>
         </item>
@@ -482,7 +482,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>288</string>
           </property>
          </widget>
         </item>
@@ -514,7 +514,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>1.8</string>
           </property>
          </widget>
         </item>
@@ -619,7 +619,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>9</string>
           </property>
          </widget>
         </item>
@@ -683,7 +683,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>213</string>
           </property>
          </widget>
         </item>
@@ -715,7 +715,7 @@
            </size>
           </property>
           <property name="text">
-           <string>1</string>
+           <string>1.8</string>
           </property>
          </widget>
         </item>
@@ -1173,7 +1173,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>180</x>
