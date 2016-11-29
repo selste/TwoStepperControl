@@ -447,77 +447,77 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isRAID(line);   // convert 'line' to a stream so that the first line
     isRAID >> this->driveData.RAControllerID;
-    qDebug() << "TSC_GlobalData -> RAID is:" << this->driveData.RAControllerID;
+   // qDebug() << "TSC_GlobalData -> RAID is:" << this->driveData.RAControllerID;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isDeclID(line);
     isDeclID >> this->driveData.DeclControllerID;
-    qDebug() << "TSC_GlobalData -> DeclID is:" << this->driveData.DeclControllerID;
+   // qDebug() << "TSC_GlobalData -> DeclID is:" << this->driveData.DeclControllerID;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream ispRatRA(line);
     ispRatRA >> this->gearData.planetaryRatioRA;
-    qDebug() << "TSC_GlobalData -> pRatioRA is:" << this->gearData.planetaryRatioRA;
+   // qDebug() << "TSC_GlobalData -> pRatioRA is:" << this->gearData.planetaryRatioRA;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isgRatRA(line);
     isgRatRA >> this->gearData.gearRatioRA;
-    qDebug() << "TSC_GlobalData -> gearRatioRA is:" << this->gearData.gearRatioRA;;
+   // qDebug() << "TSC_GlobalData -> gearRatioRA is:" << this->gearData.gearRatioRA;;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isWSRA(line);
     isWSRA >> this->gearData.wormSizeRA;
-    qDebug() << "TSC_GlobalData -> wormsizeRA is:" << this->gearData.wormSizeRA;
+   // qDebug() << "TSC_GlobalData -> wormsizeRA is:" << this->gearData.wormSizeRA;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isSSRA(line);
     isSSRA >> this->gearData.stepSizeRA;
-    qDebug() << "TSC_GlobalData -> stepSizeRA is:" << this->gearData.stepSizeRA;
+   // qDebug() << "TSC_GlobalData -> stepSizeRA is:" << this->gearData.stepSizeRA;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream ispRatDecl(line);
     ispRatDecl >> this->gearData.planetaryRatioDecl;
-    qDebug() << "TSC_GlobalData -> planetaryRatioDecl is:" << this->gearData.planetaryRatioDecl;
+   // qDebug() << "TSC_GlobalData -> planetaryRatioDecl is:" << this->gearData.planetaryRatioDecl;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isgRatDecl(line);
     isgRatDecl>> this->gearData.gearRatioDecl;
-    qDebug() << "TSC_GlobalData -> gearRatioDecl is:" << this->gearData.gearRatioDecl;
+  //  qDebug() << "TSC_GlobalData -> gearRatioDecl is:" << this->gearData.gearRatioDecl;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isWSDecl(line);
     isWSDecl >> this->gearData.wormSizeDecl;
-    qDebug() << "TSC_GlobalData -> wormSizeDecl is:" << this->gearData.wormSizeDecl;
+ //   qDebug() << "TSC_GlobalData -> wormSizeDecl is:" << this->gearData.wormSizeDecl;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isSSDecl(line);
     isSSDecl >> this->gearData.stepSizeDecl;
-    qDebug() << "TSC_GlobalData -> stepSizeDecl is:" << this->gearData.stepSizeDecl;
+ //   qDebug() << "TSC_GlobalData -> stepSizeDecl is:" << this->gearData.stepSizeDecl;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isms(line);
     isms >> this->gearData.microsteps;
-    qDebug() << "TSC_GlobalData -> microsteps is:" << this->gearData.microsteps;
+  //  qDebug() << "TSC_GlobalData -> microsteps is:" << this->gearData.microsteps;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isdara(line);
     isdara >> this->driveData.driveAccRA;
-    qDebug() << "TSC_GlobalData -> Acceleration in RA is:" << this->driveData.driveAccRA;
+ //   qDebug() << "TSC_GlobalData -> Acceleration in RA is:" << this->driveData.driveAccRA;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isdadec(line);
     isdadec >> this->driveData.driveAccDecl;
-    qDebug() << "TSC_GlobalData -> Acceleration in Decl is:" << this->driveData.driveAccDecl;
+ //   qDebug() << "TSC_GlobalData -> Acceleration in Decl is:" << this->driveData.driveAccDecl;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream iscra(line);
     iscra >> this->driveData.driveCurrRA;
-    qDebug() << "TSC_GlobalData -> Max. current in RA is:" << this->driveData.driveCurrRA;
+ //   qDebug() << "TSC_GlobalData -> Max. current in RA is:" << this->driveData.driveCurrRA;
     std::getline(infile, line, '\n'); // read the comment ...
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream iscdec(line);
     iscdec >> this->driveData.driveCurrDecl;
-    qDebug() << "TSC_GlobalData -> Max. current in Declination is:" << this->driveData.driveCurrDecl;
+ //   qDebug() << "TSC_GlobalData -> Max. current in Declination is:" << this->driveData.driveCurrDecl;
     infile.close(); // close the reading file for preference
     return true;
 }

@@ -25,7 +25,7 @@ public:
     bool travelForNSteps(long,short,int);
     int retrievePhidgetStepperData (int);
     double getKinetics(short);
-    void setKinetics(double, short);
+    void setStepperParams(double, short);
     void shutDownDrive(void);
     void setStopped(bool);
     bool getStopped(void);

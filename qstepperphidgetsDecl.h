@@ -13,20 +13,19 @@ private:
     int motorNum;
     double speedMax;
     double speedMin;
-    double accMax;
+    double acc;
     double currMax;
     int stopped;
     double stepsPerSInDecl;
 
 public:
-    QStepperPhidgetsDecl(void);
+    QStepperPhidgetsDecl(double,double);
     ~QStepperPhidgetsDecl(void);
     bool travelForNSteps(long,short,int);
     int retrievePhidgetStepperData (int);
     double getKinetics(short);
     void setStepperParams(double, short);
     void shutDownDrive(void);
-    void setStopped(bool);
     bool getStopped(void);
     void stopDrive(void);
     void engageDrive(void);

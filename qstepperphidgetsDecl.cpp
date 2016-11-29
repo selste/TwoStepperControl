@@ -10,7 +10,7 @@ extern TSC_GlobalData *g_AllData;
 
 //-----------------------------------------------------------------------------
 
-QStepperPhidgetsDecl::QStepperPhidgetsDecl(void){
+QStepperPhidgetsDecl::QStepperPhidgetsDecl(double lacc, double lcurr){
     int sernum, version;
     double smax, amax, smin;
 
@@ -29,9 +29,13 @@ QStepperPhidgetsDecl::QStepperPhidgetsDecl(void){
     CPhidgetStepper_getVelocityMin((CPhidgetStepperHandle)SH,0,&smin);
     CPhidgetStepper_getAccelerationMax((CPhidgetStepperHandle)SH,0,&amax);
     this->speedMin=smin;
-    this->accMax=1000;
-    this->currMax=1;
-    CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->accMax);
+    if (lacc > amax) {
+        this->acc = amax;
+    } else {
+        this->acc = lacc;
+    }
+    this->currMax=lcurr;
+    CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
     CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
     this->stopped=true;
 
@@ -71,12 +75,18 @@ bool QStepperPhidgetsDecl::travelForNSteps(long steps,short direction, int facto
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
-    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, factor*direction*steps);
+    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, direction*steps);
     this->stopped = false;
     while (this->stopped == false) {
         CPhidgetStepper_getStopped((CPhidgetStepperHandle)SH, 0, &stopped);
     }
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
+    this->speedMax=0.0041780746*
+            (g_AllData->getGearData(4))*
+            (g_AllData->getGearData(5))*
+            (g_AllData->getGearData(6))*
+            (g_AllData->getGearData(8))/(g_AllData->getGearData(7));
+    CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     return true;
 }
 
@@ -107,13 +117,13 @@ double QStepperPhidgetsDecl::getKinetics(short whichOne) {
 
     switch (whichOne) {
     case 1:
-        retval = (this->currMax);
+        CPhidgetStepper_getCurrentLimit((CPhidgetStepperHandle)SH,0,&retval);
         break;
     case 2:
-        retval = (this->accMax);
+        CPhidgetStepper_getAcceleration((CPhidgetStepperHandle)SH,0,&retval);
         break;
     case 3:
-        retval = (this->speedMax);
+        CPhidgetStepper_getVelocityLimit((CPhidgetStepperHandle)SH,0,&retval);
         break;
     case 4:
         retval = (this->speedMin);
@@ -130,16 +140,20 @@ void QStepperPhidgetsDecl::setStepperParams(double val, short whichOne) {
 
     switch (whichOne) {
     case 1:
-        this->accMax=val;
+        this->acc=val;
+        CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
         break;
     case 2:
         this->speedMax=val;
+        CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
         break;
     case 3:
         this->currMax=val;
+        CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,this->currMax);
     }
     return;
 }
+
 
 //-----------------------------------------------------------------------------
 
@@ -152,12 +166,6 @@ void QStepperPhidgetsDecl::shutDownDrive(void) {
 
 //-----------------------------------------------------------------------------
 
-void QStepperPhidgetsDecl::setStopped(bool isStop) {
-    this->stopped=isStop;
-}
-
-//-----------------------------------------------------------------------------
-
 bool QStepperPhidgetsDecl::getStopped(void) {
     return (this->stopped);
 }
@@ -165,10 +173,11 @@ bool QStepperPhidgetsDecl::getStopped(void) {
 //------------------------------------------------------------------------------
 
 void QStepperPhidgetsDecl::stopDrive(void) {
-    this->stopped=true;
-    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
+
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
     CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, 0);
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
+    this->stopped=true;
 }
 
 //-------------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+// derived from INDI client example; currently, it connects only to the QHY5
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -101,7 +103,6 @@ void alccd5_client::newProperty(INDI::Property *property) {
 
 //------------------------------------------
 void alccd5_client::newNumber(INumberVectorProperty *nvp) {
-
 }
 
 //------------------------------------------

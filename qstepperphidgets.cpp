@@ -59,6 +59,11 @@ QStepperPhidgets::~QStepperPhidgets(void){
 //-----------------------------------------------------------------------------
 
 void QStepperPhidgets::startTracking(void) {
+    this->speedMax=0.0041780746*
+            (g_AllData->getGearData(0))*
+            (g_AllData->getGearData(1))*
+            (g_AllData->getGearData(2))*
+            (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
@@ -73,6 +78,12 @@ void QStepperPhidgets::startTracking(void) {
 
 //-----------------------------------------------------------------------------
 bool QStepperPhidgets::travelForNSteps(long steps,short direction, int factor) {
+
+    this->speedMax=factor*0.0041780746*
+            (g_AllData->getGearData(0))*
+            (g_AllData->getGearData(1))*
+            (g_AllData->getGearData(2))*
+            (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
     if (direction < 0) {
         direction = -1;
     } else {
@@ -136,8 +147,7 @@ double QStepperPhidgets::getKinetics(short whichOne) {
 
 //-----------------------------------------------------------------------------
 
-
-void QStepperPhidgets::setKinetics(double val, short whichOne) {
+void QStepperPhidgets::setStepperParams(double val, short whichOne) {
 
     switch (whichOne) {
     case 1:
@@ -146,6 +156,8 @@ void QStepperPhidgets::setKinetics(double val, short whichOne) {
     case 2:
         this->speedMax=val;
         break;
+    case 3:
+        this->currMax=val;
     }
     return;
 }

@@ -23,6 +23,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     void emergencyShutdown(short);
+    void setControlsForRATravel(bool);
+    void setControlsForDeclTravel(bool);
+    void setControlsForGoto(bool);
 
 private slots:
     void updateReadings(void);
@@ -39,17 +42,23 @@ private slots:
     void storeGearData(void);
     void storeDriveData(void);
     void catalogChosen(QListWidgetItem*);
-    void catalogObjectChosen(QListWidgetItem*);
+    void catalogObjectChosen(void);
     void declinationMoveHandboxUp(void);
     void declinationMoveHandboxDown(void);
     void RAMoveHandboxFwd(void);
     void RAMoveHandboxBwd(void);
+    void setCorrectionSpeed(void);
+    void setMoveSpeed(void);
+    void startGoToObject(void);
+    void changeMoveSpeed(void);
 
 private:
     struct mountMotionStruct {
         bool RATrackingIsOn;  // true when the telescope is in tracking mode
         bool RADriveIsMoving; // true when the RA drive moves but does not track
         bool DeclDriveIsMoving; // true when the Decl drive moves
+        bool GoToIsActiveInRA; // the flag for hi-speed motion in RA
+        bool GoToIsActiveInDecl; // the flag for hi-speed motion in decl
         double DeclDriveDirection;
         double RADriveDirection;
         double RASpeedFactor;
@@ -58,15 +67,17 @@ private:
         qint64 RAMoveElapsedTimeInMS;
         qint64 DeclMoveElapsedTimeInMS; // timestamp for elapsed time of the tracking since last call to clock-sync
     };
-
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     QStepperPhidgetsRA *dummyDrive;
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
+    QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
     QFuture<void> futureStepperBehaviourDecl;
+    QFuture<void> futureStepperBehaviourRA_GOTO;
+    QFuture<void> futureStepperBehaviourDecl_GOTO;
     alccd5_client *camera_client;
     QPixmap *camImg;
     currentObjectCatalog *objCatalog;
