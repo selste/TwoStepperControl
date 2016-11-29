@@ -10,19 +10,19 @@
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"
 
-TSC_GlobalData *g_AllData;
+TSC_GlobalData *g_AllData; // a global class that holds system specific parameters on drive, current mount position, gears and so on ...
 
 //------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWindow)
 {
-    int serNo;
-    double val,draccRA, draccDecl, drcurrRA, drcurrDecl;
+    int serNo; // serial number of the phidgets boards
+    double val,draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
     QString *textEntry;
     QDir *catalogDir;
     QFileInfoList catFiles;
     QFileInfo catFileInfo;
     QStringList filter;
-    QString *catfName;
+    QString *catfName; // a bunch of local variables to read the catalogues
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
@@ -32,47 +32,41 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     draccRA= g_AllData->getDriveParams(0,1);
     draccDecl= g_AllData->getDriveParams(1,1);
     drcurrRA= g_AllData->getDriveParams(0,2);
-    drcurrDecl= g_AllData->getDriveParams(1,2);
+    drcurrDecl= g_AllData->getDriveParams(1,2); // retrieving acceleration and maximum current for the phidget boards
+        // start searching for the right boards for the drives ...
     if (g_AllData->getDriveID(0) == -1) { //no driver boards are assigned to drives
         StepperDriveRA = new QStepperPhidgetsRA(draccRA,drcurrRA); // call the phidget interface to the board of the stepper
-        serNo = StepperDriveRA->retrievePhidgetStepperData(1);
-        g_AllData->setDriveData(0,serNo);
+        serNo = StepperDriveRA->retrievePhidgetStepperData(1);     // get the serial number of the phidget board
+        g_AllData->setDriveData(0,serNo); // remember the ID of the RA-drive in the global class
 
         StepperDriveDecl = new QStepperPhidgetsDecl(draccDecl,drcurrDecl); // call the phidget interface to the board of the stepper
-        serNo = StepperDriveDecl->retrievePhidgetStepperData(1);
-        g_AllData->setDriveData(1,serNo);
+        serNo = StepperDriveDecl->retrievePhidgetStepperData(1); // get the serial number of the phidget board
+        g_AllData->setDriveData(1,serNo); // remember the ID of the Decl-drive in the global class
 
         ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
-        ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
-        //this->StepperDriveDecl->setStopped(0);
-    } else {
+        ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));  // display the IDs in the LCD-display on the "Drive" tab
+    } else { // IDs are written in the "TSC_Preferences.tsc" file
         dummyDrive = new QStepperPhidgetsRA(draccRA,drcurrRA); // call the first phidget interface to the board of the stepper
         serNo = dummyDrive->retrievePhidgetStepperData(1);
         if (serNo != g_AllData->getDriveID(0)) { // dummy drive is NOT the designatedRA Drive
             StepperDriveRA = new QStepperPhidgetsRA(draccRA,drcurrRA); // call the phidget interface to the board of the stepper
             serNo =StepperDriveRA->retrievePhidgetStepperData(1);
             g_AllData->setDriveData(0,serNo);
-            //this->StepperDriveRA->setStopped(0);
             ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
             delete dummyDrive; // set the other board to RA
-
             StepperDriveDecl = new QStepperPhidgetsDecl(draccDecl,drcurrDecl); // call the phidget interface to the board of the stepper
             serNo = StepperDriveDecl->retrievePhidgetStepperData(1);
             g_AllData->setDriveData(1,serNo);
-            //this->StepperDriveDecl->setStopped(0);
             ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
         } else {
             StepperDriveDecl = new QStepperPhidgetsDecl(draccDecl,drcurrDecl); // call the phidget interface to the board of the stepper
             serNo = StepperDriveDecl->retrievePhidgetStepperData(1);
             g_AllData->setDriveData(1,serNo);
             ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
-            //this->StepperDriveDecl->setStopped(0);
             delete dummyDrive; // set the other board to Decl
-
             StepperDriveRA = new QStepperPhidgetsRA(draccRA,drcurrRA); // call the phidget interface to the board of the stepper
             serNo =StepperDriveRA->retrievePhidgetStepperData(1);
             g_AllData->setDriveData(0,serNo);
-            //this->StepperDriveRA->setStopped(0);
             ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
         }
     }
@@ -81,19 +75,20 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.RADriveIsMoving =false;
     this->mountMotion.DeclDriveIsMoving = false;
     this->mountMotion.GoToIsActiveInRA = false;
-    this->mountMotion.GoToIsActiveInDecl = false;
+    this->mountMotion.GoToIsActiveInDecl = false; // setting a few flags on drive states
     this->mountMotion.DeclDriveDirection = 1;
-    this->mountMotion.RADriveDirection = 1;
+    this->mountMotion.RADriveDirection = 1; // 1 for forward, -1 for backward
     this->mountMotion.RASpeedFactor=1;
-    this->mountMotion.DeclSpeedFactor=1;
-    ui->rbCorrSpeed->setChecked(true);
+    this->mountMotion.DeclSpeedFactor=1; // speeds are multiples of sidereal compensation
+    ui->rbCorrSpeed->setChecked(true); // activate radiobutton for correction speed ... this is sidereal speed
 
     g_AllData->setDriveParams(0,0,this->StepperDriveRA->getKinetics(3));
-    g_AllData->setDriveParams(1,0,this->StepperDriveDecl->getKinetics(3));
-    this->StepperDriveRA->setStepperParams((g_AllData->getDriveParams(0,1)),1);
-    this->StepperDriveRA->setStepperParams((g_AllData->getDriveParams(0,2)),3);
-    this->StepperDriveDecl->setStepperParams((g_AllData->getDriveParams(1,1)),1);
-    this->StepperDriveDecl->setStepperParams((g_AllData->getDriveParams(1,2)),3);
+    g_AllData->setDriveParams(1,0,this->StepperDriveDecl->getKinetics(3)); // velocity limit - this is set to sidereal speed for both declination and right ascension in the constructor ...
+    this->StepperDriveRA->setStepperParams((g_AllData->getDriveParams(0,1)),1); // acceleration in RA
+    this->StepperDriveRA->setStepperParams((g_AllData->getDriveParams(0,2)),3); // motor current in RA
+    this->StepperDriveDecl->setStepperParams((g_AllData->getDriveParams(1,1)),1); // acceleration in Decl
+    this->StepperDriveDecl->setStepperParams((g_AllData->getDriveParams(1,2)),3); // motor current in Decl
+        // now setting all the parameters in the "Drive"-tab
     textEntry = new QString();
     val=(this->StepperDriveRA->getKinetics(3));
     ui->leVMaxRA->setText(textEntry->number(val,'f',2));
@@ -133,8 +128,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
 
+        // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
-    filter << "*.csv";
+    filter << "*.tsc";
     catalogDir->setNameFilters(filter);
     catFiles = catalogDir->entryInfoList();
     foreach (catFileInfo, catFiles) {
@@ -144,22 +140,23 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         delete catfName;
     }
     delete catalogDir;
+        // filled the selection with all ".tsc" files in the home directory
 
     this->objCatalog=NULL; // the topical catalogue
-    this->ra = 0.0;        // the sync position - no sync for the mount was ccarried out
-    this->decl = 0.0;
+    this->ra = 0.0;
+    this->decl = 0.0; // the sync position - no sync for the mount was carried out - these are displayed in the GOTO textentry
 
     this->camView = new QDisplay2D(ui->camTab,225,180); // make the clicakble scene view of 225 x 180 pixels
     this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0),g_AllData->getCameraDisplaySize(1)); // store the size of the scene view in the global parameter class
 
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
-    connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram()));
-    connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort()));
-    connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(takeSingleCamShot()));
+    connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills teh program, including killing the drives
+    connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
+    connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(takeSingleCamShot())); // take one shot from the ccd-camera
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*)));
-    connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void)));
-    connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)));
-    connect(ui->pbSync, SIGNAL(clicked()), this, SLOT(syncMount()));
+    connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
+    connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view ...
+    connect(ui->pbSync, SIGNAL(clicked()), this, SLOT(syncMount())); // reset the current position and timer, and set the global mount position to the actual coordinates
     connect(ui->pbStoreGears, SIGNAL(clicked()), this, SLOT(storeGearData()));
     connect(ui->pbStartTracking, SIGNAL(clicked()),this,SLOT(startRATracking()));
     connect(ui->pbStopTracking, SIGNAL(clicked()),this,SLOT(stopRATracking()));
@@ -247,7 +244,6 @@ void MainWindow::startRATracking(void) {
     ui->sbMoveSpeed->setEnabled(true);
 
     this->StepperDriveRA->stopDrive();
-    //this->StepperDriveRA->setStopped(0);
     this->mountMotion.RATrackingIsOn = true;
     ui->pbStartTracking->setEnabled(0);
     ui->pbStopTracking->setEnabled(1);
@@ -260,7 +256,6 @@ void MainWindow::stopRATracking(void) {
     this->setControlsForRATravel(true);
     ui->pbStartTracking->setEnabled(1);
     ui->pbStopTracking->setEnabled(0);
-    //this->StepperDriveRA->setStopped(1);
     this->StepperDriveRA->stopDrive();
     while (!this->futureStepperBehaviourRATracking.isFinished()) {
     } // wait till the RA-tracking thread has died ...
@@ -382,7 +377,7 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName)
     }
     ui->pbSync->setEnabled(false);
     catalogPath = new QString(catalogName->text());
-    catalogPath->append(QString(".csv"));
+    catalogPath->append(QString(".tsc"));
 
     this->objCatalog = new currentObjectCatalog(*catalogPath);
     maxObj = this->objCatalog->getNumberOfObjects();
@@ -415,6 +410,13 @@ void MainWindow::syncMount(void)
 {
     if (this->StepperDriveRA->getStopped() == false) {
         this->stopRATracking();
+    }
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        this->mountMotion.DeclDriveIsMoving=false;
+        this->StepperDriveDecl->stopDrive();
+        while (!futureStepperBehaviourDecl.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        }
     }
     g_AllData->setSyncPosition(this->ra, this->decl);
     // convey right ascension and declination to the global parameters;
@@ -746,11 +748,13 @@ void MainWindow::startGoToObject(void)
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }     // terminate all current motions ...
+
     this->mountMotion.GoToIsActiveInRA=true;
     this->mountMotion.GoToIsActiveInDecl=true;
     this->setControlsForGoto(false);
+    ui->pbStartTracking->setEnabled(false);
 
-    // determine the travel to be taken ...
+    // determine the travel to be taken based on steps, aceleration and end velocity
     travelRA=this->ra-g_AllData->getActualScopePosition(0);
     travelDecl=this->decl-g_AllData->getActualScopePosition(1);
     targetRA = this->ra;
@@ -796,8 +800,11 @@ void MainWindow::startGoToObject(void)
         TAtFullSpeed = SAtFullSpeed/(this->StepperDriveRA->getKinetics(3)*speedFactorRA);
         timeEstimatedInRAInMS = (TAtFullSpeed+2.0*TRamp)*1000+timeForProcessingEventQueue;
     }
+
     earthTravelDuringGOTOinMSteps=(0.0041780746*((double)timeEstimatedInRAInMS)/1000.0)*
-            convertDegreesToMicrostepsRA;
+            convertDegreesToMicrostepsRA; // determine the addition travel in sideral time
+
+
 
     if (this->mountMotion.RADriveDirection == 1) {
         RASteps=RASteps+earthTravelDuringGOTOinMSteps;
@@ -845,6 +852,7 @@ void MainWindow::startGoToObject(void)
         timeDifference = timeTaken-timeEstimatedInRAInMS;
         // do something if this is too big
         this->startRATracking();
+        ui->pbStopTracking->setDisabled(true);
         this->mountMotion.GoToIsActiveInRA=false;
         qDebug() << "RA was stopped with time difference:" << timeDifference;
     } else {
@@ -858,17 +866,18 @@ void MainWindow::startGoToObject(void)
                     qDebug() << "Time Difference between estimated and real travel [ms]:" << timeDifference;
                     // do something if this is too big
                     this->startRATracking();
+                    ui->pbStopTracking->setDisabled(true);
                 }
             }
         }
         this->mountMotion.GoToIsActiveInDecl=false;
-        qDebug() << "Decl Motion Stopped";
     }
     this->ra=targetRA;
     this->decl=targetDecl;
     this->syncMount();
     ui->lcdGotoTime->display(0);
     ui->pbGoTo->setEnabled(true);
+    ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(false);
     qDebug() << "------------------------";
