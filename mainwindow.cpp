@@ -28,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
     QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
     timer->start(100); // check all 100 ms for events
+    elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
 
     draccRA= g_AllData->getDriveParams(0,1);
     draccDecl= g_AllData->getDriveParams(1,1);
@@ -232,6 +233,13 @@ void MainWindow::updateReadings()
                 this->StepperDriveDecl->getKinetics(3)*topicalTime*g_AllData->getGearData(7)/
                 (1000.0*g_AllData->getGearData(8)*totalGearRatio);
         g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl);
+    }
+    if ((this->mountMotion.GoToIsActiveInRA==true) || (this->mountMotion.GoToIsActiveInDecl==true)) {
+        ui->lcdGotoTime->display(round((this->gotoETA-this->elapsedGoToTime->elapsed())*0.001));
+        if (this->mountMotion.GoToIsActiveInRA==true) {
+        }
+        if (this->mountMotion.GoToIsActiveInDecl==true) {
+        }
     }
     //qDebug() << "RA:" << g_AllData->getActualScopePosition(0) << "Decl:" << g_AllData->getActualScopePosition(1);
 }
@@ -721,7 +729,7 @@ void MainWindow::startGoToObject(void)
 {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
-            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA, ETA;
+            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA;
     float targetRA, targetDecl;
     qint64 timestampGOTOStarted, timeDifference, timeTaken;
     qint64 timeEstimatedInRAInMS = 0;
@@ -804,8 +812,6 @@ void MainWindow::startGoToObject(void)
     earthTravelDuringGOTOinMSteps=(0.0041780746*((double)timeEstimatedInRAInMS)/1000.0)*
             convertDegreesToMicrostepsRA; // determine the addition travel in sideral time
 
-
-
     if (this->mountMotion.RADriveDirection == 1) {
         RASteps=RASteps+earthTravelDuringGOTOinMSteps;
     } else {
@@ -814,20 +820,21 @@ void MainWindow::startGoToObject(void)
             // !!!!!!!!!!!! I hope that this is right! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     if (timeEstimatedInDeclInMS > timeEstimatedInRAInMS) {
-        ETA = timeEstimatedInDeclInMS;
+        gotoETA = timeEstimatedInDeclInMS;
         RAtakesLonger=false;
     } else {
-        ETA = timeEstimatedInRAInMS;
+        gotoETA = timeEstimatedInRAInMS;
         RAtakesLonger=true;
     }
     qDebug() << "Decl Time: " << timeEstimatedInDeclInMS/1000.0 << "for" << DeclSteps;
     qDebug() << "RA Time: " << timeEstimatedInRAInMS/1000.0 << "for" << RASteps;
-    ui->lcdGotoTime->display((round(ETA/1000.0)));
+    ui->lcdGotoTime->display(round(gotoETA/1000.0));
     // determined the estimated duration of the GoTo - Process
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
 
     // let the games begin...
     bool RARideIsDone = false;
+    elapsedGoToTime->start();
     futureStepperBehaviourRA_GOTO =
             QtConcurrent::run(this->StepperDriveRA,
             &QStepperPhidgetsRA::travelForNSteps,RASteps,
@@ -847,6 +854,9 @@ void MainWindow::startGoToObject(void)
     if (RAtakesLonger == true) {
         while (!futureStepperBehaviourRA_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+            if (futureStepperBehaviourDecl_GOTO.isFinished()) {
+                this->mountMotion.GoToIsActiveInDecl=false;
+            }
         }
         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
         timeDifference = timeTaken-timeEstimatedInRAInMS;
@@ -858,6 +868,9 @@ void MainWindow::startGoToObject(void)
     } else {
         while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+            if (futureStepperBehaviourRA_GOTO.isFinished()) {
+                this->mountMotion.GoToIsActiveInRA=false;
+            }
             if (futureStepperBehaviourRA_GOTO.isFinished()) {
                 if (RARideIsDone==false) {
                     RARideIsDone=true;

@@ -4,11 +4,13 @@
 #include <QtWidgets/QMainWindow>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QListWidgetItem>
+#include <QElapsedTimer>
 #include "qstepperphidgetsRA.h"
 #include "qstepperphidgetsDecl.h"
 #include "alccd5_client.h"
 #include "currentObjectCatalog.h"
 #include "QDisplay2D.h"
+
 
 using namespace QtConcurrent;
 
@@ -85,6 +87,8 @@ private:
     QDisplay2D *camView;
     float ra; // right ascension of a current object
     float decl;// declination of a current object
+    double gotoETA; // estimated time of arrival for goto
+    QElapsedTimer *elapsedGoToTime;
 };
 
 #endif // MAINWINDOW_H
