@@ -17,6 +17,7 @@ private:
     double currMax;
     int stopped;
     double stepsPerSInRA;
+    short RADirection;
 
 public:
     QStepperPhidgetsRA(double,double);
@@ -30,5 +31,6 @@ public:
     bool getStopped(void);
     void stopDrive(void);
     void engageDrive(void);
+    void setRADirection(short);
 };
 #endif // QSTEPPERPHIDGETSRA_H

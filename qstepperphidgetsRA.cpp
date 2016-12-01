@@ -39,6 +39,8 @@ QStepperPhidgetsRA::QStepperPhidgetsRA(double lacc, double lcurr) {
     CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
     this->stopped=true;
 
+    this->RADirection = 1;
+
     this->stepsPerSInRA=round(0.0041780746*
             (g_AllData->getGearData(0))*
             (g_AllData->getGearData(1))*
@@ -72,7 +74,7 @@ void QStepperPhidgetsRA::startTracking(void) {
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
-    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, (60*60*24*this->stepsPerSInRA));
+    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, this->RADirection*(60*60*24*this->stepsPerSInRA));
     // one day is maximum tracking time
     this->stopped = false;
     while (this->stopped == false) {
@@ -97,7 +99,7 @@ bool QStepperPhidgetsRA::travelForNSteps(long steps,short direction, int factor)
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
-    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, direction*steps);
+    CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, this->RADirection*direction*steps);
     this->stopped = false;
     while (this->stopped == false) {
         CPhidgetStepper_getStopped((CPhidgetStepperHandle)SH, 0, &stopped);
@@ -206,4 +208,10 @@ void QStepperPhidgetsRA::stopDrive(void) {
 void QStepperPhidgetsRA::engageDrive(void) {
     this->stopped=false;
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
+}
+
+//-------------------------------------------------------------------------------
+
+void QStepperPhidgetsRA::setRADirection(short dir) {
+    this->RADirection = dir;
 }

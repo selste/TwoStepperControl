@@ -1155,7 +1155,7 @@
         <x>160</x>
         <y>0</y>
         <width>161</width>
-        <height>171</height>
+        <height>141</height>
        </rect>
       </property>
       <property name="title">
@@ -1295,12 +1295,28 @@
        <rect>
         <x>0</x>
         <y>139</y>
-        <width>311</width>
+        <width>201</width>
         <height>51</height>
        </rect>
       </property>
       <property name="text">
        <string>Store to File and Controller</string>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
+      <property name="geometry">
+       <rect>
+        <x>200</x>
+        <y>170</y>
+        <width>100</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Northern HS</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>

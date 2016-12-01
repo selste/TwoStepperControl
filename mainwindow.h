@@ -53,6 +53,7 @@ private slots:
     void setMoveSpeed(void);
     void startGoToObject(void);
     void changeMoveSpeed(void);
+    void invertRADirection(void);
 
 private:
     struct mountMotionStruct {
@@ -71,7 +72,6 @@ private:
     };
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
-    QStepperPhidgetsRA *dummyDrive;
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
@@ -89,6 +89,7 @@ private:
     float decl;// declination of a current object
     double gotoETA; // estimated time of arrival for goto
     QElapsedTimer *elapsedGoToTime;
+    short RAdriveDirectionForNorthernHemisphere;
 };
 
 #endif // MAINWINDOW_H

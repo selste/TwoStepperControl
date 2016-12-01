@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 {
     int serNo; // serial number of the phidgets boards
     double val,draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
+    QStepperPhidgetsRA *dummyDrive;
     QString *textEntry;
     QDir *catalogDir;
     QFileInfoList catFiles;
@@ -34,8 +35,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     draccDecl= g_AllData->getDriveParams(1,1);
     drcurrRA= g_AllData->getDriveParams(0,2);
     drcurrDecl= g_AllData->getDriveParams(1,2); // retrieving acceleration and maximum current for the phidget boards
-        // start searching for the right boards for the drives ...
-    if (g_AllData->getDriveID(0) == -1) { //no driver boards are assigned to drives
+
+    // start searching for the right boards for the drives ...
+    dummyDrive = new QStepperPhidgetsRA(draccRA,drcurrRA); // call the first phidget interface to the board of the stepper
+    serNo = dummyDrive->retrievePhidgetStepperData(1);
+    delete dummyDrive;
+    if ((g_AllData->getDriveID(0) != serNo) && (g_AllData->getDriveID(1) != serNo)) { //no driver boards are assigned to drives
         StepperDriveRA = new QStepperPhidgetsRA(draccRA,drcurrRA); // call the phidget interface to the board of the stepper
         serNo = StepperDriveRA->retrievePhidgetStepperData(1);     // get the serial number of the phidget board
         g_AllData->setDriveData(0,serNo); // remember the ID of the RA-drive in the global class
@@ -174,6 +179,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed()));
     connect(ui->pbGoTo, SIGNAL(clicked()),this, SLOT(startGoToObject()));
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed()));
+    connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection()));
+
+    RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
 
     g_AllData->storeGlobalData();
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
@@ -633,7 +641,6 @@ void MainWindow::RAMoveHandboxBwd(void)
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
         ui->sbMoveSpeed->setEnabled(true);
-
     }
 }
 
@@ -648,6 +655,7 @@ void MainWindow::setControlsForRATravel(bool isEnabled)
     ui->leRAWorm->setEnabled(isEnabled);
     ui->leRAStepsize->setEnabled(isEnabled);
     ui->leMicrosteps->setEnabled(isEnabled);
+    ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
 }
 
 //---------------------------------------------------------------------
@@ -700,6 +708,17 @@ void MainWindow::storeDriveData(void)
 void MainWindow::changeMoveSpeed(void) {
     this->mountMotion.RASpeedFactor = ui->sbMoveSpeed->value();
     this->mountMotion.DeclSpeedFactor = ui->sbMoveSpeed->value();
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::invertRADirection(void) {
+    if (ui->cbIsOnNorthernHemisphere->isChecked() == true) {
+        this->RAdriveDirectionForNorthernHemisphere = 1;
+    } else {
+        this->RAdriveDirectionForNorthernHemisphere = -1;
+    }
+    this->StepperDriveRA->setRADirection(this->RAdriveDirectionForNorthernHemisphere);
 }
 
 //---------------------------------------------------------------------
