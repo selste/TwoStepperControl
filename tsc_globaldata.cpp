@@ -368,7 +368,7 @@ int TSC_GlobalData::getDriveID(short what) {
 //-----------------------------------------------
 
 void TSC_GlobalData::storeGlobalData(void) {
-    std::ofstream outfile("TSC_Preferences.tsc");
+    std::ofstream outfile("TSC_Preferences.tsp");
 
     std::string ostr = std::to_string(this->driveData.RAControllerID);
     ostr.append("// Phidget 1067 Board Serial Number for RA.\n");
@@ -439,7 +439,7 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::string line;   // define a line that is read until \n is encountered
 
     char delimiter('/');    // data are separated from comments by c++ - style comments
-    std::ifstream infile("TSC_Preferences.tsc");  // read that preferences file ...
+    std::ifstream infile("TSC_Preferences.tsp");  // read that preferences file ...
     if (infile == NULL) {
         return false;
     }
