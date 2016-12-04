@@ -29,5 +29,6 @@ public:
     bool getStopped(void);
     void stopDrive(void);
     void engageDrive(void);
+    void changeSpeedForGearChange(void);
 };
 #endif // QSTEPPERPHIDGETSDECL_H

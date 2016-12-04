@@ -32,5 +32,6 @@ public:
     void stopDrive(void);
     void engageDrive(void);
     void setRADirection(short);
+    void changeSpeedForGearChange(void);
 };
 #endif // QSTEPPERPHIDGETSRA_H

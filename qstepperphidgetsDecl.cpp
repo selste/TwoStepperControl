@@ -186,3 +186,17 @@ void QStepperPhidgetsDecl::engageDrive(void) {
     this->stopped=false;
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
 }
+
+//-------------------------------------------------------------------------------
+
+void QStepperPhidgetsDecl::changeSpeedForGearChange(void) {
+
+    this->stepsPerSInDecl=round(0.0041780746*
+            (g_AllData->getGearData(4))*
+            (g_AllData->getGearData(5))*
+            (g_AllData->getGearData(6))*
+            (g_AllData->getGearData(8))/(g_AllData->getGearData(7)));
+    this->speedMax=stepsPerSInDecl;
+    CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    // 360°/sidereal day in seconds*gear ratios*microsteps/steps
+}

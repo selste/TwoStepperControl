@@ -215,3 +215,17 @@ void QStepperPhidgetsRA::engageDrive(void) {
 void QStepperPhidgetsRA::setRADirection(short dir) {
     this->RADirection = dir;
 }
+
+//--------------------------------------------------------------------------------
+void QStepperPhidgetsRA::changeSpeedForGearChange(void) {
+
+this->stepsPerSInRA=round(0.0041780746*
+        (g_AllData->getGearData(0))*
+        (g_AllData->getGearData(1))*
+        (g_AllData->getGearData(2))*
+        (g_AllData->getGearData(8))/(g_AllData->getGearData(3)));
+this->speedMax=stepsPerSInRA;
+CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+// 360°/sidereal day in seconds*gear ratios*microsteps/steps
+
+}

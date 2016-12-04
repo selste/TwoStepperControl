@@ -443,8 +443,8 @@ void MainWindow::syncMount(void)
 //------------------------------------------------------------------
 void MainWindow::storeGearData(void)
 {
-    float pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps;
-    QString *leEntry;
+    float pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps,vra,vdecl;
+    QString *leEntry,leSpeeds;
 
     leEntry = new QString(ui->leRAPlanetary->text());
     pgra=leEntry->toFloat();
@@ -475,10 +475,23 @@ void MainWindow::storeGearData(void)
     g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps);
     // store all gear data in global struct
     g_AllData->storeGlobalData();
+
     if (this->StepperDriveRA->getStopped() == false) {
         this->stopRATracking();
+        StepperDriveRA->changeSpeedForGearChange();
+        StepperDriveDecl->changeSpeedForGearChange();
         this->startRATracking();
+    } else {
+        StepperDriveRA->changeSpeedForGearChange();
+        StepperDriveDecl->changeSpeedForGearChange();
     }
+    vra=StepperDriveRA->getKinetics(3);
+    leSpeeds= QString::number(vra, 'g', 2);
+    ui->leVMaxRA->setText(leSpeeds);
+    vdecl=StepperDriveDecl->getKinetics(3);
+    leSpeeds= QString::number(vdecl, 'g', 2);
+    ui->leVMaxDecl->setText(leSpeeds);
+    delete leEntry;
 }
 //--------------------------------------------------------------
 void MainWindow::declinationMoveHandboxUp(void)
@@ -753,7 +766,7 @@ void MainWindow::startGoToObject(void)
     qint64 timestampGOTOStarted, timeDifference, timeTaken;
     qint64 timeEstimatedInRAInMS = 0;
     qint64 timeEstimatedInDeclInMS = 0;
-    long int RASteps, DeclSteps;
+    long int RASteps, DeclSteps,corrsteps;
     int timeForProcessingEventQueue = 10;
     bool RAtakesLonger;
 
@@ -781,8 +794,12 @@ void MainWindow::startGoToObject(void)
     this->setControlsForGoto(false);
     ui->pbStartTracking->setEnabled(false);
 
+    timeDifference=0;
     // determine the travel to be taken based on steps, aceleration and end velocity
-    travelRA=this->ra-g_AllData->getActualScopePosition(0);
+    travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
+    qDebug() << "Actual Hour Angle:" << g_AllData->getActualScopePosition(0);
+    qDebug() << "Reference RA:" << (g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0;
+    qDebug() << "Travel in RA:" << travelRA;
     travelDecl=this->decl-g_AllData->getActualScopePosition(1);
     targetRA = this->ra;
     targetDecl = this->decl;
@@ -804,6 +821,7 @@ void MainWindow::startGoToObject(void)
     convertDegreesToMicrostepsRA=1.0/g_AllData->getGearData(3)*g_AllData->getGearData(8)*
             g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2);
     RASteps=abs(travelRA)*convertDegreesToMicrostepsRA;
+    qDebug() << "RASteps without time compensation:" << RASteps;
 
     TRamp = (this->StepperDriveDecl->getKinetics(3)*(speedFactorDecl))/this->StepperDriveDecl->getKinetics(2);// time needed until drive reaches full speed - vel/acc ...
     SRamp = 0.5*this->StepperDriveDecl->getKinetics(2)*TRamp*TRamp; // travel in microsteps until full speed is reached
@@ -836,6 +854,7 @@ void MainWindow::startGoToObject(void)
     } else {
         RASteps=RASteps-earthTravelDuringGOTOinMSteps;
     }
+    qDebug() << "RASteps with time compensation:" << RASteps;
             // !!!!!!!!!!!! I hope that this is right! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     if (timeEstimatedInDeclInMS > timeEstimatedInRAInMS) {
@@ -879,7 +898,6 @@ void MainWindow::startGoToObject(void)
         }
         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
         timeDifference = timeTaken-timeEstimatedInRAInMS;
-        // do something if this is too big
         this->startRATracking();
         ui->pbStopTracking->setDisabled(true);
         this->mountMotion.GoToIsActiveInRA=false;
@@ -896,13 +914,29 @@ void MainWindow::startGoToObject(void)
                     timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
                     timeDifference = timeTaken-timeEstimatedInRAInMS;
                     qDebug() << "Time Difference between estimated and real travel [ms]:" << timeDifference;
-                    // do something if this is too big
                     this->startRATracking();
                     ui->pbStopTracking->setDisabled(true);
                 }
             }
         }
         this->mountMotion.GoToIsActiveInDecl=false;
+    }
+    if (abs(timeDifference)>100) {
+        this->stopRATracking();
+        qDebug() << "Stop Tracking";
+        corrsteps=(0.0041780746*((double)(timeDifference))/1000.0)*
+                   convertDegreesToMicrostepsRA;
+        qDebug() << "Entering correction routine";
+        futureStepperBehaviourRA_Corr = QtConcurrent::run(this->StepperDriveRA,
+                &QStepperPhidgetsRA::travelForNSteps,corrsteps, 1,10);
+        while (!futureStepperBehaviourDecl.isStarted()) {
+        }
+        while (!futureStepperBehaviourRA_Corr.isFinished()) {
+           QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+        }
+        qDebug() << "Did" << corrsteps << "correction steps";
+        this->startRATracking();
+        usleep(100);
     }
     this->ra=targetRA;
     this->decl=targetDecl;

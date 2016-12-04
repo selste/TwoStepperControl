@@ -21,7 +21,7 @@ TSC_GlobalData::TSC_GlobalData() {
     syncPosition.timeSinceSyncInMS=this->monotonicGlobalTimer->elapsed();
     syncPosition.rightAscension=0.0;
     syncPosition.declination=0.0;
-    actualScopePosition.actualRA=0.0;
+    actualScopePosition.actualHA=0.0;
     actualScopePosition.actualDecl=0.0;
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
@@ -37,10 +37,10 @@ TSC_GlobalData::TSC_GlobalData() {
         gearData.microsteps=16;
         driveData.RAControllerID=-1;
         driveData.DeclControllerID=-1;
-        this->driveData.driveAccRA=1000;
-        this->driveData.driveAccDecl=1000;
+        this->driveData.driveAccRA=10000;
+        this->driveData.driveAccDecl=10000;
         this->driveData.driveCurrRA=1.0;
-        this->driveData.driveCurrDecl=0.5;
+        this->driveData.driveCurrDecl=1.0;
     }
 }
 
@@ -191,7 +191,7 @@ int TSC_GlobalData::getCameraChipPixels(short what) {
 void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->syncPosition.rightAscension=ra;
     this->syncPosition.declination=dec;
-    this->actualScopePosition.actualRA=ra;
+    this->actualScopePosition.actualHA=ra;
     this->actualScopePosition.actualDecl=dec;
     this->monotonicGlobalTimer->restart();
 }
@@ -525,7 +525,7 @@ bool TSC_GlobalData::loadGlobalData(void) {
 //-----------------------------------------------------------------
 double TSC_GlobalData::getActualScopePosition(short what) {
     if (what == 0) {
-        return this->actualScopePosition.actualRA;
+        return this->actualScopePosition.actualHA;
     } else {
         return this->actualScopePosition.actualDecl;
     }
@@ -533,7 +533,10 @@ double TSC_GlobalData::getActualScopePosition(short what) {
 
 //-----------------------------------------------------------------
 void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
-    this->actualScopePosition.actualRA += deltaRA;
+    this->actualScopePosition.actualHA -= deltaRA;
+    if (this->actualScopePosition.actualHA < 0) {
+        this->actualScopePosition.actualHA=360+this->actualScopePosition.actualHA;
+    }
     this->actualScopePosition.actualDecl += deltaDec;
 }
 

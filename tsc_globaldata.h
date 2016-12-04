@@ -40,7 +40,7 @@ public:
     void setDriveParams(short, short, double); // 0 for  RA, 1 for decl, 0 for speed, 1 for Acc, 2 for Current, and the value
     double getDriveParams(short, short); // 0 for RA, 1 for decl and 0 for speed, 1, for Acc and 2 for current
     double getActualScopePosition(short); // 0 for RA, 1 for decl
-    void incrementActualScopePosition(double, double); // add ra and decl increments
+    void incrementActualScopePosition(double, double); // add hour angle and decl increments
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -94,7 +94,7 @@ private:
     };
 
     struct actualScopePositionStruct {
-        double actualRA;
+        double actualHA;
         double actualDecl;
     };
 

@@ -80,6 +80,8 @@ private:
     QFuture<void> futureStepperBehaviourDecl;
     QFuture<void> futureStepperBehaviourRA_GOTO;
     QFuture<void> futureStepperBehaviourDecl_GOTO;
+    QFuture<void> futureStepperBehaviourRA_Corr;
+    QFuture<void> futureStepperBehaviourDecl_Corr;
     alccd5_client *camera_client;
     QPixmap *camImg;
     currentObjectCatalog *objCatalog;
