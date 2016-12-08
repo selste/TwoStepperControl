@@ -182,7 +182,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
-
     g_AllData->storeGlobalData();
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
     this->StepperDriveRA->stopDrive();
@@ -242,14 +241,32 @@ void MainWindow::updateReadings()
                 (1000.0*g_AllData->getGearData(8)*totalGearRatio);
         g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl);
     }
+
     if ((this->mountMotion.GoToIsActiveInRA==true) || (this->mountMotion.GoToIsActiveInDecl==true)) {
         ui->lcdGotoTime->display(round((this->gotoETA-this->elapsedGoToTime->elapsed())*0.001));
         if (this->mountMotion.GoToIsActiveInRA==true) {
+            topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAGoToElapsedTimeInMS;
+            this->mountMotion.RAGoToElapsedTimeInMS+=topicalTime;
+            totalGearRatio = g_AllData->getGearData(0)*g_AllData->getGearData(1)*
+            g_AllData->getGearData(2);
+            relativeTravelRA=this->mountMotion.RADriveDirection*
+                    this->StepperDriveRA->getKinetics(3)*topicalTime*g_AllData->getGearData(3)/
+                    (1000.0*g_AllData->getGearData(8)*totalGearRatio);
+            qDebug() << "RA-Travel:" << relativeTravelRA;
+            g_AllData->incrementActualScopePosition(relativeTravelRA, 0.0);
         }
         if (this->mountMotion.GoToIsActiveInDecl==true) {
+            topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.DeclGoToElapsedTimeInMS;
+            this->mountMotion.DeclGoToElapsedTimeInMS+=topicalTime;
+            totalGearRatio = g_AllData->getGearData(4)*g_AllData->getGearData(5)*
+            g_AllData->getGearData(6);
+            relativeTravelDecl= this->mountMotion.DeclDriveDirection*
+                    this->StepperDriveDecl->getKinetics(3)*topicalTime*g_AllData->getGearData(7)/
+                    (1000.0*g_AllData->getGearData(8)*totalGearRatio);
+            g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl);
         }
     }
-    //qDebug() << "RA:" << g_AllData->getActualScopePosition(0) << "Decl:" << g_AllData->getActualScopePosition(1);
+    qDebug() << "RA:" << g_AllData->getActualScopePosition(0) << "Decl:" << g_AllData->getActualScopePosition(1);
 }
 //------------------------------------------------------------------
 void MainWindow::startRATracking(void) {
@@ -257,8 +274,9 @@ void MainWindow::startRATracking(void) {
     this->setControlsForRATravel(false);
     ui->rbCorrSpeed->setEnabled(true);
     ui->rbMoveSpeed->setEnabled(true);
-    ui->sbMoveSpeed->setEnabled(true);
-
+    if (ui->rbMoveSpeed->isChecked()==false) {
+        ui->sbMoveSpeed->setEnabled(true);
+    }
     this->StepperDriveRA->stopDrive();
     this->mountMotion.RATrackingIsOn = true;
     ui->pbStartTracking->setEnabled(0);
@@ -523,6 +541,11 @@ void MainWindow::declinationMoveHandboxUp(void)
         }
         ui->pbDeclDown->setEnabled(1);
         this->setControlsForDeclTravel(true);
+        if (ui->rbMoveSpeed->isChecked()==false) {
+            ui->sbMoveSpeed->setEnabled(true);
+        } else {
+            ui->sbMoveSpeed->setEnabled(false);
+        }
     }
 }
 //--------------------------------------------------------------
@@ -555,6 +578,11 @@ void MainWindow::declinationMoveHandboxDown(void)
         }
         ui->pbDeclUp->setEnabled(1);
         this->setControlsForDeclTravel(true);
+        if (ui->rbMoveSpeed->isChecked()==false) {
+            ui->sbMoveSpeed->setEnabled(true);
+        } else {
+            ui->sbMoveSpeed->setEnabled(false);
+        }
     }
 }
 //--------------------------------------------------------------
@@ -603,7 +631,9 @@ void MainWindow::RAMoveHandboxFwd(void)
         this->setControlsForRATravel(true);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
-        ui->sbMoveSpeed->setEnabled(true);
+        if (ui->rbMoveSpeed->isChecked()==false) {
+            ui->sbMoveSpeed->setEnabled(true);
+        }
     }
 }
 
@@ -653,7 +683,9 @@ void MainWindow::RAMoveHandboxBwd(void)
         setControlsForRATravel(true);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
-        ui->sbMoveSpeed->setEnabled(true);
+        if (ui->rbMoveSpeed->isChecked()==false) {
+            ui->sbMoveSpeed->setEnabled(true);
+        }
     }
 }
 
@@ -789,8 +821,6 @@ void MainWindow::startGoToObject(void)
         this->stopRATracking();
     }     // terminate all current motions ...
 
-    this->mountMotion.GoToIsActiveInRA=true;
-    this->mountMotion.GoToIsActiveInDecl=true;
     this->setControlsForGoto(false);
     ui->pbStartTracking->setEnabled(false);
 
@@ -869,6 +899,7 @@ void MainWindow::startGoToObject(void)
     ui->lcdGotoTime->display(round(gotoETA/1000.0));
     // determined the estimated duration of the GoTo - Process
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+    qDebug() << "Coordinates at GoTo-start: " << g_AllData->getActualScopePosition(0) << g_AllData->getActualScopePosition(1);
 
     // let the games begin...
     bool RARideIsDone = false;
@@ -878,8 +909,11 @@ void MainWindow::startGoToObject(void)
             &QStepperPhidgetsRA::travelForNSteps,RASteps,
                               this->mountMotion.RADriveDirection,
                               speedFactorRA);
-    while (!futureStepperBehaviourDecl.isStarted()) {
+    while (!futureStepperBehaviourRA.isStarted()) {
     }
+    this->mountMotion.GoToIsActiveInRA=true;
+    this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
+
     timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
     futureStepperBehaviourDecl_GOTO =
             QtConcurrent::run(this->StepperDriveDecl,
@@ -888,6 +922,8 @@ void MainWindow::startGoToObject(void)
                               speedFactorDecl);
     while (!futureStepperBehaviourDecl.isStarted()) {
     }
+    this->mountMotion.GoToIsActiveInDecl=true;
+    this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
 
     if (RAtakesLonger == true) {
         while (!futureStepperBehaviourRA_GOTO.isFinished()) {
@@ -946,8 +982,7 @@ void MainWindow::startGoToObject(void)
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(false);
-    qDebug() << "------------------------";
-    // position updates ARE NOT DONE!!!
+    qDebug() << "Coordinates at GoTo-end: " << g_AllData->getActualScopePosition(0) << g_AllData->getActualScopePosition(1);
 }
 
 //----------------------------------------------------------

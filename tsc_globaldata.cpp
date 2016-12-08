@@ -533,12 +533,13 @@ double TSC_GlobalData::getActualScopePosition(short what) {
 
 //-----------------------------------------------------------------
 void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
+
     this->actualScopePosition.actualHA -= deltaRA;
     if (this->actualScopePosition.actualHA < 0) {
-        this->actualScopePosition.actualHA=360+this->actualScopePosition.actualHA;
+        this->actualScopePosition.actualHA=360.0+this->actualScopePosition.actualHA;
     }
     this->actualScopePosition.actualDecl += deltaDec;
-}
+ }
 
 //-----------------------------------------------------------------
 

@@ -69,6 +69,8 @@ private:
         qint64 RAtrackingElapsedTimeInMS; // timestamp for elapsed time of the tracking since last call to clock-sync
         qint64 RAMoveElapsedTimeInMS;
         qint64 DeclMoveElapsedTimeInMS; // timestamp for elapsed time of the tracking since last call to clock-sync
+        qint64 RAGoToElapsedTimeInMS;
+        qint64 DeclGoToElapsedTimeInMS;
     };
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
