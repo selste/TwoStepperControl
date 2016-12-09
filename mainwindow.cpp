@@ -18,7 +18,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     int serNo; // serial number of the phidgets boards
     double val,draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
     QStepperPhidgetsRA *dummyDrive;
-    QString *textEntry;
     QDir *catalogDir;
     QFileInfoList catFiles;
     QFileInfo catFileInfo;
@@ -128,7 +127,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
     ui->leMicrosteps->setText(textEntry->number(g_AllData->getGearData(8)));
     textEntry->clear();
-    delete textEntry;
     // take settings from the pref-file, except for the stepper speed, which is
     // calculated from  gear parameters
 
@@ -193,6 +191,7 @@ MainWindow::~MainWindow()
     delete StepperDriveRA;
     delete StepperDriveDecl;
     delete timer;
+    delete textEntry;
     delete ui;
     exit(0);
 }
@@ -250,9 +249,8 @@ void MainWindow::updateReadings()
             totalGearRatio = g_AllData->getGearData(0)*g_AllData->getGearData(1)*
             g_AllData->getGearData(2);
             relativeTravelRA=this->mountMotion.RADriveDirection*
-                    this->StepperDriveRA->getKinetics(3)*topicalTime*g_AllData->getGearData(3)/
+                    this->approximateGOTOSpeedRA*topicalTime*g_AllData->getGearData(3)/
                     (1000.0*g_AllData->getGearData(8)*totalGearRatio);
-            qDebug() << "RA-Travel:" << relativeTravelRA;
             g_AllData->incrementActualScopePosition(relativeTravelRA, 0.0);
         }
         if (this->mountMotion.GoToIsActiveInDecl==true) {
@@ -261,12 +259,13 @@ void MainWindow::updateReadings()
             totalGearRatio = g_AllData->getGearData(4)*g_AllData->getGearData(5)*
             g_AllData->getGearData(6);
             relativeTravelDecl= this->mountMotion.DeclDriveDirection*
-                    this->StepperDriveDecl->getKinetics(3)*topicalTime*g_AllData->getGearData(7)/
+                    this->approximateGOTOSpeedDecl*topicalTime*g_AllData->getGearData(7)/
                     (1000.0*g_AllData->getGearData(8)*totalGearRatio);
             g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl);
         }
     }
-    qDebug() << "RA:" << g_AllData->getActualScopePosition(0) << "Decl:" << g_AllData->getActualScopePosition(1);
+    ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
+    ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
 }
 //------------------------------------------------------------------
 void MainWindow::startRATracking(void) {
@@ -799,7 +798,7 @@ void MainWindow::startGoToObject(void)
     qint64 timeEstimatedInRAInMS = 0;
     qint64 timeEstimatedInDeclInMS = 0;
     long int RASteps, DeclSteps,corrsteps;
-    int timeForProcessingEventQueue = 10;
+    int timeForProcessingEventQueue = 100;
     bool RAtakesLonger;
 
     ui->pbGoTo->setEnabled(false);
@@ -827,9 +826,6 @@ void MainWindow::startGoToObject(void)
     timeDifference=0;
     // determine the travel to be taken based on steps, aceleration and end velocity
     travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
-    qDebug() << "Actual Hour Angle:" << g_AllData->getActualScopePosition(0);
-    qDebug() << "Reference RA:" << (g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0;
-    qDebug() << "Travel in RA:" << travelRA;
     travelDecl=this->decl-g_AllData->getActualScopePosition(1);
     targetRA = this->ra;
     targetDecl = this->decl;
@@ -851,7 +847,6 @@ void MainWindow::startGoToObject(void)
     convertDegreesToMicrostepsRA=1.0/g_AllData->getGearData(3)*g_AllData->getGearData(8)*
             g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2);
     RASteps=abs(travelRA)*convertDegreesToMicrostepsRA;
-    qDebug() << "RASteps without time compensation:" << RASteps;
 
     TRamp = (this->StepperDriveDecl->getKinetics(3)*(speedFactorDecl))/this->StepperDriveDecl->getKinetics(2);// time needed until drive reaches full speed - vel/acc ...
     SRamp = 0.5*this->StepperDriveDecl->getKinetics(2)*TRamp*TRamp; // travel in microsteps until full speed is reached
@@ -884,8 +879,7 @@ void MainWindow::startGoToObject(void)
     } else {
         RASteps=RASteps-earthTravelDuringGOTOinMSteps;
     }
-    qDebug() << "RASteps with time compensation:" << RASteps;
-            // !!!!!!!!!!!! I hope that this is right! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    timeEstimatedInRAInMS = RASteps/((double)this->StepperDriveRA->getKinetics(3)*(speedFactorRA))*1000;
 
     if (timeEstimatedInDeclInMS > timeEstimatedInRAInMS) {
         gotoETA = timeEstimatedInDeclInMS;
@@ -894,12 +888,11 @@ void MainWindow::startGoToObject(void)
         gotoETA = timeEstimatedInRAInMS;
         RAtakesLonger=true;
     }
-    qDebug() << "Decl Time: " << timeEstimatedInDeclInMS/1000.0 << "for" << DeclSteps;
-    qDebug() << "RA Time: " << timeEstimatedInRAInMS/1000.0 << "for" << RASteps;
+    this->approximateGOTOSpeedRA=RASteps/(timeEstimatedInRAInMS/1000.0);
+    this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0);
     ui->lcdGotoTime->display(round(gotoETA/1000.0));
     // determined the estimated duration of the GoTo - Process
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
-    qDebug() << "Coordinates at GoTo-start: " << g_AllData->getActualScopePosition(0) << g_AllData->getActualScopePosition(1);
 
     // let the games begin...
     bool RARideIsDone = false;
@@ -937,7 +930,6 @@ void MainWindow::startGoToObject(void)
         this->startRATracking();
         ui->pbStopTracking->setDisabled(true);
         this->mountMotion.GoToIsActiveInRA=false;
-        qDebug() << "RA was stopped with time difference:" << timeDifference;
     } else {
         while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
@@ -949,7 +941,6 @@ void MainWindow::startGoToObject(void)
                     RARideIsDone=true;
                     timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
                     timeDifference = timeTaken-timeEstimatedInRAInMS;
-                    qDebug() << "Time Difference between estimated and real travel [ms]:" << timeDifference;
                     this->startRATracking();
                     ui->pbStopTracking->setDisabled(true);
                 }
@@ -957,12 +948,11 @@ void MainWindow::startGoToObject(void)
         }
         this->mountMotion.GoToIsActiveInDecl=false;
     }
+    usleep(100);
+    this->stopRATracking();
     if (abs(timeDifference)>100) {
-        this->stopRATracking();
-        qDebug() << "Stop Tracking";
         corrsteps=(0.0041780746*((double)(timeDifference))/1000.0)*
                    convertDegreesToMicrostepsRA;
-        qDebug() << "Entering correction routine";
         futureStepperBehaviourRA_Corr = QtConcurrent::run(this->StepperDriveRA,
                 &QStepperPhidgetsRA::travelForNSteps,corrsteps, 1,10);
         while (!futureStepperBehaviourDecl.isStarted()) {
@@ -970,9 +960,6 @@ void MainWindow::startGoToObject(void)
         while (!futureStepperBehaviourRA_Corr.isFinished()) {
            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
         }
-        qDebug() << "Did" << corrsteps << "correction steps";
-        this->startRATracking();
-        usleep(100);
     }
     this->ra=targetRA;
     this->decl=targetDecl;
@@ -982,7 +969,6 @@ void MainWindow::startGoToObject(void)
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(false);
-    qDebug() << "Coordinates at GoTo-end: " << g_AllData->getActualScopePosition(0) << g_AllData->getActualScopePosition(1);
 }
 
 //----------------------------------------------------------

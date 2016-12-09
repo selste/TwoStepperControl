@@ -94,6 +94,9 @@ private:
     double gotoETA; // estimated time of arrival for goto
     QElapsedTimer *elapsedGoToTime;
     short RAdriveDirectionForNorthernHemisphere;
+    QString *textEntry;
+    double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
+    double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
 };
 
 #endif // MAINWINDOW_H
