@@ -17,9 +17,8 @@ QStepperPhidgetsRA::QStepperPhidgetsRA(double lacc, double lcurr) {
     this->SH = NULL;
     this->errorCreate = CPhidgetStepper_create(&SH);
     this->errorOpen = CPhidget_open((CPhidgetHandle)SH, -1);
-    sleep(2);
+    sleep(1);
     CPhidget_getSerialNumber((CPhidgetHandle)SH, &sernum);
-
     CPhidget_getDeviceVersion((CPhidgetHandle)SH, &version);
     sleep(1);
     this->snumifk=sernum;
@@ -111,6 +110,7 @@ bool QStepperPhidgetsRA::travelForNSteps(long steps,short direction, int factor)
             (g_AllData->getGearData(2))*
             (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    usleep(100);
     return true;
 }
 
@@ -201,6 +201,7 @@ void QStepperPhidgetsRA::stopDrive(void) {
     CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, 0);
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
     this->stopped=true;
+    usleep(100);
 }
 
 //-------------------------------------------------------------------------------

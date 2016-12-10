@@ -752,6 +752,7 @@ void MainWindow::storeDriveData(void)
 void MainWindow::changeMoveSpeed(void) {
     this->mountMotion.RASpeedFactor = ui->sbMoveSpeed->value();
     this->mountMotion.DeclSpeedFactor = ui->sbMoveSpeed->value();
+    ui->rbMoveSpeed->setChecked(true);
 }
 
 //---------------------------------------------------------------------
