@@ -206,7 +206,7 @@ MainWindow::~MainWindow()
 //------------------------------------------------------------------
 void MainWindow::updateReadings()
 {
-    qint64 topicalTime;
+    qint64 topicalTime,charsReadFromRS232;
     double relativeTravelRA, relativeTravelDecl,totalGearRatio;
 
     if (g_AllData->getINDIState() == true) {
@@ -220,7 +220,8 @@ void MainWindow::updateReadings()
     }
     if (this->lx200IsOn) {
         if (lx200port->getPortState() == 1) {
-                   // read the serial port
+            charsReadFromRS232 = lx200port->getDataFromSerialPort();
+            qDebug() << "Characters read from TTY0:" << charsReadFromRS232;
         }
     }
     if (this->mountMotion.RATrackingIsOn == true) {
@@ -640,7 +641,9 @@ void MainWindow::RAMoveHandboxFwd(void)
         }
         this->startRATracking();
         ui->pbRAMinus->setEnabled(1);
-        this->setControlsForRATravel(true);
+        if (this->mountMotion.RATrackingIsOn == false) {
+            this->setControlsForRATravel(true);
+        }
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -692,7 +695,9 @@ void MainWindow::RAMoveHandboxBwd(void)
         }
         this->startRATracking();
         ui->pbRAPlus->setEnabled(1);
-        setControlsForRATravel(true);
+        if (this->mountMotion.RATrackingIsOn == false) {
+            this->setControlsForRATravel(true);
+        }
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
