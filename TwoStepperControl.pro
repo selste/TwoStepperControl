@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui
+QT       += serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,6 +13,7 @@ TARGET = TwoStepperControl
 TEMPLATE = app
 
 CONFIG += c++11
+
 
 SOURCES += \
     main.cpp \
@@ -21,7 +23,8 @@ SOURCES += \
     QDisplay2D.cpp \
     tsc_globaldata.cpp \
     qstepperphidgetsDecl.cpp \
-    qstepperphidgetsRA.cpp
+    qstepperphidgetsRA.cpp \
+    lx200_communication.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -30,7 +33,8 @@ HEADERS  += \
     QDisplay2D.h \
     tsc_globaldata.h \
     qstepperphidgetsDecl.h \
-    qstepperphidgetsRA.h
+    qstepperphidgetsRA.h \
+    lx200_communication.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/

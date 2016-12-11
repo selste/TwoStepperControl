@@ -81,6 +81,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.DeclDriveIsMoving = false;
     this->mountMotion.GoToIsActiveInRA = false;
     this->mountMotion.GoToIsActiveInDecl = false; // setting a few flags on drive states
+    this->lx200IsOn = false;
     this->mountMotion.DeclDriveDirection = 1;
     this->mountMotion.RADriveDirection = 1; // 1 for forward, -1 for backward
     this->mountMotion.RASpeedFactor=1;
@@ -178,10 +179,16 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGoTo, SIGNAL(clicked()),this, SLOT(startGoToObject()));
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed()));
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection()));
+    connect(ui->pbLX200Active, SIGNAL(clicked()), this, SLOT(switchToLX200()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+
+    this->lx200port= new lx200_communication();
+    if (this->lx200port->getPortState() == 1) {
+        ui->cbRS232Open->setChecked(true);
+    }
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
@@ -192,6 +199,7 @@ MainWindow::~MainWindow()
     delete StepperDriveDecl;
     delete timer;
     delete textEntry;
+    delete lx200port;
     delete ui;
     exit(0);
 }
@@ -208,6 +216,11 @@ void MainWindow::updateReadings()
             if (ui->cbContinuous->isChecked()) {
                 this->takeSingleCamShot();
             }
+        }
+    }
+    if (this->lx200IsOn) {
+        if (lx200port->getPortState() == 1) {
+                   // read the serial port
         }
     }
     if (this->mountMotion.RATrackingIsOn == true) {
@@ -785,6 +798,21 @@ void MainWindow::setControlsForGoto(bool isEnabled)
     ui->sbMoveSpeed->setEnabled(isEnabled);
     ui->pbStoreDrive->setEnabled(isEnabled);
     ui->pbStoreGears->setEnabled(isEnabled);
+    ui->LX200Tab->setEnabled(isEnabled);
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::switchToLX200(void) {
+    if (this->lx200IsOn==false) {
+        this->lx200IsOn=true;
+        ui->catTab->setEnabled(false);
+        ui->pbLX200Active->setText("Deactivate LX200");
+    } else {
+        this->lx200IsOn=false;
+        ui->catTab->setEnabled(true);
+        ui->pbLX200Active->setText("Activate LX200");
+    }
 }
 
 //---------------------------------------------------------------------

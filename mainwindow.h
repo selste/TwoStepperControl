@@ -10,7 +10,7 @@
 #include "alccd5_client.h"
 #include "currentObjectCatalog.h"
 #include "QDisplay2D.h"
-
+#include "lx200_communication.h"
 
 using namespace QtConcurrent;
 
@@ -54,6 +54,7 @@ private slots:
     void startGoToObject(void);
     void changeMoveSpeed(void);
     void invertRADirection(void);
+    void switchToLX200(void);
 
 private:
     struct mountMotionStruct {
@@ -77,6 +78,8 @@ private:
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
+    lx200_communication *lx200port;
+    bool lx200IsOn;
     QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
     QFuture<void> futureStepperBehaviourDecl;
