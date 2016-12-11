@@ -151,7 +151,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->ra = 0.0;
     this->decl = 0.0; // the sync position - no sync for the mount was carried out - these are displayed in the GOTO textentry
 
-    this->camView = new QDisplay2D(ui->camTab,225,180); // make the clicakble scene view of 225 x 180 pixels
+    this->camView = new QDisplay2D(ui->camTab,425,340); // make the clicakble scene view of 425 x 340 pixels
     this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0),g_AllData->getCameraDisplaySize(1)); // store the size of the scene view in the global parameter class
 
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue

@@ -51,7 +51,7 @@ class QDisplay2D: public QGraphicsView {
     Q_OBJECT
 
 public:
-    QDisplay2D(QWidget *parent = 0, int = 225, int = 180);
+    QDisplay2D(QWidget *parent = 0, int = 425, int = 340);
     void addBgImage(QPixmap image);
     bool isImageLoaded();
 

@@ -9,8 +9,8 @@ TSC_GlobalData::TSC_GlobalData() {
     initialStarPos.screeny=0;
     initialStarPos.ccdx=0;
     initialStarPos.ccdy=0;
-    cameraDisplaySize.width=225;
-    cameraDisplaySize.height=180;
+    cameraDisplaySize.width=425;
+    cameraDisplaySize.height=340;
     cameraDisplaySize.scalingFactor=1;
     cameraParameters.pixelSizeMicronsX=5.4;
     cameraParameters.pixelSizeMicronsY=5.4;
