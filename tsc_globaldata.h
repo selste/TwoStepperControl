@@ -39,7 +39,7 @@ public:
     int getDriveID(short); // 0 for controller ID of RA, 1 for ID of Decl
     void setDriveParams(short, short, double); // 0 for  RA, 1 for decl, 0 for speed, 1 for Acc, 2 for Current, and the value
     double getDriveParams(short, short); // 0 for RA, 1 for decl and 0 for speed, 1, for Acc and 2 for current
-    double getActualScopePosition(short); // 0 for RA, 1 for decl
+    double getActualScopePosition(short); // 0 for hour angle, 1 for decl, 2 for RA
     void incrementActualScopePosition(double, double); // add hour angle and decl increments
 
 private:
@@ -96,6 +96,7 @@ private:
     struct actualScopePositionStruct {
         double actualHA;
         double actualDecl;
+        double actualRA;
     };
 
     struct initialStarPosStruct initialStarPos;

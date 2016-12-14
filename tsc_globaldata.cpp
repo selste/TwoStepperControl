@@ -23,6 +23,7 @@ TSC_GlobalData::TSC_GlobalData() {
     syncPosition.declination=0.0;
     actualScopePosition.actualHA=0.0;
     actualScopePosition.actualDecl=0.0;
+    actualScopePosition.actualRA=0.0;
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
     if (this->loadGlobalData() == false) {
@@ -192,6 +193,7 @@ void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->syncPosition.rightAscension=ra;
     this->syncPosition.declination=dec;
     this->actualScopePosition.actualHA=ra;
+    this->actualScopePosition.actualRA=ra;
     this->actualScopePosition.actualDecl=dec;
     this->monotonicGlobalTimer->restart();
 }
@@ -508,16 +510,28 @@ bool TSC_GlobalData::loadGlobalData(void) {
 }
 
 //-----------------------------------------------------------------
-double TSC_GlobalData::getActualScopePosition(short what) {
-    if (what == 0) {
-        return this->actualScopePosition.actualHA;
-    } else {
-        return this->actualScopePosition.actualDecl;
+double TSC_GlobalData::getActualScopePosition(short what) {  
+    double retval;
+
+    switch (what) {
+    case 0:
+        retval = this->actualScopePosition.actualHA;
+        break;
+    case 1:
+        retval = this->actualScopePosition.actualDecl;
+        break;
+    case 2:
+        retval = this->actualScopePosition.actualRA;
+        break;
+    default:
+        retval=0;
     }
+    return retval;
 }
 
 //-----------------------------------------------------------------
 void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
+    double actRA;
 
     this->actualScopePosition.actualHA -= deltaRA;
     if (this->actualScopePosition.actualHA < 0) {
@@ -526,6 +540,9 @@ void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDe
     if (this->actualScopePosition.actualHA > 360) {
         this->actualScopePosition.actualHA = this->actualScopePosition.actualHA-360.0;
     }
+    // compute the HA at sideral time 0, which is here the time of the last sync
+    actRA=this->actualScopePosition.actualHA+0.0041780746*(this->getTimeSinceLastSync()/1000.0);
+    this->actualScopePosition.actualRA=actRA;
     this->actualScopePosition.actualDecl += deltaDec;
  }
 

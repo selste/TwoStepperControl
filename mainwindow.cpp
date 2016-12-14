@@ -199,6 +199,7 @@ MainWindow::~MainWindow()
     delete StepperDriveDecl;
     delete timer;
     delete textEntry;
+    this->lx200port->shutDownPort();
     delete lx200port;
     delete ui;
     exit(0);
@@ -221,7 +222,6 @@ void MainWindow::updateReadings()
     if (this->lx200IsOn) {
         if (lx200port->getPortState() == 1) {
             charsReadFromRS232 = lx200port->getDataFromSerialPort();
-            qDebug() << "Characters read from TTY0:" << charsReadFromRS232;
         }
     }
     if (this->mountMotion.RATrackingIsOn == true) {
@@ -810,13 +810,15 @@ void MainWindow::setControlsForGoto(bool isEnabled)
 
 void MainWindow::switchToLX200(void) {
     if (this->lx200IsOn==false) {
+        this->lx200port->openPort();
         this->lx200IsOn=true;
-        ui->catTab->setEnabled(false);
         ui->pbLX200Active->setText("Deactivate LX200");
+        ui->cbRS232Open->setChecked(true);
     } else {
+        this->lx200port->shutDownPort();
         this->lx200IsOn=false;
-        ui->catTab->setEnabled(true);
         ui->pbLX200Active->setText("Activate LX200");
+        ui->cbRS232Open->setChecked(false);
     }
 }
 
@@ -877,10 +879,10 @@ void MainWindow::startGoToObject(void)
     speedFactorRA=ui->sbGoToSpeed->value();
     convertDegreesToMicrostepsDecl=1.0/g_AllData->getGearData(7)*g_AllData->getGearData(8)*
             g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6);
-    DeclSteps=abs(travelDecl)*convertDegreesToMicrostepsDecl;
+    DeclSteps=round(fabs(travelDecl)*convertDegreesToMicrostepsDecl);
     convertDegreesToMicrostepsRA=1.0/g_AllData->getGearData(3)*g_AllData->getGearData(8)*
             g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2);
-    RASteps=abs(travelRA)*convertDegreesToMicrostepsRA;
+    RASteps=round(fabs(travelRA)*convertDegreesToMicrostepsRA);
 
     TRamp = (this->StepperDriveDecl->getKinetics(3)*(speedFactorDecl))/this->StepperDriveDecl->getKinetics(2);// time needed until drive reaches full speed - vel/acc ...
     SRamp = 0.5*this->StepperDriveDecl->getKinetics(2)*TRamp*TRamp; // travel in microsteps until full speed is reached
