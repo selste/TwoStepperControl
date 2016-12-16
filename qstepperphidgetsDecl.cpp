@@ -174,11 +174,11 @@ bool QStepperPhidgetsDecl::getStopped(void) {
 
 void QStepperPhidgetsDecl::stopDrive(void) {
 
+    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
     CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, 0);
-    CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
-    usleep(100);
     this->stopped=true;
+    usleep(100);
 }
 
 //-------------------------------------------------------------------------------

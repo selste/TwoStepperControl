@@ -199,7 +199,6 @@ MainWindow::~MainWindow()
     delete StepperDriveDecl;
     delete timer;
     delete textEntry;
-    this->lx200port->shutDownPort();
     delete lx200port;
     delete ui;
     exit(0);
