@@ -43,10 +43,10 @@ lx200_communication::lx200_communication(void) {
 lx200_communication::~lx200_communication(void) {
     qDebug() << "Entered RS232 Destructor";
     if (portIsUp == 1) {
-        portIsUp = 0;
         rs232port.setBreakEnabled(true);
         rs232port.clear(QSerialPort::AllDirections);
         rs232port.close();
+        portIsUp = 0;
     }
     delete replyStrLX;
     delete serialData;
@@ -140,61 +140,60 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     QStringList commandList;
     int numberOfCommands, cmdCounter;
 
+    lx200cmd = new QString();
+    assembledString = new QString();
     if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
     // if LX200 sends <ACK> -> reply with P for forks, G for german equatorials or A for Alt/Az
         bytesWritten = rs232port.write("P");
         qDebug() << "Sent 'P' as a reply for <ACK> ...";
         return true; // exit here
     }
-
     commandList = cmd.split('#',QString::SkipEmptyParts,Qt::CaseSensitive);
     numberOfCommands=commandList.count();
-    qDebug() << "Number of Commands:" << numberOfCommands;
 
     for (cmdCounter = 0; cmdCounter < numberOfCommands; cmdCounter++) {
-
-        lx200cmd = new QString(commandList[cmdCounter]);
-        qDebug() << "LX 200 Command:" << lx200cmd->toLatin1();
+        lx200cmd->clear();
+        assembledString->clear();
+        lx200cmd->append(commandList[cmdCounter]);
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getDecl, Qt::CaseSensitive)==0) {
             // returns actual scope declination as "sDD*MM’SS#"
             commandToBeSent = 1;
             this->assembleDeclinationString();
-            assembledString = new QString(replyStrLX->toLatin1());
+            assembledString->append(replyStrLX->toLatin1());
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getRA, Qt::CaseSensitive)==0) {
             // returns actual scope RA as "HH:MM:SS#"
             commandToBeSent = 1;
             this->assembleRAString();
-            assembledString = new QString(replyStrLX->toLatin1());
+            assembledString->append(replyStrLX->toLatin1());
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMotion, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
                 // tell TSC to stop all Motion here; as this one does not require a reply,
                 // commandToBeSent is set to 0 ...
             qDebug() << "Scope should stop but doesn't do that yet ...";
-
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewRA,Qt::CaseSensitive)==1) {
             commandToBeSent = 1;
-            assembledString = new QString(QString::number(1));
+            assembledString->append(QString::number(1));
             // got a slewing command in RA - do something here ...
             qDebug() << "Scope should slew in RA but doesn't do that yet ...";
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
             commandToBeSent = 1;
-            assembledString = new QString(QString::number(1));
+            assembledString->append(QString::number(1));
             // got a slewing command in Decl - do something here ...
             qDebug() << "Scope should slew in Declination but doesn't do that yet ...";
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.slewPossible, Qt::CaseSensitive)==0) {
             commandToBeSent = 1;
-            assembledString = new QString(QString::number(1));
+            assembledString->append(QString::number(1));
             // asks whether slew is possible
             qDebug() << "Scope should assess slew but doesn't do that yet ...";
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.syncCommand, Qt::CaseSensitive)==0) {
             commandToBeSent = 1;
-            assembledString = new QString("M31 EX GAL MAG 35 SZ178.0'#");
+            assembledString->append("M31 EX GAL MAG 35 SZ178.0'#");
             // asks whether slew is possible
             qDebug() << "Scope should sync but doesn't do that yet ...";
         }
@@ -253,11 +252,11 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         if (commandToBeSent == true) {
             qDebug() << "Sending: " << assembledString->toLatin1();
             bytesWritten = rs232port.write((assembledString->toLatin1()));
-            delete assembledString;
+            rs232port.flush();
         }
-        delete lx200cmd;
     }
-    qDebug() << "leaving serial connection";
+    delete lx200cmd;
+    delete assembledString;
     return true; // do something here later ...
 }
 
@@ -266,7 +265,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
 void lx200_communication::assembleDeclinationString(void) {
     QString *helper;
     double currDecl, remainder;
-    int declDeg, declMin, declSec,sign;
+    int declDeg, declMin, declSec,sign=1;
 
     replyStrLX->clear();
     currDecl = g_AllData->getActualScopePosition(1);
@@ -281,18 +280,18 @@ void lx200_communication::assembleDeclinationString(void) {
     remainder = remainder*60.0-declMin;
     declSec=round(remainder);
     helper = new QString();
-    if (abs(declDeg) < 10) {
-        if (declDeg >= 0) {
-            replyStrLX->append("+0");
-        } else {
-            replyStrLX->append("-0");
-        }
-        helper->setNum(abs(declDeg));
-        replyStrLX->append(helper);
-        helper->clear();
+    if (sign == 1) {
+        replyStrLX->insert(0,'+');
     } else {
-        replyStrLX->setNum(declDeg);
+        replyStrLX->insert(0,'-');
     }
+
+    if ((abs(declDeg)) < 10) {
+        replyStrLX->insert(1,'0');
+    }
+    helper->setNum(abs(declDeg));
+    replyStrLX->append(helper);
+    helper->clear();
     replyStrLX->append("*");
     if (declMin < 10) {
         replyStrLX->append("0");

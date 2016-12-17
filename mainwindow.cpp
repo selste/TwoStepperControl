@@ -276,6 +276,14 @@ void MainWindow::updateReadings()
                     (1000.0*g_AllData->getGearData(8)*totalGearRatio);
             g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl);
         }
+    } else {
+        if ((this->mountMotion.RATrackingIsOn == false) &&
+                (this->mountMotion.RADriveIsMoving == false) &&
+                (this->mountMotion.DeclDriveIsMoving == false)) {
+                    g_AllData->incrementActualScopePosition(0.0,0.0);
+                    // the scope is at rest, but the hour angle still
+                    // needs to be updated ...
+        }
     }
     ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
     ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
