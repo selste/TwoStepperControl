@@ -28,6 +28,7 @@ public:
     void setControlsForRATravel(bool);
     void setControlsForDeclTravel(bool);
     void setControlsForGoto(bool);
+    void terminateAllMotion(void);
 
 private slots:
     void updateReadings(void);
@@ -55,6 +56,15 @@ private slots:
     void changeMoveSpeed(void);
     void invertRADirection(void);
     void switchToLX200(void);
+    void LXmoveEast(void);
+    void LXmoveWest(void);
+    void LXmoveNorth(void);
+    void LXmoveSouth(void);
+    void LXstopMoveEast(void);
+    void LXstopMoveWest(void);
+    void LXstopMoveNorth(void);
+    void LXstopMoveSouth(void);
+    void LXstopMotion(void);
 
 private:
     struct mountMotionStruct {

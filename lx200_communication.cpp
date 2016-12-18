@@ -2,6 +2,7 @@
 #include "tsc_globaldata.h"
 #include <QDebug>
 
+
 extern TSC_GlobalData *g_AllData;
 
 //--------------------------------------------------------
@@ -169,9 +170,10 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMotion, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
+            emit this->RS232stopMotion();
                 // tell TSC to stop all Motion here; as this one does not require a reply,
                 // commandToBeSent is set to 0 ...
-            qDebug() << "Scope should stop but doesn't do that yet ...";
+
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewRA,Qt::CaseSensitive)==1) {
             commandToBeSent = 1;
@@ -199,35 +201,35 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveEast, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232moveEast();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveWest, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232moveWest();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveNorth, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232moveNorth();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveSouth, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232moveSouth();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveEast, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232stopMoveEast();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveWest, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232stopMoveWest();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveNorth, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232stopMoveNorth();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveSouth, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;
-            qDebug() << "to be implemented";
+            emit this->RS232stopMoveSouth();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setCenterSpeed, Qt::CaseSensitive)==0) {
             commandToBeSent = 0;

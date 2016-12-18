@@ -189,6 +189,16 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     if (this->lx200port->getPortState() == 1) {
         ui->cbRS232Open->setChecked(true);
     }
+    connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232moveSouth()), this, SLOT(LXmoveSouth()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232stopMoveEast()), this, SLOT(LXstopMoveEast()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232stopMoveWest()), this, SLOT(LXstopMoveWest()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232stopMoveNorth()), this, SLOT(LXstopMoveNorth()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232stopMoveSouth()), this, SLOT(LXstopMoveSouth()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232stopMotion()), this, SLOT(LXstopMotion()),Qt::QueuedConnection);
+
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
@@ -631,7 +641,7 @@ void MainWindow::RAMoveHandboxFwd(void)
                 g_AllData->getGearData(2); // travel 180° at most
 
         this->mountMotion.RADriveDirection=1;
-        fwdFactor = this->mountMotion.RASpeedFactor+1; // forward motion means increasethe speed
+        fwdFactor = this->mountMotion.RASpeedFactor+1; // forward motion means increase the speed
         futureStepperBehaviourRA =
                 QtConcurrent::run(this->StepperDriveRA,
                 &QStepperPhidgetsRA::travelForNSteps,maxRASteps,
@@ -715,6 +725,102 @@ void MainWindow::RAMoveHandboxBwd(void)
 
 //---------------------------------------------------------------------
 
+void MainWindow::LXmoveEast(void) {
+
+    qDebug() << "Got LX - Move East";
+    if (this->mountMotion.RADriveIsMoving == true) {
+        return;
+    } else {
+        this->RAMoveHandboxBwd();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXmoveWest(void) {
+
+    qDebug() << "Got LX - Move West";
+    if (this->mountMotion.RADriveIsMoving == true) {
+        return;
+    } else {
+        this->RAMoveHandboxFwd();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXmoveNorth(void) {
+
+    qDebug() << "Got LX - Move North";
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        return;
+    } else {
+        this->declinationMoveHandboxUp();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXmoveSouth(void) {
+
+    qDebug() << "Got LX - Move South";
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        return;
+    } else {
+        this->declinationMoveHandboxDown();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXstopMoveEast(void) {
+
+    qDebug() << "Got LX - Stop Move East";
+    if (this->mountMotion.RADriveIsMoving == false) {
+        return;
+    } else {
+        this->RAMoveHandboxBwd();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXstopMoveWest(void) {
+
+    qDebug() << "Got LX - Stop Move West";
+    if (this->mountMotion.RADriveIsMoving == false) {
+        return;
+    } else {
+        this->RAMoveHandboxFwd();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXstopMoveNorth(void) {
+
+    qDebug() << "Got LX - Stop Move North";
+    if (this->mountMotion.DeclDriveIsMoving == false) {
+        return;
+    } else {
+        this->declinationMoveHandboxUp();
+    }
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXstopMoveSouth(void) {
+
+    qDebug() << "Got LX - Stop Move South";
+    if (this->mountMotion.DeclDriveIsMoving == false) {
+        return;
+    } else {
+        this->declinationMoveHandboxDown();
+    }
+}
+
+//---------------------------------------------------------------------
+   
 void MainWindow::setControlsForRATravel(bool isEnabled)
 {
     ui->leAMaxRA->setEnabled(isEnabled);
@@ -831,6 +937,35 @@ void MainWindow::switchToLX200(void) {
 
 //---------------------------------------------------------------------
 
+void MainWindow::LXstopMotion(void) {
+    this->terminateAllMotion();
+    ui->pbStartTracking->setEnabled(true);
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::terminateAllMotion(void) {
+    if (this->mountMotion.RADriveIsMoving == true) {
+        this->mountMotion.RADriveIsMoving=false;
+        this->StepperDriveRA->stopDrive();
+        while (!futureStepperBehaviourRA.isFinished()) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        }
+    }
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        this->mountMotion.DeclDriveIsMoving=false;
+        this->StepperDriveDecl->stopDrive();
+        while (!futureStepperBehaviourDecl.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        }
+    }
+    if (this->mountMotion.RATrackingIsOn == true) {
+        this->stopRATracking();
+    }     // terminate all current motions ...
+}
+
+//---------------------------------------------------------------------
+
 void MainWindow::startGoToObject(void)
 {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
@@ -845,24 +980,7 @@ void MainWindow::startGoToObject(void)
     bool RAtakesLonger;
 
     ui->pbGoTo->setEnabled(false);
-    if (this->mountMotion.RADriveIsMoving == true) {
-        this->mountMotion.RADriveIsMoving=false;
-        this->StepperDriveRA->stopDrive();
-        while (!futureStepperBehaviourRA.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
-        }
-    }
-    if (this->mountMotion.DeclDriveIsMoving == true) {
-        this->mountMotion.DeclDriveIsMoving=false;
-        this->StepperDriveDecl->stopDrive();
-        while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
-        }
-    }
-    if (this->mountMotion.RATrackingIsOn == true) {
-        this->stopRATracking();
-    }     // terminate all current motions ...
-
+    this->terminateAllMotion();
     this->setControlsForGoto(false);
     ui->pbStartTracking->setEnabled(false);
 

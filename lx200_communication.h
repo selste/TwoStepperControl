@@ -8,7 +8,8 @@
 #include <QObject>
 #include <QString>
 
-class lx200_communication {
+class lx200_communication:public QObject {
+    Q_OBJECT
 public:
     lx200_communication(void);
     ~lx200_communication(void);
@@ -48,6 +49,22 @@ private:
         QString setGOTOSpeed;
     };
     struct LX200CommandStruct LX200Commands;
+signals:
+    void RS232stopMotion(void);
+    void RS232stopMoveEast(void);
+    void RS232stopMoveWest(void);
+    void RS232stopMoveNorth(void);
+    void RS232stopMoveSouth(void);
+    void RS232slew(void);
+    void RS232sync(void);
+    void RS232moveEast(void);
+    void RS232moveWest(void);
+    void RS232moveNorth(void);
+    void RS232moveSouth(void);
+    void RS232centerSpeed(void);
+    void RS232guideSpeed(void);
+    void RS232findSpeed(void);
+    void RS232gotoSpeed(void);
 };
 
 #endif // LX200_COMMUNICATION_H
