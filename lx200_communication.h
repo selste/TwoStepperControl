@@ -17,12 +17,15 @@ public:
     qint64 getDataFromSerialPort(void);
     void shutDownPort(void);
     void openPort(void);
+    double getReceivedCoordinates(short); // 0 for RA, 1 for Decl - retrieve data conveyed from LX
 
 private:
     QSerialPort rs232port;
     QString *replyStrLX;
     bool portIsUp;
     QByteArray *serialData;
+    double receivedRAFromLX;
+    double receivedDeclFromLX;
     bool handleBasicLX200Protocol(QString);
     void assembleDeclinationString(void);
     void assembleRAString(void);

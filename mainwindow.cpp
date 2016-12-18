@@ -82,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.GoToIsActiveInRA = false;
     this->mountMotion.GoToIsActiveInDecl = false; // setting a few flags on drive states
     this->lx200IsOn = false;
+    this->MountWasSynced = false;
     this->mountMotion.DeclDriveDirection = 1;
     this->mountMotion.RADriveDirection = 1; // 1 for forward, -1 for backward
     this->mountMotion.RASpeedFactor=1;
@@ -198,7 +199,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232stopMoveNorth()), this, SLOT(LXstopMoveNorth()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232stopMoveSouth()), this, SLOT(LXstopMoveSouth()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232stopMotion()), this, SLOT(LXstopMotion()),Qt::QueuedConnection);
-
+    connect(this->lx200port,SIGNAL(RS232guideSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232centerSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232findSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection);
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
@@ -439,6 +445,9 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName)
     if (this->objCatalog != NULL) {
         delete this->objCatalog;
     }
+    if (this->MountWasSynced == true) {
+        ui->pbGoTo->setEnabled(true);
+    }
     ui->pbSync->setEnabled(false);
     catalogPath = new QString(catalogName->text());
     catalogPath->append(QString(".tsc"));
@@ -487,7 +496,39 @@ void MainWindow::syncMount(void)
     // a microtimer starts ...
     this->startRATracking();
     ui->pbGoTo->setEnabled(true);
+    this->MountWasSynced = true;
 }
+//------------------------------------------------------------------
+
+void MainWindow::LXsyncMount(void)
+{
+    QString lestr;
+
+    if (this->StepperDriveRA->getStopped() == false) {
+        this->stopRATracking();
+    }
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        this->mountMotion.DeclDriveIsMoving=false;
+        this->StepperDriveDecl->stopDrive();
+        while (!futureStepperBehaviourDecl.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        }
+    }
+
+    this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
+    this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
+    qDebug() << "LX Sync with" << this->ra << "and" << this->decl;
+    g_AllData->setSyncPosition(this->ra, this->decl);
+    // convey right ascension and declination to the global parameters;
+    // a microtimer starts ...
+    this->startRATracking();
+    lestr = QString::number(this->ra, 'g', 8);
+    ui->lineEditRA->setText(lestr);
+    lestr = QString::number(this->decl, 'g', 8);
+    ui->lineEditDecl->setText(lestr);
+    this->MountWasSynced = true;
+}
+
 //------------------------------------------------------------------
 void MainWindow::storeGearData(void)
 {
@@ -860,6 +901,26 @@ void MainWindow::setCorrectionSpeed(void)
 
 //---------------------------------------------------------------------
 
+void MainWindow::LXslowSpeed(void)
+{
+    qDebug() << "LX set slow speed";
+    ui->rbCorrSpeed->setChecked(true);
+    this->setCorrectionSpeed();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXhiSpeed(void)
+{
+    qDebug() << "LX set hi speed";
+    ui->rbMoveSpeed->setChecked(true);
+    this->setMoveSpeed();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+}
+
+//---------------------------------------------------------------------
+
 void MainWindow::setMoveSpeed(void)
 {
     this->mountMotion.RASpeedFactor = ui->sbMoveSpeed->value();
@@ -940,6 +1001,7 @@ void MainWindow::switchToLX200(void) {
 void MainWindow::LXstopMotion(void) {
     this->terminateAllMotion();
     ui->pbStartTracking->setEnabled(true);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
 }
 
 //---------------------------------------------------------------------
@@ -962,6 +1024,26 @@ void MainWindow::terminateAllMotion(void) {
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }     // terminate all current motions ...
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::LXslewMount(void) {
+    QString lestr;
+
+    qDebug() << "Slew Event received";
+    if (this->MountWasSynced == true) {
+        this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
+        this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
+        lestr = QString::number(this->ra, 'g', 8);
+        ui->lineEditRA->setText(lestr);
+        lestr = QString::number(this->decl, 'g', 8);
+        ui->lineEditDecl->setText(lestr);
+        qDebug() << "LX Slew to" << this->ra << "and" << this->decl;
+        this->startGoToObject();
+    } else {
+        qDebug() << "Slew impossible - mount not synced";
+    }
 }
 
 //---------------------------------------------------------------------

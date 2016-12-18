@@ -65,6 +65,10 @@ private slots:
     void LXstopMoveNorth(void);
     void LXstopMoveSouth(void);
     void LXstopMotion(void);
+    void LXslowSpeed(void);
+    void LXhiSpeed(void);
+    void LXsyncMount(void);
+    void LXslewMount(void);
 
 private:
     struct mountMotionStruct {
@@ -90,6 +94,7 @@ private:
     QTimer *timer;
     lx200_communication *lx200port;
     bool lx200IsOn;
+    bool MountWasSynced;     // a flag indicating whether a sync occurred
     QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
     QFuture<void> futureStepperBehaviourDecl;
