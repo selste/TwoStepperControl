@@ -69,6 +69,7 @@ private slots:
     void LXhiSpeed(void);
     void LXsyncMount(void);
     void LXslewMount(void);
+    void displayGuideCamImage(void);
 
 private:
     struct mountMotionStruct {

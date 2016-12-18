@@ -5,16 +5,16 @@
 #include <QImage>
 #include <QPixmap>
 #include <QVector>
+#include <QObject>
 
-class alccd5_client : public INDI::BaseClient {
+class alccd5_client:public QObject, public INDI::BaseClient {
+    Q_OBJECT
  public:
     alccd5_client();
     ~alccd5_client();
     void takeExposure(int);
     bool setINDIServer(QString, int);
     QPixmap* getScaledPixmapFromCamera(void);
-    bool newImageArrived(void);
-    void newImageUsedAsPixmap(void);
     void sayGoodbyeToINDIServer(void);
 
 protected:
@@ -37,4 +37,8 @@ private:
    QPixmap* displayPMap;
    bool newCameraImageAvailable;  
    QVector<QRgb> *myVec;
+
+signals:
+   void imageAvailable(void);
+
 };

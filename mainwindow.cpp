@@ -133,6 +133,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     // calculated from  gear parameters
 
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
+    connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection);
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
@@ -225,15 +226,6 @@ void MainWindow::updateReadings()
     qint64 topicalTime,charsReadFromRS232;
     double relativeTravelRA, relativeTravelDecl,totalGearRatio;
 
-    if (g_AllData->getINDIState() == true) {
-        if (camera_client->newImageArrived() ==true) {
-            this->updateCameraImage();
-            camera_client->newImageUsedAsPixmap(); // set the "new image state to false
-            if (ui->cbContinuous->isChecked()) {
-                this->takeSingleCamShot();
-            }
-        }
-    }
     if (this->lx200IsOn) {
         if (lx200port->getPortState() == 1) {
             charsReadFromRS232 = lx200port->getDataFromSerialPort();
@@ -436,6 +428,19 @@ void MainWindow::updateCameraImage(void)
     this->camView->addBgImage(*camImg);
 }
 //------------------------------------------------------------------
+
+void MainWindow::displayGuideCamImage(void) {
+
+    if (g_AllData->getINDIState() == true) {
+        this->updateCameraImage();
+        if (ui->cbContinuous->isChecked()) {
+          this->takeSingleCamShot();
+        }
+    }
+}
+
+//------------------------------------------------------------------
+
 void MainWindow::catalogChosen(QListWidgetItem* catalogName)
 {
     QString *catalogPath;
