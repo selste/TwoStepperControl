@@ -182,6 +182,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed()));
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection()));
     connect(ui->pbLX200Active, SIGNAL(clicked()), this, SLOT(switchToLX200()));
+    connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop()));
+    connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop()));
+    connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop()));
+    connect(ui->pbStop4, SIGNAL(clicked()), this, SLOT(emergencyStop()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -772,12 +776,13 @@ void MainWindow::RAMoveHandboxBwd(void)
 //---------------------------------------------------------------------
 
 void MainWindow::LXmoveEast(void) {
-
-    qDebug() << "Got LX - Move East";
-    if (this->mountMotion.RADriveIsMoving == true) {
-        return;
-    } else {
-        this->RAMoveHandboxBwd();
+    if ((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) {
+        if (this->mountMotion.RADriveIsMoving == true) {
+            return;
+        } else {
+            this->RAMoveHandboxBwd();
+        }
     }
 }
 
@@ -785,23 +790,26 @@ void MainWindow::LXmoveEast(void) {
 
 void MainWindow::LXmoveWest(void) {
 
-    qDebug() << "Got LX - Move West";
-    if (this->mountMotion.RADriveIsMoving == true) {
-        return;
-    } else {
-        this->RAMoveHandboxFwd();
+    if ((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) {
+        if (this->mountMotion.RADriveIsMoving == true) {
+            return;
+        } else {
+            this->RAMoveHandboxFwd();
+        }
     }
 }
 
 //---------------------------------------------------------------------
 
 void MainWindow::LXmoveNorth(void) {
-
-    qDebug() << "Got LX - Move North";
-    if (this->mountMotion.DeclDriveIsMoving == true) {
-        return;
-    } else {
-        this->declinationMoveHandboxUp();
+    if ((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) {
+        if (this->mountMotion.DeclDriveIsMoving == true) {
+            return;
+        } else {
+            this->declinationMoveHandboxUp();
+        }
     }
 }
 
@@ -809,22 +817,22 @@ void MainWindow::LXmoveNorth(void) {
 
 void MainWindow::LXmoveSouth(void) {
 
-    qDebug() << "Got LX - Move South";
-    if (this->mountMotion.DeclDriveIsMoving == true) {
-        return;
-    } else {
-        this->declinationMoveHandboxDown();
+    if ((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) {
+        if (this->mountMotion.DeclDriveIsMoving == true) {
+            return;
+        } else {
+            this->declinationMoveHandboxDown();
+        }
     }
 }
 
 //---------------------------------------------------------------------
 
 void MainWindow::LXstopMoveEast(void) {
-
-    qDebug() << "Got LX - Stop Move East";
-    if (this->mountMotion.RADriveIsMoving == false) {
-        return;
-    } else {
+    if (((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) &&
+            (mountMotion.RADriveIsMoving == true))  {
         this->RAMoveHandboxBwd();
     }
 }
@@ -832,11 +840,9 @@ void MainWindow::LXstopMoveEast(void) {
 //---------------------------------------------------------------------
 
 void MainWindow::LXstopMoveWest(void) {
-
-    qDebug() << "Got LX - Stop Move West";
-    if (this->mountMotion.RADriveIsMoving == false) {
-        return;
-    } else {
+    if (((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) &&
+            (mountMotion.RADriveIsMoving == true))  {
         this->RAMoveHandboxFwd();
     }
 }
@@ -844,11 +850,9 @@ void MainWindow::LXstopMoveWest(void) {
 //---------------------------------------------------------------------
 
 void MainWindow::LXstopMoveNorth(void) {
-
-    qDebug() << "Got LX - Stop Move North";
-    if (this->mountMotion.DeclDriveIsMoving == false) {
-        return;
-    } else {
+    if (((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) &&
+            (mountMotion.DeclDriveIsMoving == true))  {
         this->declinationMoveHandboxUp();
     }
 }
@@ -856,11 +860,9 @@ void MainWindow::LXstopMoveNorth(void) {
 //---------------------------------------------------------------------
 
 void MainWindow::LXstopMoveSouth(void) {
-
-    qDebug() << "Got LX - Stop Move South";
-    if (this->mountMotion.DeclDriveIsMoving == false) {
-        return;
-    } else {
+    if (((mountMotion.GoToIsActiveInRA==false) ||
+            (mountMotion.GoToIsActiveInDecl==false)) &&
+            (mountMotion.DeclDriveIsMoving == true))  {
         this->declinationMoveHandboxDown();
     }
 }
@@ -908,7 +910,6 @@ void MainWindow::setCorrectionSpeed(void)
 
 void MainWindow::LXslowSpeed(void)
 {
-    qDebug() << "LX set slow speed";
     ui->rbCorrSpeed->setChecked(true);
     this->setCorrectionSpeed();
     QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
@@ -918,7 +919,6 @@ void MainWindow::LXslowSpeed(void)
 
 void MainWindow::LXhiSpeed(void)
 {
-    qDebug() << "LX set hi speed";
     ui->rbMoveSpeed->setChecked(true);
     this->setMoveSpeed();
     QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
@@ -1004,9 +1004,44 @@ void MainWindow::switchToLX200(void) {
 //---------------------------------------------------------------------
 
 void MainWindow::LXstopMotion(void) {
-    this->terminateAllMotion();
+    this->emergencyStop();
+}
+
+//---------------------------------------------------------------------
+void MainWindow::emergencyStop(void) {
+    this->StepperDriveRA->stopDrive();
+    this->StepperDriveDecl->stopDrive();
+    this->mountMotion.RATrackingIsOn = false;
+    this->mountMotion.RADriveIsMoving = false;
+    this->mountMotion.DeclDriveIsMoving = false;
+    this->mountMotion.GoToIsActiveInRA = false;
+    this->mountMotion.GoToIsActiveInDecl = false;
+    while (!futureStepperBehaviourRATracking.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
+    while (!futureStepperBehaviourRA.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
+    while (!futureStepperBehaviourDecl.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
+    while (!futureStepperBehaviourRA_GOTO.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
+    while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
+    while (!futureStepperBehaviourRA_Corr.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
+    while (!futureStepperBehaviourDecl_Corr.isFinished()) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    };
     ui->pbStartTracking->setEnabled(true);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    ui->pbDeclDown->setEnabled(true);
+    ui->pbDeclUp->setEnabled(true);
+    ui->pbRAPlus->setEnabled(true);
+    ui->pbRAMinus->setEnabled(true);
 }
 
 //---------------------------------------------------------------------
@@ -1036,18 +1071,19 @@ void MainWindow::terminateAllMotion(void) {
 void MainWindow::LXslewMount(void) {
     QString lestr;
 
-    qDebug() << "Slew Event received";
-    if (this->MountWasSynced == true) {
-        this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
-        this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
-        lestr = QString::number(this->ra, 'g', 8);
-        ui->lineEditRA->setText(lestr);
-        lestr = QString::number(this->decl, 'g', 8);
-        ui->lineEditDecl->setText(lestr);
-        qDebug() << "LX Slew to" << this->ra << "and" << this->decl;
-        this->startGoToObject();
-    } else {
-        qDebug() << "Slew impossible - mount not synced";
+    if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
+        if (this->MountWasSynced == true) {
+            this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
+            this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
+            lestr = QString::number(this->ra, 'g', 8);
+            ui->lineEditRA->setText(lestr);
+            lestr = QString::number(this->decl, 'g', 8);
+            ui->lineEditDecl->setText(lestr);
+            qDebug() << "LX Slew to" << this->ra << "and" << this->decl;
+            this->startGoToObject();
+        } else {
+            qDebug() << "Slew impossible - mount not synced";
+        }
     }
 }
 

@@ -127,7 +127,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 }
                 this->serialData->clear();
             }
-      //      qDebug() << "Received" << incomingCommand->toLatin1();
+            qDebug() << "Received" << incomingCommand->toLatin1();
             this->handleBasicLX200Protocol(*incomingCommand);
         }
     }
@@ -273,7 +273,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             // ignore this as we are always sending in high resolution
         }
         if (commandToBeSent == true) {
-//            qDebug() << "Sending: " << assembledString->toLatin1();
+            qDebug() << "Sending: " << assembledString->toLatin1();
             bytesWritten = rs232port.write((assembledString->toLatin1()));
             rs232port.flush();
         }

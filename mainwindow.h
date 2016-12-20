@@ -70,6 +70,7 @@ private slots:
     void LXsyncMount(void);
     void LXslewMount(void);
     void displayGuideCamImage(void);
+    void emergencyStop(void);
 
 private:
     struct mountMotionStruct {

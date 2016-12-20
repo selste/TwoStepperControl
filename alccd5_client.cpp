@@ -157,7 +157,7 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     displayPMap->convertFromImage(*smallQImage,0);
     delete smallQImage;
     delete mimage;
-    emit imageAvailable();
+    emit this->imageAvailable();
 //    fitsfile.open ("alccd5.fits", ios::out | ios::binary);
 //    fitsfile.write(static_cast<char *> (bp->blob), bp->bloblen);
 //    fitsfile.close();

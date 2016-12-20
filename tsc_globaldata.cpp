@@ -442,7 +442,7 @@ bool TSC_GlobalData::loadGlobalData(void) {
 
     char delimiter('/');    // data are separated from comments by c++ - style comments
     std::ifstream infile("TSC_Preferences.tsp");  // read that preferences file ...
-    if (infile == NULL) {
+    if (!infile.is_open()) {
         return false;
     }
 

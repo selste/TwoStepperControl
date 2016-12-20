@@ -372,10 +372,55 @@
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>451</x>
+        <y>290</y>
+        <width>206</width>
+        <height>52</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <item>
+        <widget class="QLabel" name="label_7">
+         <property name="text">
+          <string>GoTo-time [s]:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLCDNumber" name="lcdGotoTime">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>14</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="digitCount">
+          <number>6</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>22</x>
         <y>350</y>
-        <width>362</width>
-        <height>71</height>
+        <width>518</width>
+        <height>62</height>
        </rect>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -421,6 +466,31 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pbStop1">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>60</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>150</width>
+           <height>60</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Emergency Stop</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="pbExit">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -442,51 +512,6 @@
          </property>
          <property name="text">
           <string>Exit</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>451</x>
-        <y>290</y>
-        <width>206</width>
-        <height>52</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_8">
-       <item>
-        <widget class="QLabel" name="label_7">
-         <property name="text">
-          <string>GoTo-time [s]:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLCDNumber" name="lcdGotoTime">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>100</width>
-           <height>50</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>14</pointsize>
-           <weight>75</weight>
-           <bold>true</bold>
-          </font>
-         </property>
-         <property name="digitCount">
-          <number>6</number>
          </property>
         </widget>
        </item>
@@ -611,6 +636,22 @@
        <string>GoTo</string>
       </property>
      </widget>
+     <widget class="QPushButton" name="pbStop2">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>250</y>
+        <width>241</width>
+        <height>61</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Emergency Stop</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="LX200Tab">
      <attribute name="title">
@@ -663,6 +704,31 @@
        </item>
       </layout>
      </widget>
+     <widget class="QPushButton" name="pbStop3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>70</y>
+        <width>150</width>
+        <height>50</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Emergency Stop</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="INDItab">
      <attribute name="title">
@@ -672,8 +738,49 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>10</y>
-        <width>411</width>
+        <y>60</y>
+        <width>161</width>
+        <height>33</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QLabel" name="indiportlabel">
+         <property name="text">
+          <string>Port</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="sbINDIPort">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="maximum">
+          <number>255000</number>
+         </property>
+         <property name="value">
+          <number>7624</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>11</x>
+        <y>11</y>
+        <width>567</width>
         <height>42</height>
        </rect>
       </property>
@@ -726,44 +833,25 @@
          </property>
         </widget>
        </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>50</y>
-        <width>139</width>
-        <height>33</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QLabel" name="indiportlabel">
-         <property name="text">
-          <string>Port</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QSpinBox" name="sbINDIPort">
+        <widget class="QPushButton" name="pbStop4">
          <property name="minimumSize">
           <size>
-           <width>100</width>
+           <width>150</width>
            <height>30</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>100</width>
+           <width>150</width>
            <height>30</height>
           </size>
          </property>
-         <property name="maximum">
-          <number>255000</number>
+         <property name="toolTipDuration">
+          <number>1</number>
          </property>
-         <property name="value">
-          <number>7624</number>
+         <property name="text">
+          <string>Emergency Stop</string>
          </property>
         </widget>
        </item>
