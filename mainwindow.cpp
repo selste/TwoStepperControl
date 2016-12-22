@@ -81,6 +81,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.DeclDriveIsMoving = false;
     this->mountMotion.GoToIsActiveInRA = false;
     this->mountMotion.GoToIsActiveInDecl = false; // setting a few flags on drive states
+    this->mountMotion.emeregencyStopTriggered = false;
     this->lx200IsOn = false;
     this->MountWasSynced = false;
     this->mountMotion.DeclDriveDirection = 1;
@@ -451,6 +452,7 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName)
     long counterForObjects, maxObj;
     std::string objectName;
 
+    ui->listWidgetCatalog->blockSignals(true);
     if (this->objCatalog != NULL) {
         delete this->objCatalog;
     }
@@ -468,6 +470,7 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName)
         objectName=this->objCatalog->getNamesOfObjects(counterForObjects);
         ui->listWidgetObject->addItem(QString(objectName.data()));
     }
+    ui->listWidgetCatalog->blockSignals(false);
 }
 //------------------------------------------------------------------
 
@@ -1009,6 +1012,7 @@ void MainWindow::LXstopMotion(void) {
 
 //---------------------------------------------------------------------
 void MainWindow::emergencyStop(void) {
+    this->mountMotion.emeregencyStopTriggered=true;
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive();
     this->mountMotion.RATrackingIsOn = false;
@@ -1038,10 +1042,10 @@ void MainWindow::emergencyStop(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
     };
     ui->pbStartTracking->setEnabled(true);
-    ui->pbDeclDown->setEnabled(true);
-    ui->pbDeclUp->setEnabled(true);
-    ui->pbRAPlus->setEnabled(true);
-    ui->pbRAMinus->setEnabled(true);
+    ui->pbStopTracking->setEnabled(false);
+    this->setControlsForGoto(true);
+    ui->lcdGotoTime->display(0);
+    ui->pbGoTo->setEnabled(true);
 }
 
 //---------------------------------------------------------------------
@@ -1209,6 +1213,10 @@ void MainWindow::startGoToObject(void)
                 this->mountMotion.GoToIsActiveInDecl=false;
             }
         }
+        if (this->mountMotion.emeregencyStopTriggered==true) {
+            this->mountMotion.emeregencyStopTriggered=false;
+            return;
+        }
         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
         timeDifference = timeTaken-timeEstimatedInRAInMS;
         this->startRATracking();
@@ -1221,6 +1229,10 @@ void MainWindow::startGoToObject(void)
                 this->mountMotion.GoToIsActiveInRA=false;
             }
             if (futureStepperBehaviourRA_GOTO.isFinished()) {
+                if (this->mountMotion.emeregencyStopTriggered==true) {
+                    this->mountMotion.emeregencyStopTriggered=false;
+                    return;
+                }
                 if (RARideIsDone==false) {
                     RARideIsDone=true;
                     timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
@@ -1229,6 +1241,10 @@ void MainWindow::startGoToObject(void)
                     ui->pbStopTracking->setDisabled(true);
                 }
             }
+        }
+        if (this->mountMotion.emeregencyStopTriggered==true) {
+            this->mountMotion.emeregencyStopTriggered=false;
+            return;
         }
         this->mountMotion.GoToIsActiveInDecl=false;
     }
@@ -1244,6 +1260,10 @@ void MainWindow::startGoToObject(void)
         while (!futureStepperBehaviourRA_Corr.isFinished()) {
            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
         }
+        if (this->mountMotion.emeregencyStopTriggered==true) {
+            this->mountMotion.emeregencyStopTriggered=false;
+            return;
+        }
     }
     this->ra=targetRA;
     this->decl=targetDecl;
@@ -1253,6 +1273,7 @@ void MainWindow::startGoToObject(void)
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(false);
+    return;
 }
 
 //----------------------------------------------------------
