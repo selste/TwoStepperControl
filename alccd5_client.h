@@ -16,6 +16,7 @@ class alccd5_client:public QObject, public INDI::BaseClient {
     bool setINDIServer(QString, int);
     QPixmap* getScaledPixmapFromCamera(void);
     void sayGoodbyeToINDIServer(void);
+    void getCCDParameters(void);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);

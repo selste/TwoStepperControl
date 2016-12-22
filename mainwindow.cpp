@@ -134,6 +134,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     // calculated from  gear parameters
 
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
+    camera_client->getCCDParameters();
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection);
 
         // now read all catalog files, ending in "*.tsc"

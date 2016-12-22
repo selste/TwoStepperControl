@@ -71,7 +71,7 @@ void alccd5_client::takeExposure(int expTime) {
     if (alccd5->isConnected()) {
         ccd_exposure = alccd5->getNumber("CCD_EXPOSURE");
         if (ccd_exposure == NULL)     {
-            qDebug() << "Error: unable to find CCD Simulator CCD_EXPOSURE property...";
+            qDebug() << "Error: unable to find CCD_EXPOSURE property...";
             return;
         }
         newCameraImageAvailable = false;
@@ -89,8 +89,6 @@ void alccd5_client::newDevice(INDI::BaseDevice *dp) {
         qDebug() << "Receiving Device:" << dp->getDeviceName();
     }
     alccd5 = dp;
-    g_AllData->setCameraParameters(5.4,5.4,1280,1024);
-    // setting pixelsize and chipsize as the camera is now connected
 }
 
 //------------------------------------------
@@ -113,6 +111,16 @@ void alccd5_client::newMessage(INDI::BaseDevice *dp, int messageID) {
 }
 
 //------------------------------------------
+
+void alccd5_client::getCCDParameters(void) {
+
+    g_AllData->setCameraParameters(5.4,5.4,1280,1024);
+    qDebug() << "Trying to set Camera Parameters...";
+    // setting pixelsize and chipsize as the camera is now connected
+}
+
+//------------------------------------------
+
 void alccd5_client::newBLOB(IBLOB *bp) {
     // receive a FITS file from the server ...
     // header is 2880, image is 1280x1024
