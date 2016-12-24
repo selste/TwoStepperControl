@@ -130,12 +130,21 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
     ui->leMicrosteps->setText(textEntry->number(g_AllData->getGearData(8)));
     textEntry->clear();
+    // now setting all the parameters in the "Cam"-tab
+    ui->lePixelSizeX->setText(textEntry->number(g_AllData->getCameraPixelSize(0)));
+    textEntry->clear();
+    ui->lePixelSizeY->setText(textEntry->number(g_AllData->getCameraPixelSize(1)));
+    textEntry->clear();
+    ui->leFrameSizeX->setText(textEntry->number(g_AllData->getCameraChipPixels(0)));
+    textEntry->clear();
+    ui->leFrameSizeY->setText(textEntry->number(g_AllData->getCameraChipPixels(1)));
+    textEntry->clear();
     // take settings from the pref-file, except for the stepper speed, which is
     // calculated from  gear parameters
 
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
-    camera_client->getCCDParameters();
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection);
+    connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection);
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
@@ -184,6 +193,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed()));
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection()));
     connect(ui->pbLX200Active, SIGNAL(clicked()), this, SLOT(switchToLX200()));
+    connect(ui->pbGetCCDParams, SIGNAL(clicked()), this, SLOT(getCCDParameters()));
+    connect(ui->pbStoreCCDParams, SIGNAL(clicked()), this, SLOT(storeCCDData()));
+    connect(ui->pbStartINDIServer, SIGNAL(clicked()), this, SLOT(deployINDICommand()));
     connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop()));
@@ -406,7 +418,7 @@ void MainWindow::setMaxStepperCurrentDecl(void)
 //------------------------------------------------------------------
 void MainWindow::setINDISAddrAndPort(void)
 {
-    QString saddr;
+    QString saddr,letxt;
     int sport;
     bool isServerUp = 0;
 
@@ -417,6 +429,7 @@ void MainWindow::setINDISAddrAndPort(void)
     // set a global flag on the server state
     if (isServerUp== true) {
         ui->pbExpose->setEnabled(true);
+        ui->pbGetCCDParams->setEnabled(true);
     }
 }
 //------------------------------------------------------------------
@@ -427,7 +440,59 @@ void MainWindow::takeSingleCamShot(void)
    exptime = (ui->sbExposureTime->value());
    camera_client->takeExposure(exptime);
 }
+
 //------------------------------------------------------------------
+
+void MainWindow::handleServerMessage(void) {
+    QString *indiMesg;
+
+    indiMesg=new QString(camera_client->getINDIServerMessage()->toLatin1());
+    if (indiMesg->isEmpty()==false) {
+        ui->textEditINDIMsgs->insertPlainText(indiMesg->toLatin1());
+        ui->textEditINDIMsgs->insertPlainText("\n");
+    }
+    delete indiMesg;
+}
+
+//------------------------------------------------------------------
+
+void MainWindow::deployINDICommand(void) {
+    int retval;
+
+    if (ui->rbQHYINDI->isChecked()== true) {
+        retval = system("indiserver -v -m 100 indi_qhy_ccd &");
+    }
+    ui->pbStartINDIServer->setEnabled(false);
+}
+
+//------------------------------------------------------------------
+
+ bool MainWindow::getCCDParameters(void) {
+    bool retrievalSuccess;
+    QString letxt;
+    float psx,psy;
+    int fsx,fsy;
+
+    retrievalSuccess = camera_client->getCCDParameters();
+    if (retrievalSuccess==1) {
+        psx=g_AllData->getCameraPixelSize(0);
+        psy=g_AllData->getCameraPixelSize(1);
+        fsx=(int)g_AllData->getCameraChipPixels(0);
+        fsy=(int)g_AllData->getCameraChipPixels(1);
+        letxt=QString::number((double)psx,'g',2);
+        ui->lePixelSizeX->setText(letxt);
+        letxt=QString::number((double)psy,'g',2);
+        ui->lePixelSizeY->setText(letxt);
+        letxt=QString::number(fsx);
+        ui->leFrameSizeX->setText(letxt);
+        letxt=QString::number(fsy);
+        ui->leFrameSizeY->setText(letxt);
+    }
+    return retrievalSuccess;
+}
+
+//------------------------------------------------------------------
+
 void MainWindow::updateCameraImage(void)
 {
     camImg=camera_client->getScaledPixmapFromCamera();
@@ -540,6 +605,29 @@ void MainWindow::LXsyncMount(void)
     lestr = QString::number(this->decl, 'g', 8);
     ui->lineEditDecl->setText(lestr);
     this->MountWasSynced = true;
+}
+
+//------------------------------------------------------------------
+void MainWindow::storeCCDData(void)
+{
+    float psx,psy;
+    int ccdw, ccdh;
+    QString *leEntry;
+
+    leEntry = new QString(ui->lePixelSizeX->text());
+    psx=leEntry->toFloat();
+    leEntry->clear();
+    leEntry->append(ui->lePixelSizeY->text());
+    psy=leEntry->toFloat();
+    leEntry->clear();
+    leEntry->append(ui->leFrameSizeX->text());
+    ccdw=leEntry->toInt();
+    leEntry->clear();
+    leEntry->append(ui->leFrameSizeY->text());
+    ccdh=leEntry->toInt();
+    delete leEntry;
+    g_AllData->setCameraParameters(psx,psy,ccdw,ccdh);
+    g_AllData->storeGlobalData();
 }
 
 //------------------------------------------------------------------

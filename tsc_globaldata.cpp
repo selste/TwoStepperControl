@@ -12,8 +12,8 @@ TSC_GlobalData::TSC_GlobalData() {
     cameraDisplaySize.width=425;
     cameraDisplaySize.height=340;
     cameraDisplaySize.scalingFactor=1;
-    cameraParameters.pixelSizeMicronsX=5.4;
-    cameraParameters.pixelSizeMicronsY=5.4;
+    cameraParameters.pixelSizeMicronsX=5.2;
+    cameraParameters.pixelSizeMicronsY=5.2;
     cameraParameters.chipWidth=1280;
     cameraParameters.chipHeight=1024;
     this->monotonicGlobalTimer=new QElapsedTimer();
@@ -151,7 +151,6 @@ void TSC_GlobalData::setCameraParameters(float psmx, float psmy, int cw, int ch)
     this->cameraParameters.pixelSizeMicronsY=psmy;
     this->cameraParameters.chipWidth=cw;
     this->cameraParameters.chipHeight=ch;
-    qDebug() << "Camera Parameters set...";
 }
 
 //-----------------------------------------------
@@ -432,6 +431,22 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Maximum Current in A for Declination Drive.\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr = std::to_string(this->cameraParameters.pixelSizeMicronsX);
+    ostr.append("// Pixelsize x for guiding camera.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->cameraParameters.pixelSizeMicronsY);
+    ostr.append("// Pixelsize y for guiding camera.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->cameraParameters.chipWidth);
+    ostr.append("// Chip width x for guiding camera.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->cameraParameters.chipHeight);
+    ostr.append("// Chip width y for guiding camera.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -453,58 +468,74 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
     std::istringstream isDeclID(line);
     isDeclID >> this->driveData.DeclControllerID;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream ispRatRA(line);
     ispRatRA >> this->gearData.planetaryRatioRA;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isgRatRA(line);
     isgRatRA >> this->gearData.gearRatioRA;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isWSRA(line);
     isWSRA >> this->gearData.wormSizeRA;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isSSRA(line);
     isSSRA >> this->gearData.stepSizeRA;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream ispRatDecl(line);
     ispRatDecl >> this->gearData.planetaryRatioDecl;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isgRatDecl(line);
     isgRatDecl>> this->gearData.gearRatioDecl;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isWSDecl(line);
     isWSDecl >> this->gearData.wormSizeDecl;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isSSDecl(line);
     isSSDecl >> this->gearData.stepSizeDecl;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isms(line);
     isms >> this->gearData.microsteps;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isdara(line);
     isdara >> this->driveData.driveAccRA;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream isdadec(line);
     isdadec >> this->driveData.driveAccDecl;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream iscra(line);
     iscra >> this->driveData.driveCurrRA;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
     std::istringstream iscdec(line);
     iscdec >> this->driveData.driveCurrDecl;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream iscpixsx(line);
+    iscpixsx >> this->cameraParameters.pixelSizeMicronsX;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream iscpixsy(line);
+    iscpixsy >> this->cameraParameters.pixelSizeMicronsY;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream iscframex(line);
+    iscframex >> this->cameraParameters.chipWidth;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream iscframey(line);
+    iscframey >> this->cameraParameters.chipHeight;
     infile.close(); // close the reading file for preference
     return true;
 }

@@ -5,7 +5,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QVector>
-#include <QObject>
+#include <QObject>*
 
 class alccd5_client:public QObject, public INDI::BaseClient {
     Q_OBJECT
@@ -15,8 +15,9 @@ class alccd5_client:public QObject, public INDI::BaseClient {
     void takeExposure(int);
     bool setINDIServer(QString, int);
     QPixmap* getScaledPixmapFromCamera(void);
+    QString* getINDIServerMessage(void);
     void sayGoodbyeToINDIServer(void);
-    void getCCDParameters(void);
+    bool getCCDParameters(void);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);
@@ -33,13 +34,20 @@ protected:
     virtual void serverDisconnected(int exit_code) {}
 
 private:
-   INDI::BaseDevice * alccd5;
+   INDI::BaseDevice *alccd5;
+   double pixSizeX;
+   double pixSizeY;
+   double frameSizeX;
+   double frameSizeY;
+   double bitsPerPixel;
    QImage* fitsqimage;
    QPixmap* displayPMap;
    bool newCameraImageAvailable;  
    QVector<QRgb> *myVec;
+   QString *serverMessage;
+   INumberVectorProperty *ccd_exposure = NULL;
 
 signals:
    void imageAvailable(void);
-
+   void messageFromINDIAvailable(void);
 };

@@ -5,6 +5,7 @@
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QListWidgetItem>
 #include <QElapsedTimer>
+#include <stdlib.h>
 #include "qstepperphidgetsRA.h"
 #include "qstepperphidgetsDecl.h"
 #include "alccd5_client.h"
@@ -71,6 +72,10 @@ private slots:
     void LXslewMount(void);
     void displayGuideCamImage(void);
     void emergencyStop(void);
+    bool getCCDParameters(void);
+    void storeCCDData(void);
+    void handleServerMessage(void);
+    void deployINDICommand(void);
 
 private:
     struct mountMotionStruct {

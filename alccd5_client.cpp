@@ -34,21 +34,24 @@ extern TSC_GlobalData *g_AllData;
 alccd5_client::alccd5_client() {
     QRgb cval;
 
-    alccd5 = NULL;
-    fitsqimage = NULL;
-    displayPMap = new QPixmap();
-    newCameraImageAvailable = false;
-
-    myVec =new QVector<QRgb>(256);
+    this->alccd5 = NULL;
+    this->fitsqimage = NULL;
+    this->displayPMap = new QPixmap();
+    this->serverMessage= new QString();
+    this->myVec =new QVector<QRgb>(256);
     for(int i=0;i<256;i++) {
         cval = qRgb(i,i,i);
-        myVec->insert(i, cval);
+        this->myVec->insert(i, cval);
     }
     // setting colortable for grayscale QImages
 }
 
 //------------------------------------------
 alccd5_client::~alccd5_client() {
+    delete fitsqimage;
+    delete displayPMap;
+    delete myVec;
+    delete serverMessage;
 }
 
 //------------------------------------------
@@ -66,7 +69,7 @@ bool alccd5_client::setINDIServer(QString addr, int port) {
 
 //------------------------------------------
 void alccd5_client::takeExposure(int expTime) {
-    INumberVectorProperty *ccd_exposure = NULL;
+    float fexpt;
 
     if (alccd5->isConnected()) {
         ccd_exposure = alccd5->getNumber("CCD_EXPOSURE");
@@ -74,10 +77,12 @@ void alccd5_client::takeExposure(int expTime) {
             qDebug() << "Error: unable to find CCD_EXPOSURE property...";
             return;
         }
-        newCameraImageAvailable = false;
-        // set flag to false as acquisition is under way
-        ccd_exposure->np[0].value = expTime;
-        sendNewNumber(ccd_exposure);
+        usleep(50);
+        fexpt=(float)expTime;
+        ccd_exposure->np[0].value = fexpt;
+        if ((fexpt > 0.001) && (fexpt < 3600)) {
+            sendNewNumber(ccd_exposure);
+        }
     } else {
         qDebug() << "Cam not connected...";
     }
@@ -87,8 +92,17 @@ void alccd5_client::takeExposure(int expTime) {
 void alccd5_client::newDevice(INDI::BaseDevice *dp) {
     if (!strcmp(dp->getDeviceName(), MYCCD)) {
         qDebug() << "Receiving Device:" << dp->getDeviceName();
+        this->serverMessage->clear();
+        this->serverMessage->append(dp->getDeviceName());
+        emit messageFromINDIAvailable();
     }
     alccd5 = dp;
+}
+
+//------------------------------------------
+
+QString* alccd5_client::getINDIServerMessage(void) {
+    return serverMessage;
 }
 
 //------------------------------------------
@@ -100,23 +114,42 @@ void alccd5_client::newProperty(INDI::Property *property) {
 }
 
 //------------------------------------------
-void alccd5_client::newNumber(INumberVectorProperty *nvp) {
-}
+void alccd5_client::newNumber(INumberVectorProperty *nvp) { }
 
 //------------------------------------------
 void alccd5_client::newMessage(INDI::BaseDevice *dp, int messageID) {
-     if (strcmp(dp->getDeviceName(), MYCCD))
+     if (strcmp(dp->getDeviceName(), MYCCD)) {
          return;
+     }
      qDebug() << "Receiving message from Server: " << dp->messageQueue(messageID).c_str();
+     this->serverMessage->clear();
+     this->serverMessage->append(dp->messageQueue(messageID).c_str());
+     emit messageFromINDIAvailable();
 }
 
 //------------------------------------------
 
-void alccd5_client::getCCDParameters(void) {
+bool alccd5_client::getCCDParameters(void) {
+    INumberVectorProperty *ccd_params;
 
-    g_AllData->setCameraParameters(5.4,5.4,1280,1024);
-    qDebug() << "Trying to set Camera Parameters...";
-    // setting pixelsize and chipsize as the camera is now connected
+    qDebug() << "Retrieving camera data";
+    if (alccd5->isConnected()) {
+        ccd_params = alccd5->getNumber("CCD_INFO");
+        if (ccd_params == NULL)     {
+            qDebug() << "Error: unable to find CCD_INFO property...";
+            return 0;
+        }
+            this->pixSizeX = IUFindNumber(ccd_params,"CCD_PIXEL_SIZE_X")->value;
+            this->pixSizeY = IUFindNumber(ccd_params,"CCD_PIXEL_SIZE_Y")->value;
+            this->frameSizeX = IUFindNumber(ccd_params,"CCD_MAX_X")->value;
+            this->frameSizeY = IUFindNumber(ccd_params,"CCD_MAX_Y")->value;
+            this->bitsPerPixel = IUFindNumber(ccd_params, "CCD_BITSPERPIXEL")->value;
+    } else {
+        qDebug() << "Cam not connected...";
+        return 0;
+    }
+    g_AllData->setCameraParameters(this->pixSizeX,this->pixSizeY,this->frameSizeX,this->frameSizeY);
+    return 1;
 }
 
 //------------------------------------------
