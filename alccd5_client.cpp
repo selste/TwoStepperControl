@@ -63,7 +63,9 @@ bool alccd5_client::setINDIServer(QString addr, int port) {
     this->setServer(c_str2, port);
     this->watchDevice(MYCCD);
     serverconnected= this->connectServer();
-    this->setBLOBMode(B_ALSO, MYCCD, NULL);
+    if (serverconnected==true) {
+        this->setBLOBMode(B_ALSO, MYCCD, NULL);
+    }
     return serverconnected;
 }
 
@@ -77,7 +79,7 @@ void alccd5_client::takeExposure(int expTime) {
             qDebug() << "Error: unable to find CCD_EXPOSURE property...";
             return;
         }
-        usleep(50);
+        usleep(20);
         fexpt=(float)expTime;
         ccd_exposure->np[0].value = fexpt;
         if ((fexpt > 0.001) && (fexpt < 3600)) {

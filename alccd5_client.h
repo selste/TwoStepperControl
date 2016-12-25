@@ -5,7 +5,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QVector>
-#include <QObject>*
+#include <QObject>
 
 class alccd5_client:public QObject, public INDI::BaseClient {
     Q_OBJECT

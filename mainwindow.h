@@ -25,11 +25,6 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    void emergencyShutdown(short);
-    void setControlsForRATravel(bool);
-    void setControlsForDeclTravel(bool);
-    void setControlsForGoto(bool);
-    void terminateAllMotion(void);
 
 private slots:
     void updateReadings(void);
@@ -76,6 +71,11 @@ private slots:
     void storeCCDData(void);
     void handleServerMessage(void);
     void deployINDICommand(void);
+    void declPGPlus(void);
+    void declPGMinus(void);
+    void raPGFwd(void);
+    void raPGBwd(void);
+
 
 private:
     struct mountMotionStruct {
@@ -114,6 +114,14 @@ private:
     QPixmap *camImg;
     currentObjectCatalog *objCatalog;
     void updateCameraImage(void);
+    void declinationPulseGuide(long, short);
+    void raPulseGuide(long, short);
+    void emergencyShutdown(short);
+    void setControlsForRATravel(bool);
+    void setControlsForRATracking(bool);
+    void setControlsForDeclTravel(bool);
+    void setControlsForGoto(bool);
+    void terminateAllMotion(void);
     QDisplay2D *camView;
     float ra; // right ascension of a current object
     float decl;// declination of a current object

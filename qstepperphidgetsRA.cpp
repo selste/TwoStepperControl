@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <QDebug>
+#include <QElapsedTimer>
 
 extern TSC_GlobalData *g_AllData;
 
@@ -110,7 +111,6 @@ bool QStepperPhidgetsRA::travelForNSteps(long steps,short direction, int factor)
             (g_AllData->getGearData(2))*
             (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-    usleep(100);
     return true;
 }
 

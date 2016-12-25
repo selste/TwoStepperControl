@@ -200,6 +200,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop4, SIGNAL(clicked()), this, SLOT(emergencyStop()));
+    connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus()));
+    connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus()));
+    connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd()));
+    connect(ui->pbPGRAMinus, SIGNAL(clicked()), this, SLOT(raPGBwd()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -317,7 +321,7 @@ void MainWindow::updateReadings()
 //------------------------------------------------------------------
 void MainWindow::startRATracking(void) {
 
-    this->setControlsForRATravel(false);
+    this->setControlsForRATracking(false);
     ui->rbCorrSpeed->setEnabled(true);
     ui->rbMoveSpeed->setEnabled(true);
     if (ui->rbMoveSpeed->isChecked()==false) {
@@ -333,7 +337,7 @@ void MainWindow::startRATracking(void) {
 //------------------------------------------------------------------
 void MainWindow::stopRATracking(void) {
 
-    this->setControlsForRATravel(true);
+    this->setControlsForRATracking(true);
     ui->pbStartTracking->setEnabled(1);
     ui->pbStopTracking->setEnabled(0);
     this->StepperDriveRA->stopDrive();
@@ -418,7 +422,7 @@ void MainWindow::setMaxStepperCurrentDecl(void)
 //------------------------------------------------------------------
 void MainWindow::setINDISAddrAndPort(void)
 {
-    QString saddr,letxt;
+    QString saddr;
     int sport;
     bool isServerUp = 0;
 
@@ -429,7 +433,11 @@ void MainWindow::setINDISAddrAndPort(void)
     // set a global flag on the server state
     if (isServerUp== true) {
         ui->pbExpose->setEnabled(true);
+        ui->cbIndiIsUp->setChecked(true);
         ui->pbGetCCDParams->setEnabled(true);
+        ui->pbCCDTakeDarks->setEnabled(true);
+        ui->pbCCDTakeFlats->setEnabled(true);
+        ui->pbTrainAxes->setEnabled(true);
     }
 }
 //------------------------------------------------------------------
@@ -690,6 +698,10 @@ void MainWindow::declinationMoveHandboxUp(void)
 
     if (this->mountMotion.DeclDriveIsMoving==false){
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        ui->pbPGRAMinus->setEnabled(false);
+        ui->pbPGRAPlus->setEnabled(false);
         ui->pbDeclDown->setEnabled(0);
         this->setControlsForDeclTravel(false);
         this->mountMotion.DeclDriveIsMoving=true;
@@ -713,6 +725,10 @@ void MainWindow::declinationMoveHandboxUp(void)
         }
         ui->pbDeclDown->setEnabled(1);
         this->setControlsForDeclTravel(true);
+        ui->pbPGDecMinus->setEnabled(true);
+        ui->pbPGDecPlus->setEnabled(true);
+        ui->pbPGRAMinus->setEnabled(true);
+        ui->pbPGRAPlus->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         } else {
@@ -720,12 +736,83 @@ void MainWindow::declinationMoveHandboxUp(void)
         }
     }
 }
+
 //--------------------------------------------------------------
+void MainWindow::declPGPlus(void) {
+    long duration;
+
+    duration = ui->sbPulseGuideDuration->value();
+    declinationPulseGuide(duration, 1);
+}
+
+//--------------------------------------------------------------
+void MainWindow::declPGMinus(void) {
+    long duration;
+
+    duration = ui->sbPulseGuideDuration->value();
+    declinationPulseGuide(duration, -1);
+}
+//--------------------------------------------------------------
+void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) {
+    long steps;
+    double declSpeed;
+
+    this->setControlsForDeclTravel(false);
+    ui->pbDeclDown->setEnabled(false);
+    ui->pbDeclUp->setEnabled(false);
+    ui->pbRAMinus->setEnabled(false);
+    ui->pbRAPlus->setEnabled(false);
+    if (this->mountMotion.DeclDriveIsMoving==true){
+        this->mountMotion.DeclDriveIsMoving=false;
+        this->StepperDriveDecl->stopDrive();
+        while (!futureStepperBehaviourDecl.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+    } // if the decl drive was moving, it is now set to stop
+    this->setCorrectionSpeed();
+    ui->rbCorrSpeed->setChecked(true); // switch to correction speed
+    declSpeed = 0.0041780746*
+            (g_AllData->getGearData(4))*
+            (g_AllData->getGearData(5))*
+            (g_AllData->getGearData(6))*
+            (g_AllData->getGearData(8))/(g_AllData->getGearData(7));
+    if (direction < 0) {
+        direction = -1;
+    } else {
+        direction = 1;
+    }
+    steps = direction*declSpeed*(pulseDurationInMS/1000.0);
+    this->mountMotion.DeclDriveDirection=direction;
+    this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
+    this->mountMotion.DeclDriveIsMoving=true;
+    futureStepperBehaviourDecl =
+            QtConcurrent::run(this->StepperDriveDecl,
+            &QStepperPhidgetsDecl::travelForNSteps,steps,
+                              this->mountMotion.DeclDriveDirection,
+                              this->mountMotion.DeclSpeedFactor);
+    while (!futureStepperBehaviourDecl.isFinished()) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    }
+    this->mountMotion.DeclDriveIsMoving=false;
+    this->setControlsForDeclTravel(true);
+    ui->pbDeclDown->setEnabled(true);
+    ui->pbDeclUp->setEnabled(true);
+    ui->pbRAMinus->setEnabled(true);
+    ui->pbRAPlus->setEnabled(true);
+}
+
+//--------------------------------------------------------------
+
 void MainWindow::declinationMoveHandboxDown(void)
 {
     long maxDeclSteps;
 
+
     if (this->mountMotion.DeclDriveIsMoving==false){
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        ui->pbPGRAMinus->setEnabled(false);
+        ui->pbPGRAPlus->setEnabled(false);
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbDeclUp->setEnabled(0);
         this->setControlsForDeclTravel(false);
@@ -748,6 +835,10 @@ void MainWindow::declinationMoveHandboxDown(void)
         while (!futureStepperBehaviourDecl.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
+        ui->pbPGDecMinus->setEnabled(true);
+        ui->pbPGDecPlus->setEnabled(true);
+        ui->pbPGRAMinus->setEnabled(true);
+        ui->pbPGRAPlus->setEnabled(true);
         ui->pbDeclUp->setEnabled(1);
         this->setControlsForDeclTravel(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -756,6 +847,7 @@ void MainWindow::declinationMoveHandboxDown(void)
             ui->sbMoveSpeed->setEnabled(false);
         }
     }
+
 }
 //--------------------------------------------------------------
 
@@ -770,10 +862,13 @@ void MainWindow::RAMoveHandboxFwd(void)
     ui->rbCorrSpeed->setEnabled(false);
     ui->rbMoveSpeed->setEnabled(false);
     ui->sbMoveSpeed->setEnabled(false);
+    ui->pbPGRAMinus->setEnabled(false);
+    ui->pbPGRAPlus->setEnabled(false);
+    ui->pbPGDecMinus->setEnabled(false);
+    ui->pbPGDecPlus->setEnabled(false);
     if (this->mountMotion.RADriveIsMoving ==false){
         this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbRAMinus->setEnabled(0);
-        //this->StepperDriveRA->setStopped(1);
         ui->pbStartTracking->setEnabled(0);
         ui->pbStopTracking->setEnabled(0);
         this->setControlsForRATravel(false);
@@ -798,13 +893,17 @@ void MainWindow::RAMoveHandboxFwd(void)
         while (!futureStepperBehaviourRA.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
-        this->startRATracking();
-        ui->pbRAMinus->setEnabled(1);
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
         }
+        this->startRATracking();
+        ui->pbRAMinus->setEnabled(1);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
+        ui->pbPGRAMinus->setEnabled(true);
+        ui->pbPGRAPlus->setEnabled(true);
+        ui->pbPGDecMinus->setEnabled(true);
+        ui->pbPGDecPlus->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         }
@@ -824,10 +923,13 @@ void MainWindow::RAMoveHandboxBwd(void)
     ui->rbCorrSpeed->setEnabled(false);
     ui->rbMoveSpeed->setEnabled(false);
     ui->sbMoveSpeed->setEnabled(false);
+    ui->pbPGRAMinus->setEnabled(false);
+    ui->pbPGRAPlus->setEnabled(false);
+    ui->pbPGDecMinus->setEnabled(false);
+    ui->pbPGDecPlus->setEnabled(false);
     if (this->mountMotion.RADriveIsMoving ==false){
         this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbRAPlus->setEnabled(0);
-        //this->StepperDriveRA->setStopped(1);
         setControlsForRATravel(false);
         ui->pbStartTracking->setEnabled(0);
         ui->pbStopTracking->setEnabled(0);
@@ -852,19 +954,106 @@ void MainWindow::RAMoveHandboxBwd(void)
         while (!futureStepperBehaviourRA.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
-        this->startRATracking();
-        ui->pbRAPlus->setEnabled(1);
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
         }
+        this->startRATracking();
+        ui->pbRAPlus->setEnabled(1);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
+        ui->pbPGRAMinus->setEnabled(true);
+        ui->pbPGRAPlus->setEnabled(true);
+        ui->pbPGDecMinus->setEnabled(true);
+        ui->pbPGDecPlus->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         }
     }
 }
+//---------------------------------------------------------------------
 
+void MainWindow::raPGFwd(void) {
+    long duration;
+
+    duration = ui->sbPulseGuideDuration->value();
+    raPulseGuide(duration,1);
+}
+
+//---------------------------------------------------------------------
+
+void MainWindow::raPGBwd(void) {
+    long duration;
+
+    duration = ui->sbPulseGuideDuration->value();
+    raPulseGuide(duration,-1);
+}
+//---------------------------------------------------------------------
+
+void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) {
+    long steps;
+    double raSpeed,pgFactor;
+    QElapsedTimer *localTimer;
+
+    if (this->mountMotion.RATrackingIsOn) {
+        this->stopRATracking();
+    }
+    if (this->mountMotion.RADriveIsMoving==true){
+        this->mountMotion.RADriveIsMoving=false;
+        this->StepperDriveRA->stopDrive();
+        while (!futureStepperBehaviourDecl.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+    }
+    this->setControlsForRATravel(false);
+    ui->pbStartTracking->setEnabled(0);
+    ui->pbStopTracking->setEnabled(0);
+    ui->pbRAMinus->setEnabled(0);
+    ui->pbRAPlus->setEnabled(0); // if the RA drive was moving, it is now set to stop
+    ui->pbDeclDown->setEnabled(0);
+    ui->pbDeclUp->setEnabled(0);
+    this->setCorrectionSpeed();
+    ui->rbCorrSpeed->setChecked(true); // switch to correction speed
+    if (direction < 0) {
+        direction = -1;
+         pgFactor=this->mountMotion.RASpeedFactor-1;
+    } else {
+        direction = 1;
+        pgFactor=this->mountMotion.RASpeedFactor+1;
+    }
+    if (direction == 1) {
+        this->mountMotion.RADriveDirection=direction;
+        raSpeed=0.0041780746*
+                (g_AllData->getGearData(0))*
+                (g_AllData->getGearData(1))*
+                (g_AllData->getGearData(2))*
+                (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
+        steps = direction*pgFactor*raSpeed*(pulseDurationInMS/1000.0);
+        this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
+        this->mountMotion.RADriveIsMoving=true;
+        this->futureStepperBehaviourRA =
+                QtConcurrent::run(this->StepperDriveRA,
+                &QStepperPhidgetsRA::travelForNSteps,steps,
+                                this->mountMotion.RADriveDirection,pgFactor);
+        while (!futureStepperBehaviourRA.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+    } else {
+        localTimer = new QElapsedTimer();
+        localTimer->start();
+        while (localTimer->elapsed() < pulseDurationInMS) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            // that one is easy - just stop the drive for a given amount of time
+        }
+        delete localTimer;
+    }
+    this->mountMotion.RADriveIsMoving=false;
+    ui->pbRAMinus->setEnabled(1);
+    ui->pbRAPlus->setEnabled(1);
+    ui->pbDeclDown->setEnabled(1);
+    ui->pbDeclUp->setEnabled(1);
+    this->setControlsForRATravel(true);
+    this->startRATracking();
+}
 //---------------------------------------------------------------------
 
 void MainWindow::LXmoveEast(void) {
@@ -960,6 +1149,20 @@ void MainWindow::LXstopMoveSouth(void) {
 }
 
 //---------------------------------------------------------------------
+
+void MainWindow::setControlsForRATracking(bool isEnabled)
+{
+    ui->leAMaxRA->setEnabled(isEnabled);
+    ui->leCurrMaxRA->setEnabled(isEnabled);
+    ui->leRAPlanetary->setEnabled(isEnabled);
+    ui->leRAGear->setEnabled(isEnabled);
+    ui->leRAWorm->setEnabled(isEnabled);
+    ui->leRAStepsize->setEnabled(isEnabled);
+    ui->leMicrosteps->setEnabled(isEnabled);
+    ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
+}
+
+//---------------------------------------------------------------------
    
 void MainWindow::setControlsForRATravel(bool isEnabled)
 {
@@ -971,6 +1174,9 @@ void MainWindow::setControlsForRATravel(bool isEnabled)
     ui->leRAStepsize->setEnabled(isEnabled);
     ui->leMicrosteps->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
+    ui->pbPGRAMinus->setEnabled(isEnabled);
+    ui->pbPGRAPlus->setEnabled(isEnabled);
+    ui->catTab->setEnabled(isEnabled);
 }
 
 //---------------------------------------------------------------------
@@ -987,6 +1193,9 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled)
     ui->leDeclWorm->setEnabled(isEnabled);
     ui->leDeclStepSize->setEnabled(isEnabled);
     ui->leMicrosteps->setEnabled(isEnabled);
+    ui->pbPGDecMinus->setEnabled(isEnabled);
+    ui->pbPGDecPlus->setEnabled(isEnabled);
+    ui->catTab->setEnabled(isEnabled);
 }
 
 //---------------------------------------------------------------------
@@ -1075,6 +1284,10 @@ void MainWindow::setControlsForGoto(bool isEnabled)
     ui->pbStoreDrive->setEnabled(isEnabled);
     ui->pbStoreGears->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
+    ui->pbPGDecMinus->setEnabled(isEnabled);
+    ui->pbPGDecPlus->setEnabled(isEnabled);
+    ui->pbPGRAMinus->setEnabled(isEnabled);
+    ui->pbPGRAPlus->setEnabled(isEnabled);
 }
 
 //---------------------------------------------------------------------

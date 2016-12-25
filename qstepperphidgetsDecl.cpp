@@ -86,11 +86,11 @@ bool QStepperPhidgetsDecl::travelForNSteps(long steps,short direction, int facto
             (g_AllData->getGearData(6))*
             (g_AllData->getGearData(8))/(g_AllData->getGearData(7));
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-    usleep(100);
     return true;
 }
 
 //-----------------------------------------------------------------------------
+
 int QStepperPhidgetsDecl::retrievePhidgetStepperData(int what) {
     int retval;
 
