@@ -22,11 +22,14 @@ public:
 private:
     QSerialPort rs232port;
     QString *replyStrLX;
+    QString *incomingCommand;
     bool portIsUp;
     QByteArray *serialData;
     double receivedRAFromLX;
     double receivedDeclFromLX;
     bool handleBasicLX200Protocol(QString);
+    bool gotRACoordinates;
+    bool gotDeclCoordinates;
     void assembleDeclinationString(void);
     void assembleRAString(void);
     struct LX200CommandStruct {

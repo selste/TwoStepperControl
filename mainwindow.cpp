@@ -603,6 +603,7 @@ void MainWindow::LXsyncMount(void)
 
     this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
     this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
     qDebug() << "LX Sync with" << this->ra << "and" << this->decl;
     g_AllData->setSyncPosition(this->ra, this->decl);
     // convey right ascension and declination to the global parameters;
@@ -613,6 +614,7 @@ void MainWindow::LXsyncMount(void)
     lestr = QString::number(this->decl, 'g', 8);
     ui->lineEditDecl->setText(lestr);
     this->MountWasSynced = true;
+
 }
 
 //------------------------------------------------------------------
@@ -806,7 +808,6 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) 
 void MainWindow::declinationMoveHandboxDown(void)
 {
     long maxDeclSteps;
-
 
     if (this->mountMotion.DeclDriveIsMoving==false){
         ui->pbPGDecMinus->setEnabled(false);
@@ -1213,7 +1214,7 @@ void MainWindow::LXslowSpeed(void)
 {
     ui->rbCorrSpeed->setChecked(true);
     this->setCorrectionSpeed();
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+
 }
 
 //---------------------------------------------------------------------
@@ -1222,7 +1223,6 @@ void MainWindow::LXhiSpeed(void)
 {
     ui->rbMoveSpeed->setChecked(true);
     this->setMoveSpeed();
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
 }
 
 //---------------------------------------------------------------------
@@ -1379,10 +1379,11 @@ void MainWindow::LXslewMount(void) {
 
     if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
         if (this->MountWasSynced == true) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
             this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
             lestr = QString::number(this->ra, 'g', 8);
-            ui->lineEditRA->setText(lestr);
+            ui->lineEditRA->setText(lestr);           
             lestr = QString::number(this->decl, 'g', 8);
             ui->lineEditDecl->setText(lestr);
             qDebug() << "LX Slew to" << this->ra << "and" << this->decl;
@@ -1574,7 +1575,7 @@ void MainWindow::startGoToObject(void)
     ui->pbGoTo->setEnabled(true);
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
-    this->setControlsForRATravel(false);
+    this->setControlsForRATravel(true);
     return;
 }
 

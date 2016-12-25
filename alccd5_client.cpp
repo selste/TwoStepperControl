@@ -72,6 +72,7 @@ bool alccd5_client::setINDIServer(QString addr, int port) {
 //------------------------------------------
 void alccd5_client::takeExposure(int expTime) {
     float fexpt;
+    QElapsedTimer *localTimer;
 
     if (alccd5->isConnected()) {
         ccd_exposure = alccd5->getNumber("CCD_EXPOSURE");
@@ -79,9 +80,18 @@ void alccd5_client::takeExposure(int expTime) {
             qDebug() << "Error: unable to find CCD_EXPOSURE property...";
             return;
         }
-        usleep(20);
+        localTimer = new QElapsedTimer();
+        localTimer->start();
         fexpt=(float)expTime;
+        while (localTimer->elapsed() < 100) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        localTimer->restart();
         ccd_exposure->np[0].value = fexpt;
+        while (localTimer->elapsed() < 100) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        delete localTimer;
         if ((fexpt > 0.001) && (fexpt < 3600)) {
             sendNewNumber(ccd_exposure);
         }
