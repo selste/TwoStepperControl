@@ -87,7 +87,7 @@ private:
         bool DeclDriveIsMoving; // true when the Decl drive moves
         bool GoToIsActiveInRA; // the flag for hi-speed motion in RA
         bool GoToIsActiveInDecl; // the flag for hi-speed motion in decl
-        bool emeregencyStopTriggered; // a flag that is set when the Emergency Stop button is pressed
+        bool emergencyStopTriggered; // a flag that is set when the Emergency Stop button is pressed
         double DeclDriveDirection;
         double RADriveDirection;
         double RASpeedFactor;

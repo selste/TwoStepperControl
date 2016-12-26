@@ -81,7 +81,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.DeclDriveIsMoving = false;
     this->mountMotion.GoToIsActiveInRA = false;
     this->mountMotion.GoToIsActiveInDecl = false; // setting a few flags on drive states
-    this->mountMotion.emeregencyStopTriggered = false;
+    this->mountMotion.emergencyStopTriggered = false;
     this->lx200IsOn = false;
     this->MountWasSynced = false;
     this->mountMotion.DeclDriveDirection = 1;
@@ -1365,7 +1365,7 @@ void MainWindow::LXstopMotion(void) {
 
 //---------------------------------------------------------------------
 void MainWindow::emergencyStop(void) {
-    this->mountMotion.emeregencyStopTriggered=true;
+    this->mountMotion.emergencyStopTriggered=true;
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive();
     this->mountMotion.RATrackingIsOn = false;
@@ -1537,7 +1537,7 @@ void MainWindow::startGoToObject(void) {
     // determined the estimated duration of the GoTo - Process
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
 
-    // let the games begin...
+ // let the games begin...
     bool RARideIsDone = false;
     elapsedGoToTime->start();
     futureStepperBehaviourRA_GOTO =
@@ -1561,6 +1561,9 @@ void MainWindow::startGoToObject(void) {
     this->mountMotion.GoToIsActiveInDecl=true;
     this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
 
+
+
+
     if (RAtakesLonger == true) {
         while (!futureStepperBehaviourRA_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
@@ -1568,8 +1571,8 @@ void MainWindow::startGoToObject(void) {
                 this->mountMotion.GoToIsActiveInDecl=false;
             }
         }
-        if (this->mountMotion.emeregencyStopTriggered==true) {
-            this->mountMotion.emeregencyStopTriggered=false;
+        if (this->mountMotion.emergencyStopTriggered==true) {
+            this->mountMotion.emergencyStopTriggered=false;
             return;
         }
         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
@@ -1588,8 +1591,8 @@ void MainWindow::startGoToObject(void) {
             }
             if (futureStepperBehaviourRA_GOTO.isFinished()) {
 
-                if (this->mountMotion.emeregencyStopTriggered==true) {
-                    this->mountMotion.emeregencyStopTriggered=false;
+                if (this->mountMotion.emergencyStopTriggered==true) {
+                    this->mountMotion.emergencyStopTriggered=false;
                     return;
                 }
                 if (RARideIsDone==false) {
@@ -1601,8 +1604,8 @@ void MainWindow::startGoToObject(void) {
                 }
             }
         }
-        if (this->mountMotion.emeregencyStopTriggered==true) {
-            this->mountMotion.emeregencyStopTriggered=false;
+        if (this->mountMotion.emergencyStopTriggered==true) {
+            this->mountMotion.emergencyStopTriggered=false;
             return;
         }
         this->mountMotion.GoToIsActiveInDecl=false;
@@ -1618,13 +1621,11 @@ void MainWindow::startGoToObject(void) {
                    convertDegreesToMicrostepsRA;
         futureStepperBehaviourRA_Corr = QtConcurrent::run(this->StepperDriveRA,
                 &QStepperPhidgetsRA::travelForNSteps,corrsteps, 1,10);
-        while (!futureStepperBehaviourDecl.isStarted()) {
-        }
         while (!futureStepperBehaviourRA_Corr.isFinished()) {
            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
         }
-        if (this->mountMotion.emeregencyStopTriggered==true) {
-            this->mountMotion.emeregencyStopTriggered=false;
+        if (this->mountMotion.emergencyStopTriggered==true) {
+            this->mountMotion.emergencyStopTriggered=false;
             return;
         }
     }

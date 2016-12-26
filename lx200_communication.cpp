@@ -129,7 +129,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 }
                 this->serialData->clear();
             }
-   //         qDebug() << "Raw Command:" << incomingCommand->toLatin1();
+            qDebug() << "Raw Command:" << incomingCommand->toLatin1();
             if (((incomingCommand->startsWith("#:")) || (incomingCommand->startsWith(":"))) &&
                     (incomingCommand->endsWith("#"))) {
                 this->handleBasicLX200Protocol(*incomingCommand);
@@ -169,7 +169,11 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             commandToBeSent = 1;
             assembledString->append(QString::number(1));
             lx200cmd->remove(' ');
-            numSubStr = new QString(lx200cmd->right(8));
+            if (sendSimpleCoordinates==false) {
+                numSubStr = new QString(lx200cmd->right(8));
+            } else {
+                numSubStr = new QString(lx200cmd->right(7));
+            }
             qDebug() << "---------------";
             qDebug() << "What I got for RA:" << numSubStr->toLatin1();
             qDebug() << "---------------";
@@ -191,7 +195,11 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             commandToBeSent = 1;
             assembledString->append(QString::number(1));
             lx200cmd->remove(' ');
-            numSubStr = new QString(lx200cmd->right(9));
+            if (sendSimpleCoordinates==false) {
+                numSubStr = new QString(lx200cmd->right(9));
+            } else {
+                numSubStr = new QString(lx200cmd->right(6));
+            }
             qDebug() << "---------------";
             qDebug() << "What I got for Decl:" << numSubStr->toLatin1();
             qDebug() << "---------------";
