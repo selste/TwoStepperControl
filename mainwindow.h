@@ -75,7 +75,10 @@ private slots:
     void declPGMinus(void);
     void raPGFwd(void);
     void raPGBwd(void);
-
+    void logLX200IncomingCmds(void);
+    void logLX200OutgoingCmds(void);
+    void clearLXLog(void);
+    void LXSetNumberFormatToSimple(void);
 
 private:
     struct mountMotionStruct {

@@ -18,10 +18,14 @@ public:
     void shutDownPort(void);
     void openPort(void);
     double getReceivedCoordinates(short); // 0 for RA, 1 for Decl - retrieve data conveyed from LX
+    QString* getLX200Command(void);
+    QString* getLX200Response(void);
+    void setNumberFormat(bool);
 
 private:
     QSerialPort rs232port;
     QString *replyStrLX;
+    QString *assembledString;
     QString *incomingCommand;
     bool portIsUp;
     QByteArray *serialData;
@@ -30,6 +34,7 @@ private:
     bool handleBasicLX200Protocol(QString);
     bool gotRACoordinates;
     bool gotDeclCoordinates;
+    bool sendSimpleCoordinates; // use either ddd.mm or ddd.mm.ss
     void assembleDeclinationString(void);
     void assembleRAString(void);
     struct LX200CommandStruct {
@@ -71,6 +76,8 @@ signals:
     void RS232guideSpeed(void);
     void RS232findSpeed(void);
     void RS232gotoSpeed(void);
+    void RS232CommandReceived(void);
+    void RS232CommandSent(void);
 };
 
 #endif // LX200_COMMUNICATION_H

@@ -80,7 +80,7 @@ void alccd5_client::takeExposure(int expTime) {
             qDebug() << "Error: unable to find CCD_EXPOSURE property...";
             return;
         }
-        localTimer = new QElapsedTimer();
+        localTimer = new QElapsedTimer(); // INDIserver needs a few ms to digest the command ...
         localTimer->start();
         fexpt=(float)expTime;
         while (localTimer->elapsed() < 100) {

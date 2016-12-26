@@ -16,12 +16,14 @@ lx200_communication::lx200_communication(void) {
     rs232port.setStopBits(QSerialPort::OneStop);
     rs232port.setFlowControl(QSerialPort::SoftwareControl);
     replyStrLX = new QString();
+    assembledString = new QString();
     this->serialData = new QByteArray();
     this->incomingCommand = new QString;
     receivedRAFromLX = 0.0;
     receivedDeclFromLX = 0.0;
     gotRACoordinates = false;
     gotDeclCoordinates = false;
+    sendSimpleCoordinates=false; // determine the reponse format as ddd:mm or ddd:mm:ss
     LX200Commands.getDecl = QString(":GD");
     LX200Commands.getRA = QString(":GR");
     LX200Commands.getHiDef = QString(":U");
@@ -47,7 +49,6 @@ lx200_communication::lx200_communication(void) {
 //--------------------------------------------------------
 
 lx200_communication::~lx200_communication(void) {
-    qDebug() << "Entered RS232 Destructor";
     if (portIsUp == 1) {
         rs232port.setBreakEnabled(true);
         rs232port.clear(QSerialPort::AllDirections);
@@ -57,7 +58,7 @@ lx200_communication::~lx200_communication(void) {
     delete replyStrLX;
     delete serialData;
     delete incomingCommand;
-    qDebug() << "Left RS232 Destructor";
+    delete assembledString;
 }
 
 //--------------------------------------------------------
@@ -128,8 +129,11 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 }
                 this->serialData->clear();
             }
-            if ((incomingCommand->startsWith("#:")) && (incomingCommand->endsWith("#"))) {
+   //         qDebug() << "Raw Command:" << incomingCommand->toLatin1();
+            if (((incomingCommand->startsWith("#:")) || (incomingCommand->startsWith(":"))) &&
+                    (incomingCommand->endsWith("#"))) {
                 this->handleBasicLX200Protocol(*incomingCommand);
+                emit this->RS232CommandReceived();
             }
         }
     }
@@ -139,7 +143,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
 //--------------------------------------------------------
 
 bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
-    QString *assembledString, *lx200cmd, *numSubStr;
+    QString *lx200cmd, *numSubStr;
     qint64 bytesWritten;
     bool commandToBeSent = 0;
     QStringList commandList,numericalList;
@@ -147,7 +151,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     double rah,ram,ras,decldeg,declmin,declsec;
 
     lx200cmd = new QString();
-    assembledString = new QString();
     if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
     // if LX200 sends <ACK> -> reply with P for forks, G for german equatorials or A for Alt/Az
         bytesWritten = rs232port.write("P");
@@ -167,12 +170,19 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             assembledString->append(QString::number(1));
             lx200cmd->remove(' ');
             numSubStr = new QString(lx200cmd->right(8));
+            qDebug() << "---------------";
+            qDebug() << "What I got for RA:" << numSubStr->toLatin1();
+            qDebug() << "---------------";
             numericalList=numSubStr->split(':',QString::SkipEmptyParts,Qt::CaseSensitive);
             rah=numericalList[0].toDouble();
             ram=numericalList[1].toDouble();
-            ras=numericalList[2].toDouble();
-            delete numSubStr;
+            if (sendSimpleCoordinates==false) {
+                ras=numericalList[2].toDouble();
+            } else {
+                ras = 0.0;
+            }
             this->receivedRAFromLX =(rah+ram/60.0+ras/3600.0)*15.0;
+            delete numSubStr;        
             gotRACoordinates = true;
             qDebug() << "Coordinates RA:" << this->receivedRAFromLX;
             // got RA coordinates from LX200 ...
@@ -182,13 +192,20 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             assembledString->append(QString::number(1));
             lx200cmd->remove(' ');
             numSubStr = new QString(lx200cmd->right(9));
+            qDebug() << "---------------";
+            qDebug() << "What I got for Decl:" << numSubStr->toLatin1();
+            qDebug() << "---------------";
             decldeg=(numSubStr->left(3)).toDouble();
             numSubStr->clear();
             numSubStr->append(lx200cmd->right(5));
             declmin=(numSubStr->left(2)).toDouble();
-            declsec=(numSubStr->right(2)).toDouble();
-            delete numSubStr;
+            if (sendSimpleCoordinates==false) {
+                declsec=(numSubStr->right(2)).toDouble();
+            } else {
+                declsec = 0.0;
+            }
             this->receivedDeclFromLX =(decldeg+declmin/60.0+declsec/3600.0);
+            delete numSubStr;
             gotDeclCoordinates = true;
             qDebug() << "Coordinates Decl:" << this->receivedDeclFromLX;
             // got Decl coordinates from LX200 ...
@@ -286,12 +303,13 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             // ignore this as we are always sending in high resolution
         }
         if (commandToBeSent == true) {
-   //         qDebug() << "Sending: " << assembledString->toLatin1();
+     //       qDebug() << "Sending: " << assembledString->toLatin1();
+            emit this->RS232CommandSent();
             bytesWritten = rs232port.write((assembledString->toLatin1()));
             rs232port.flush();
         }
     }
-    delete assembledString;
+
     delete lx200cmd;
     return true; // do something here later ...
 }
@@ -328,19 +346,21 @@ void lx200_communication::assembleDeclinationString(void) {
     helper->setNum(abs(declDeg));
     replyStrLX->append(helper);
     helper->clear();
-    replyStrLX->append("*");
+    replyStrLX->append("°");
     if (declMin < 10) {
         replyStrLX->append("0");
     }
     helper->setNum(declMin);
     replyStrLX->append(helper);
     helper->clear();
-    replyStrLX->append(":");
-    if (declSec < 10) {
-        replyStrLX->append("0");
+    if (sendSimpleCoordinates==false) {
+        replyStrLX->append(":");
+        if (declSec < 10) {
+            replyStrLX->append("0");
+        }
+        helper->setNum(declSec);
+        replyStrLX->append(helper);
     }
-    helper->setNum(declSec);
-    replyStrLX->append(helper);
     replyStrLX->append("#");
     delete helper;
 }
@@ -373,14 +393,17 @@ void lx200_communication::assembleRAString(void) {
     helper->setNum(RAMin);
     replyStrLX->append(helper);
     helper->clear();
-    replyStrLX->append(":");
-    if (RASec < 10) {
-        replyStrLX->append("0");
+    if (sendSimpleCoordinates==false) {
+        replyStrLX->append(":");
+        if (RASec < 10) {
+            replyStrLX->append("0");
+        }
+        helper->setNum(RASec);
+        replyStrLX->append(helper);
+        helper->clear();
     }
-    helper->setNum(RASec);
-    replyStrLX->append(helper);
-    helper->clear();
     replyStrLX->append("#");
+    delete helper;
 }
 
 //---------------------------------------------------
@@ -394,4 +417,22 @@ double lx200_communication::getReceivedCoordinates(short what) {
         retval = this->receivedDeclFromLX;
     }
     return retval;
+}
+
+//---------------------------------------------------
+
+QString* lx200_communication::getLX200Command(void) {
+    return this->incomingCommand;
+}
+
+//---------------------------------------------------
+
+QString* lx200_communication::getLX200Response(void) {
+    return this->assembledString;
+}
+
+//---------------------------------------------------
+
+void lx200_communication::setNumberFormat(bool isSimple) {
+    this->sendSimpleCoordinates=isSimple;
 }

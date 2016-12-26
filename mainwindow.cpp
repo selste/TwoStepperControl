@@ -204,6 +204,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus()));
     connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd()));
     connect(ui->pbPGRAMinus, SIGNAL(clicked()), this, SLOT(raPGBwd()));
+    connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -213,6 +214,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     if (this->lx200port->getPortState() == 1) {
         ui->cbRS232Open->setChecked(true);
     }
+    this->LXSetNumberFormatToSimple();
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -228,6 +230,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()));
+    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()));
+    connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple()));
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
@@ -464,6 +469,40 @@ void MainWindow::handleServerMessage(void) {
 
 //------------------------------------------------------------------
 
+void MainWindow::logLX200IncomingCmds(void) {
+    QString* lx200msg;
+
+    if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
+        lx200msg = new QString("Incoming: ");
+        lx200msg->append(this->lx200port->getLX200Command());
+        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
+        ui->teLX200Data->insertPlainText("\n");
+        delete lx200msg;
+    }
+}
+
+//------------------------------------------------------------------
+
+void MainWindow::logLX200OutgoingCmds(void) {
+    QString* lx200msg;
+
+    if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
+        lx200msg = new QString("Outgoing: ");
+        lx200msg->append(this->lx200port->getLX200Response());
+        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
+        ui->teLX200Data->insertPlainText("\n");
+        delete lx200msg;
+    }
+}
+
+//------------------------------------------------------------------
+
+void MainWindow::clearLXLog(void) {
+    ui->teLX200Data->clear();
+}
+
+//------------------------------------------------------------------
+
 void MainWindow::deployINDICommand(void) {
     int retval;
 
@@ -611,8 +650,10 @@ void MainWindow::LXsyncMount(void)
     this->startRATracking();
     lestr = QString::number(this->ra, 'g', 8);
     ui->lineEditRA->setText(lestr);
+    ui->leLX200RA->setText(lestr);
     lestr = QString::number(this->decl, 'g', 8);
     ui->lineEditDecl->setText(lestr);
+    ui->leLX200Decl->setText(lestr);
     this->MountWasSynced = true;
 
 }
@@ -1227,6 +1268,16 @@ void MainWindow::LXhiSpeed(void)
 
 //---------------------------------------------------------------------
 
+void MainWindow::LXSetNumberFormatToSimple(void) {
+    if (ui->cbLXSimpleNumbers->isChecked() == true) {
+        this->lx200port->setNumberFormat(true);
+    } else {
+        this->lx200port->setNumberFormat(false);
+    }
+}
+
+//---------------------------------------------------------------------
+
 void MainWindow::setMoveSpeed(void)
 {
     this->mountMotion.RASpeedFactor = ui->sbMoveSpeed->value();
@@ -1283,7 +1334,7 @@ void MainWindow::setControlsForGoto(bool isEnabled)
     ui->sbMoveSpeed->setEnabled(isEnabled);
     ui->pbStoreDrive->setEnabled(isEnabled);
     ui->pbStoreGears->setEnabled(isEnabled);
-    ui->LX200Tab->setEnabled(isEnabled);
+    ui->pbLX200Active->setEnabled(isEnabled);
     ui->pbPGDecMinus->setEnabled(isEnabled);
     ui->pbPGDecPlus->setEnabled(isEnabled);
     ui->pbPGRAMinus->setEnabled(isEnabled);
@@ -1383,9 +1434,11 @@ void MainWindow::LXslewMount(void) {
             this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
             this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
             lestr = QString::number(this->ra, 'g', 8);
-            ui->lineEditRA->setText(lestr);           
+            ui->lineEditRA->setText(lestr);
+            ui->leLX200RA->setText(lestr);
             lestr = QString::number(this->decl, 'g', 8);
             ui->lineEditDecl->setText(lestr);
+            ui->leLX200Decl->setText(lestr);
             qDebug() << "LX Slew to" << this->ra << "and" << this->decl;
             this->startGoToObject();
         } else {
@@ -1396,8 +1449,7 @@ void MainWindow::LXslewMount(void) {
 
 //---------------------------------------------------------------------
 
-void MainWindow::startGoToObject(void)
-{
+void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
             convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA;
@@ -1525,6 +1577,9 @@ void MainWindow::startGoToObject(void)
         this->startRATracking();
         ui->pbStopTracking->setDisabled(true);
         this->mountMotion.GoToIsActiveInRA=false;
+        qDebug() << "-------------------";
+        qDebug() << "Terminated slew, RA took longer. States:" << this->mountMotion.GoToIsActiveInRA
+                 << this->mountMotion.GoToIsActiveInDecl;
     } else {
         while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
@@ -1532,6 +1587,7 @@ void MainWindow::startGoToObject(void)
                 this->mountMotion.GoToIsActiveInRA=false;
             }
             if (futureStepperBehaviourRA_GOTO.isFinished()) {
+
                 if (this->mountMotion.emeregencyStopTriggered==true) {
                     this->mountMotion.emeregencyStopTriggered=false;
                     return;
@@ -1550,8 +1606,12 @@ void MainWindow::startGoToObject(void)
             return;
         }
         this->mountMotion.GoToIsActiveInDecl=false;
+        qDebug() << "-------------------";
+        qDebug() << "Terminated slew, Decl took longer. States:" << this->mountMotion.GoToIsActiveInRA
+                 << this->mountMotion.GoToIsActiveInDecl;
     }
     usleep(100);
+
     this->stopRATracking();
     if (abs(timeDifference)>100) {
         corrsteps=(0.0041780746*((double)(timeDifference))/1000.0)*
