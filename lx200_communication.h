@@ -7,6 +7,7 @@
 #include <QByteArray>
 #include <QObject>
 #include <QString>
+#include <QCoreApplication>
 
 class lx200_communication:public QObject {
     Q_OBJECT
@@ -20,12 +21,16 @@ public:
     double getReceivedCoordinates(short); // 0 for RA, 1 for Decl - retrieve data conveyed from LX
     QString* getLX200Command(void);
     QString* getLX200Response(void);
+    QString* getLX200ResponseRA(void);
+    QString* getLX200ResponseDecl(void);
     void setNumberFormat(bool);
 
 private:
     QSerialPort rs232port;
     QString *replyStrLX;
     QString *assembledString;
+    QString *msgRAString;
+    QString *msgDeclString;
     QString *incomingCommand;
     bool portIsUp;
     QByteArray *serialData;
@@ -37,6 +42,7 @@ private:
     bool sendSimpleCoordinates; // use either ddd.mm or ddd.mm.ss
     void assembleDeclinationString(void);
     void assembleRAString(void);
+    void sendCommand(short what);
     struct LX200CommandStruct {
         QString getDecl;
         QString getRA;
@@ -76,8 +82,10 @@ signals:
     void RS232guideSpeed(void);
     void RS232findSpeed(void);
     void RS232gotoSpeed(void);
-    void RS232CommandReceived(void);
     void RS232CommandSent(void);
+    void RS232DeclSent(void);
+    void RS232RASent(void);
+    void RS232CommandReceived(void);
 };
 
 #endif // LX200_COMMUNICATION_H

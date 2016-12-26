@@ -77,6 +77,8 @@ private slots:
     void raPGBwd(void);
     void logLX200IncomingCmds(void);
     void logLX200OutgoingCmds(void);
+    void logLX200OutgoingCmdsRA(void);
+    void logLX200OutgoingCmdsDecl(void);
     void clearLXLog(void);
     void LXSetNumberFormatToSimple(void);
 

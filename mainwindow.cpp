@@ -230,8 +230,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()));
-    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()));
+    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection);
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple()));
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
@@ -482,7 +484,31 @@ void MainWindow::logLX200IncomingCmds(void) {
 }
 
 //------------------------------------------------------------------
+void MainWindow::logLX200OutgoingCmdsRA(void) {
+    QString* lx200msg;
 
+    if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
+        lx200msg = new QString("Outgoing: ");
+        lx200msg->append(this->lx200port->getLX200ResponseRA());
+        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
+        ui->teLX200Data->insertPlainText("\n");
+        delete lx200msg;
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::logLX200OutgoingCmdsDecl(void) {
+    QString* lx200msg;
+
+    if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
+        lx200msg = new QString("Outgoing: ");
+        lx200msg->append(this->lx200port->getLX200ResponseDecl());
+        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
+        ui->teLX200Data->insertPlainText("\n");
+        delete lx200msg;
+    }
+}
+//------------------------------------------------------------------
 void MainWindow::logLX200OutgoingCmds(void) {
     QString* lx200msg;
 
