@@ -13,9 +13,11 @@ public:
     std::string getNamesOfObjects(long);
     float getRADec(long);
     float getDeclDec(long);
+    long getEpoch(void);
 
 private:
     long numberOfObjects;
+    long epoch;
     struct catalogEntry {
         long oindex;
         std::string oname;

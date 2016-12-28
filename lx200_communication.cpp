@@ -233,22 +233,22 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.slewPossible, Qt::CaseSensitive)==0) {         
             if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {
-                emit RS232slew();
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
                 commandToBeSent = 1;
                 assembledString->append(QString::number(1));
+                emit RS232slew();
                 this->sendCommand(2);
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.syncCommand, Qt::CaseSensitive)==0) {
             if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {
-                emit RS232sync();
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
                 commandToBeSent = 1;
                 assembledString->append("M31 EX GAL MAG 35 SZ178.0'#");
                 // now set the global coordinates in g_AllData to receivedRA and received Decl
+                emit RS232sync();
                 this->sendCommand(2);
             }
         }

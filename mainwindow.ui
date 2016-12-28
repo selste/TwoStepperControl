@@ -62,7 +62,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <property name="movable">
      <bool>true</bool>
@@ -573,9 +573,9 @@
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>50</y>
+        <y>40</y>
         <width>131</width>
-        <height>341</height>
+        <height>351</height>
        </rect>
       </property>
      </widget>
@@ -583,7 +583,7 @@
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>30</y>
+        <y>10</y>
         <width>68</width>
         <height>21</height>
        </rect>
@@ -643,7 +643,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>110</y>
+        <y>190</y>
         <width>241</width>
         <height>61</height>
        </rect>
@@ -659,7 +659,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>180</y>
+        <y>260</y>
         <width>241</width>
         <height>61</height>
        </rect>
@@ -675,7 +675,7 @@
       <property name="geometry">
        <rect>
         <x>390</x>
-        <y>250</y>
+        <y>330</y>
         <width>241</width>
         <height>61</height>
        </rect>
@@ -683,6 +683,61 @@
       <property name="text">
        <string>Emergency Stop</string>
       </property>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>391</x>
+        <y>111</y>
+        <width>241</width>
+        <height>74</height>
+       </rect>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <widget class="QLabel" name="lCatEpoch">
+         <property name="text">
+          <string>Catalog Epoch:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLCDNumber" name="lcdCatEpoch">
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>30</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QCheckBox" name="cbConvertToCurrentEpoch">
+         <property name="text">
+          <string>Convert to</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="sbEpoch">
+         <property name="minimum">
+          <number>2000</number>
+         </property>
+         <property name="maximum">
+          <number>2525</number>
+         </property>
+         <property name="value">
+          <number>2017</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
     <widget class="QWidget" name="camTab">
@@ -1557,7 +1612,7 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>

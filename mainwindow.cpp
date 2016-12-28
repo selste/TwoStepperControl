@@ -572,7 +572,6 @@ void MainWindow::updateCameraImage(void)
     this->camView->addBgImage(*camImg);
 }
 //------------------------------------------------------------------
-
 void MainWindow::displayGuideCamImage(void) {
 
     if (g_AllData->getINDIState() == true) {
@@ -584,7 +583,6 @@ void MainWindow::displayGuideCamImage(void) {
 }
 
 //------------------------------------------------------------------
-
 void MainWindow::catalogChosen(QListWidgetItem* catalogName)
 {
     QString *catalogPath;
@@ -609,6 +607,7 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName)
         objectName=this->objCatalog->getNamesOfObjects(counterForObjects);
         ui->listWidgetObject->addItem(QString(objectName.data()));
     }
+    ui->lcdCatEpoch->display(QString::number(this->objCatalog->getEpoch()));
     ui->listWidgetCatalog->blockSignals(false);
 }
 //------------------------------------------------------------------
@@ -617,11 +616,28 @@ void MainWindow::catalogObjectChosen(void)
 {
     QString lestr;
     long indexInList;
+    double epRA, epDecl, meeusM, meeusN, deltaRA, deltaDecl,raRadians, declRadians;
 
     indexInList = ui->listWidgetObject->currentRow();
     if (this->objCatalog != NULL) {
-        this->ra=this->objCatalog->getRADec(indexInList);
-        this->decl=this->objCatalog->getDeclDec(indexInList);
+        epRA=this->objCatalog->getRADec(indexInList);
+        epDecl=this->objCatalog->getDeclDec(indexInList);
+        if (ui->cbConvertToCurrentEpoch->isChecked()==false) {
+            this->ra=epRA;
+            this->decl=epDecl;
+        } else {
+            meeusM=(3.07234+0.00186*((ui->sbEpoch->value()-1900)/100.0))*0.00416667; // factor m, J. Meeus, 3. ed, p.63, given in degrees
+            meeusN=(20.0468-0.0085*((ui->sbEpoch->value()-1900)/100.0))/(3600.0);  // factor n, in degrees
+            raRadians=epRA/180.0*3.141592653589793;
+            raRadians=epDecl/180.0*3.141592653589793;
+            deltaRA = meeusM+meeusN*sin(raRadians)*tan(raRadians);
+            deltaDecl = meeusN*cos(raRadians);
+            this->ra=epRA+deltaRA*((double)(ui->sbEpoch->value()-ui->lcdCatEpoch->value()));
+            this->decl=epDecl+deltaDecl*((double)(ui->sbEpoch->value()-ui->lcdCatEpoch->value()));
+            qDebug() << "catalog ra vs. corr. RA:" << epRA << this->ra;
+            qDebug() << "catalog decl vs. corr. decl:" << epDecl << this->decl;
+        }
+
         lestr = QString::number(this->ra, 'g', 8);
         ui->lineEditRA->setText(lestr);
         lestr = QString::number(this->decl, 'g', 8);

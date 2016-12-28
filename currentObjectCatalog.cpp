@@ -9,6 +9,7 @@
 currentObjectCatalog::currentObjectCatalog(QString filename) {
 // reading a .csv file with the special format
 // number of datasets
+// epoch
 // Constellation,ObjectName,RA[h],RA[min],RA[sec],Decl-Sign,Decl-Degree,Decl-Arcmin,Decl-Arcsec
 // ....
     std::string constellation, name, decsign;   // string data
@@ -26,6 +27,9 @@ currentObjectCatalog::currentObjectCatalog(QString filename) {
     std::istringstream iss(line);   // convert it to a stream so that the first line
                                     // can be converted to long
     iss >> this->numberOfObjects;
+    std::getline(infile, line);     // read the second line
+    std::istringstream issepoch(line);
+    issepoch >> this->epoch;
     // now read the other lines...
     for (counter = 0; counter < this->numberOfObjects; counter++) {
         std::getline(infile, constellation, delimiter);     //constellation
@@ -98,6 +102,11 @@ float currentObjectCatalog::getRADec(long index) {
 //--------------------------------------------------
 float currentObjectCatalog::getDeclDec(long index) {
     return currentCatalogObjects[index].oDeclDec;
+}
+
+//--------------------------------------------------
+long currentObjectCatalog::getEpoch(void) {
+    return this->epoch;
 }
 
 //--------------------------------------------------
