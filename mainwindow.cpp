@@ -1474,7 +1474,6 @@ void MainWindow::LXslewMount(void) {
 }
 
 //---------------------------------------------------------------------
-
 void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
@@ -1485,13 +1484,13 @@ void MainWindow::startGoToObject(void) {
     qint64 timeEstimatedInDeclInMS = 0;
     long int RASteps, DeclSteps,corrsteps;
     int timeForProcessingEventQueue = 100;
-    bool RAtakesLonger;
+    bool RAtakesLonger, shortSlew;
 
     ui->pbGoTo->setEnabled(false);
     this->terminateAllMotion();
     this->setControlsForGoto(false);
     ui->pbStartTracking->setEnabled(false);
-
+    shortSlew=false;
     timeDifference=0;
     // determine the travel to be taken based on steps, aceleration and end velocity
     travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
@@ -1557,87 +1556,115 @@ void MainWindow::startGoToObject(void) {
         gotoETA = timeEstimatedInRAInMS;
         RAtakesLonger=true;
     }
+    if ((timeEstimatedInDeclInMS < 5000) || (timeEstimatedInRAInMS < 5000)) {
+        gotoETA = timeEstimatedInDeclInMS+timeEstimatedInRAInMS;
+        shortSlew=true;
+    }
     this->approximateGOTOSpeedRA=RASteps/(timeEstimatedInRAInMS/1000.0);
     this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0);
     ui->lcdGotoTime->display(round(gotoETA/1000.0));
     // determined the estimated duration of the GoTo - Process
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
 
+
+
+
+
+
  // let the games begin...
     bool RARideIsDone = false;
     elapsedGoToTime->start();
-    futureStepperBehaviourRA_GOTO =
-            QtConcurrent::run(this->StepperDriveRA,
-            &QStepperPhidgetsRA::travelForNSteps,RASteps,
-                              this->mountMotion.RADriveDirection,
-                              speedFactorRA);
-    while (!futureStepperBehaviourRA.isStarted()) {
-    }
-    this->mountMotion.GoToIsActiveInRA=true;
-    this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
 
-    timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
-    futureStepperBehaviourDecl_GOTO =
-            QtConcurrent::run(this->StepperDriveDecl,
-            &QStepperPhidgetsDecl::travelForNSteps,DeclSteps,
-                              this->mountMotion.DeclDriveDirection,
-                              speedFactorDecl);
-    while (!futureStepperBehaviourDecl.isStarted()) {
-    }
-    this->mountMotion.GoToIsActiveInDecl=true;
-    this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
-
-
-
-
-    if (RAtakesLonger == true) {
-        while (!futureStepperBehaviourRA_GOTO.isFinished()) {
+    if (shortSlew == true) {
+        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl);
+        while (!futureStepperBehaviourDecl.isStarted()) {
+        }
+        this->mountMotion.GoToIsActiveInDecl=true;
+        timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
+        this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
+        while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
-            if (futureStepperBehaviourDecl_GOTO.isFinished()) {
-                this->mountMotion.GoToIsActiveInDecl=false;
+            if (this->mountMotion.emergencyStopTriggered==true) {
+                this->mountMotion.emergencyStopTriggered=false;
+                return;
             }
         }
-        if (this->mountMotion.emergencyStopTriggered==true) {
-            this->mountMotion.emergencyStopTriggered=false;
-            return;
+        this->mountMotion.GoToIsActiveInDecl=false;
+
+        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA);
+        while (!futureStepperBehaviourRA.isStarted()) {
+        }
+        this->mountMotion.GoToIsActiveInRA=true;
+        this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
+        while (!futureStepperBehaviourRA_GOTO.isFinished()) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+            if (this->mountMotion.emergencyStopTriggered==true) {
+                this->mountMotion.emergencyStopTriggered=false;
+                return;
+            }
         }
         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
         timeDifference = timeTaken-timeEstimatedInRAInMS;
         this->startRATracking();
         ui->pbStopTracking->setDisabled(true);
         this->mountMotion.GoToIsActiveInRA=false;
-        qDebug() << "-------------------";
-        qDebug() << "Terminated slew, RA took longer. States:" << this->mountMotion.GoToIsActiveInRA
-                 << this->mountMotion.GoToIsActiveInDecl;
-    } else {
-        while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
-            if (futureStepperBehaviourRA_GOTO.isFinished()) {
-                this->mountMotion.GoToIsActiveInRA=false;
-            }
-            if (futureStepperBehaviourRA_GOTO.isFinished()) {
+    } else { // carry out the slews parallel
+        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA);
+        while (!futureStepperBehaviourRA.isStarted()) {
+        }
+        this->mountMotion.GoToIsActiveInRA=true;
+        this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
 
+        timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
+        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl);
+        while (!futureStepperBehaviourDecl.isStarted()) {
+        }
+        this->mountMotion.GoToIsActiveInDecl=true;
+        this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
+
+        if (RAtakesLonger == true) {
+            while (!futureStepperBehaviourRA_GOTO.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+                if (futureStepperBehaviourDecl_GOTO.isFinished()) {
+                    this->mountMotion.GoToIsActiveInDecl=false;
+                }
                 if (this->mountMotion.emergencyStopTriggered==true) {
                     this->mountMotion.emergencyStopTriggered=false;
                     return;
                 }
-                if (RARideIsDone==false) {
-                    RARideIsDone=true;
-                    timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
-                    timeDifference = timeTaken-timeEstimatedInRAInMS;
-                    this->startRATracking();
-                    ui->pbStopTracking->setDisabled(true);
+            }
+
+            timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
+            timeDifference = timeTaken-timeEstimatedInRAInMS;
+            this->startRATracking();
+            ui->pbStopTracking->setDisabled(true);
+            this->mountMotion.GoToIsActiveInRA=false;
+        } else {
+            while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+                if (futureStepperBehaviourRA_GOTO.isFinished()) {
+                    this->mountMotion.GoToIsActiveInRA=false;
+                }
+                if (futureStepperBehaviourRA_GOTO.isFinished()) {
+                    if (this->mountMotion.emergencyStopTriggered==true) {
+                        this->mountMotion.emergencyStopTriggered=false;
+                        return;
+                    }
+                    if (RARideIsDone==false) {
+                        RARideIsDone=true;
+                        timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
+                        timeDifference = timeTaken-timeEstimatedInRAInMS;
+                        this->startRATracking();
+                        ui->pbStopTracking->setDisabled(true);
+                    }
                 }
             }
+                if (this->mountMotion.emergencyStopTriggered==true) {
+                    this->mountMotion.emergencyStopTriggered=false;
+                    return;
+                }
+            this->mountMotion.GoToIsActiveInDecl=false;
         }
-        if (this->mountMotion.emergencyStopTriggered==true) {
-            this->mountMotion.emergencyStopTriggered=false;
-            return;
-        }
-        this->mountMotion.GoToIsActiveInDecl=false;
-        qDebug() << "-------------------";
-        qDebug() << "Terminated slew, Decl took longer. States:" << this->mountMotion.GoToIsActiveInRA
-                 << this->mountMotion.GoToIsActiveInDecl;
     }
     usleep(100);
 
@@ -1665,6 +1692,3 @@ void MainWindow::startGoToObject(void) {
     this->setControlsForRATravel(true);
     return;
 }
-
-//----------------------------------------------------------
-

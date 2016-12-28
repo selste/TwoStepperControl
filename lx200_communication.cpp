@@ -105,6 +105,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     QChar lastChar;
     QElapsedTimer *localTimer;
 
+
     charsToBeRead=rs232port.bytesAvailable();
     incomingCommand->clear();
     if (charsToBeRead == 1) { // a single <ACK> is sent at establishing connection
@@ -160,6 +161,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     QStringList commandList,numericalList;
     int numberOfCommands, cmdCounter;
     double rah,ram,ras,decldeg,declmin,declsec;
+    short declSign;
 
     lx200cmd = new QString();
     if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
@@ -206,7 +208,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
             } else {
-                numSubStr = new QString(lx200cmd->right(6));
+                numSubStr = new QString(lx200cmd->right(6));                
             }
             decldeg=(numSubStr->left(3)).toDouble();
             numSubStr->clear();
@@ -214,10 +216,16 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             declmin=(numSubStr->left(2)).toDouble();
             if (sendSimpleCoordinates==false) {
                 declsec=(numSubStr->right(2)).toDouble();
+
             } else {
                 declsec = 0.0;
             }
-            this->receivedDeclFromLX =(decldeg+declmin/60.0+declsec/3600.0);
+            if (decldeg < 0) {
+                declSign = -1;
+            } else {
+                declSign = 1;
+            }
+            this->receivedDeclFromLX =declSign*(fabs(decldeg)+declmin/60.0+declsec/3600.0);
             delete numSubStr;
             gotDeclCoordinates = true;
             this->sendCommand(2);
