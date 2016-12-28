@@ -205,27 +205,30 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             commandToBeSent = 1;
             assembledString->append(QString::number(1));
             lx200cmd->remove(' ');
+            qDebug() << "cmd:" << lx200cmd->toLatin1();
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
             } else {
                 numSubStr = new QString(lx200cmd->right(6));                
             }
+            if (numSubStr->startsWith("-"))  {
+                declSign = -1;
+            } else {
+                declSign = 1;
+            }
             decldeg=(numSubStr->left(3)).toDouble();
+            qDebug() << "Deg substring" << (numSubStr->left(3)).toLatin1();
             numSubStr->clear();
             numSubStr->append(lx200cmd->right(5));
             declmin=(numSubStr->left(2)).toDouble();
             if (sendSimpleCoordinates==false) {
                 declsec=(numSubStr->right(2)).toDouble();
-
             } else {
                 declsec = 0.0;
             }
-            if (decldeg < 0) {
-                declSign = -1;
-            } else {
-                declSign = 1;
-            }
+            qDebug() << "Decl is" << declSign << decldeg << declmin << declsec;
             this->receivedDeclFromLX =declSign*(fabs(decldeg)+declmin/60.0+declsec/3600.0);
+            qDebug() << "in decimal:" << this->receivedDeclFromLX;
             delete numSubStr;
             gotDeclCoordinates = true;
             this->sendCommand(2);
