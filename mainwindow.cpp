@@ -1493,7 +1493,7 @@ void MainWindow::LXslewMount(void) {
 void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
-            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA;
+            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA,currposra;
     float targetRA, targetDecl;
     qint64 timestampGOTOStarted, timeDifference, timeTaken;
     qint64 timeEstimatedInRAInMS = 0;
@@ -1509,7 +1509,15 @@ void MainWindow::startGoToObject(void) {
     shortSlew=false;
     timeDifference=0;
     // determine the travel to be taken based on steps, aceleration and end velocity
-    travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
+    currposra=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0);
+    travelRA=currposra-this->ra;
+    if (fabs(travelRA) > 180.0) {
+        if (travelRA < 0) {
+            travelRA = (360.0-fabs(travelRA));
+        } else {
+            travelRA = -(360.0-fabs(travelRA));
+        }
+    } // change to the shorter path
     travelDecl=this->decl-g_AllData->getActualScopePosition(1);
     targetRA = this->ra;
     targetDecl = this->decl;
@@ -1682,7 +1690,7 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.GoToIsActiveInDecl=false;
         }
     }
-    usleep(100);
+    //usleep(100);
 
     this->stopRATracking();
     if (abs(timeDifference)>100) {
