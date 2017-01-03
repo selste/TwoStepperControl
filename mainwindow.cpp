@@ -252,12 +252,12 @@ MainWindow::~MainWindow()
 //------------------------------------------------------------------
 void MainWindow::updateReadings()
 {
-    qint64 topicalTime,charsReadFromRS232;
+    qint64 topicalTime;
     double relativeTravelRA, relativeTravelDecl,totalGearRatio;
 
     if (this->lx200IsOn) {
         if (lx200port->getPortState() == 1) {
-            charsReadFromRS232 = lx200port->getDataFromSerialPort();
+            lx200port->getDataFromSerialPort();
         }
     }
     if (this->mountMotion.RATrackingIsOn == true) {
@@ -278,6 +278,29 @@ void MainWindow::updateReadings()
                 this->StepperDriveRA->getKinetics(3)*topicalTime*g_AllData->getGearData(3)/
                 (1000.0*g_AllData->getGearData(8)*totalGearRatio);
         g_AllData->incrementActualScopePosition(relativeTravelRA, 0.0);
+        if (this->StepperDriveRA->hasHBoxSlewEnded() == true) {
+            // this is a little bit strange; handboxslew is 180 degrees maximum. if this occurs,
+            // it has to be handled like pressing the stop button
+            this->mountMotion.RADriveIsMoving = false;
+            while (!futureStepperBehaviourRA.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            }
+            if (this->mountMotion.RATrackingIsOn == false) {
+                this->setControlsForRATravel(true);
+            }
+            this->startRATracking();
+            ui->pbRAMinus->setEnabled(1);
+            ui->pbRAPlus->setEnabled(1);
+            ui->rbCorrSpeed->setEnabled(true);
+            ui->rbMoveSpeed->setEnabled(true);
+            ui->pbPGRAMinus->setEnabled(true);
+            ui->pbPGRAPlus->setEnabled(true);
+            ui->pbPGDecMinus->setEnabled(true);
+            ui->pbPGDecPlus->setEnabled(true);
+            if (ui->rbMoveSpeed->isChecked()==false) {
+                ui->sbMoveSpeed->setEnabled(true);
+            }
+        }
     }
 
     if (this->mountMotion.DeclDriveIsMoving == true) {
@@ -289,6 +312,25 @@ void MainWindow::updateReadings()
                 this->StepperDriveDecl->getKinetics(3)*topicalTime*g_AllData->getGearData(7)/
                 (1000.0*g_AllData->getGearData(8)*totalGearRatio);
         g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl);
+        if (this->StepperDriveDecl->hasHBoxSlewEnded() == true) {
+            // same as above; end of handbox slew of 180 degrees has to be handled like pressing a stop button
+            this->mountMotion.DeclDriveIsMoving = false;
+            while (!futureStepperBehaviourDecl.isFinished()) {
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            }
+            ui->pbPGDecMinus->setEnabled(true);
+            ui->pbPGDecPlus->setEnabled(true);
+            ui->pbPGRAMinus->setEnabled(true);
+            ui->pbPGRAPlus->setEnabled(true);
+            ui->pbDeclUp->setEnabled(true);
+            ui->pbDeclDown->setEnabled(true);
+            this->setControlsForDeclTravel(true);
+            if (ui->rbMoveSpeed->isChecked()==false) {
+                ui->sbMoveSpeed->setEnabled(true);
+            } else {
+                ui->sbMoveSpeed->setEnabled(false);
+            }
+        }
     }
 
     if ((this->mountMotion.GoToIsActiveInRA==true) || (this->mountMotion.GoToIsActiveInDecl==true)) {
@@ -798,7 +840,7 @@ void MainWindow::declinationMoveHandboxUp(void)
                 QtConcurrent::run(this->StepperDriveDecl,
                 &QStepperPhidgetsDecl::travelForNSteps,maxDeclSteps,
                                   this->mountMotion.DeclDriveDirection,
-                                  this->mountMotion.DeclSpeedFactor);
+                                  this->mountMotion.DeclSpeedFactor,1);
         while (!futureStepperBehaviourDecl.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
@@ -874,7 +916,7 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) 
             QtConcurrent::run(this->StepperDriveDecl,
             &QStepperPhidgetsDecl::travelForNSteps,steps,
                               this->mountMotion.DeclDriveDirection,
-                              this->mountMotion.DeclSpeedFactor);
+                              this->mountMotion.DeclSpeedFactor,0);
     while (!futureStepperBehaviourDecl.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
     }
@@ -909,7 +951,7 @@ void MainWindow::declinationMoveHandboxDown(void)
                 QtConcurrent::run(this->StepperDriveDecl,
                 &QStepperPhidgetsDecl::travelForNSteps,maxDeclSteps,
                                   this->mountMotion.DeclDriveDirection,
-                                  this->mountMotion.DeclSpeedFactor);
+                                  this->mountMotion.DeclSpeedFactor,1);
         while (!futureStepperBehaviourDecl.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
@@ -967,7 +1009,7 @@ void MainWindow::RAMoveHandboxFwd(void)
                 QtConcurrent::run(this->StepperDriveRA,
                 &QStepperPhidgetsRA::travelForNSteps,maxRASteps,
                                   this->mountMotion.RADriveDirection,
-                                  fwdFactor);
+                                  fwdFactor,true);
         while (!futureStepperBehaviourRA.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
@@ -1028,7 +1070,7 @@ void MainWindow::RAMoveHandboxBwd(void)
                 QtConcurrent::run(this->StepperDriveRA,
                 &QStepperPhidgetsRA::travelForNSteps,maxRASteps,
                                   this->mountMotion.RADriveDirection,
-                                  bwdFactor);
+                                  bwdFactor,true);
         while (!futureStepperBehaviourRA.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
@@ -1117,7 +1159,7 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) {
         this->futureStepperBehaviourRA =
                 QtConcurrent::run(this->StepperDriveRA,
                 &QStepperPhidgetsRA::travelForNSteps,steps,
-                                this->mountMotion.RADriveDirection,pgFactor);
+                                this->mountMotion.RADriveDirection,pgFactor,false);
         while (!futureStepperBehaviourRA.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
@@ -1493,7 +1535,7 @@ void MainWindow::LXslewMount(void) {
 void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
-            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA,currposra;
+            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA;
     float targetRA, targetDecl;
     qint64 timestampGOTOStarted, timeDifference, timeTaken;
     qint64 timeEstimatedInRAInMS = 0;
@@ -1509,15 +1551,7 @@ void MainWindow::startGoToObject(void) {
     shortSlew=false;
     timeDifference=0;
     // determine the travel to be taken based on steps, aceleration and end velocity
-    currposra=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0);
-    travelRA=currposra-this->ra;
-    if (fabs(travelRA) > 180.0) {
-        if (travelRA < 0) {
-            travelRA = (360.0-fabs(travelRA));
-        } else {
-            travelRA = -(360.0-fabs(travelRA));
-        }
-    } // change to the shorter path
+    travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
     travelDecl=this->decl-g_AllData->getActualScopePosition(1);
     targetRA = this->ra;
     targetDecl = this->decl;
@@ -1600,7 +1634,7 @@ void MainWindow::startGoToObject(void) {
     elapsedGoToTime->start();
 
     if (shortSlew == true) {
-        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl);
+        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) {
         }
         this->mountMotion.GoToIsActiveInDecl=true;
@@ -1615,7 +1649,7 @@ void MainWindow::startGoToObject(void) {
         }
         this->mountMotion.GoToIsActiveInDecl=false;
 
-        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA);
+        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA,false);
         while (!futureStepperBehaviourRA.isStarted()) {
         }
         this->mountMotion.GoToIsActiveInRA=true;
@@ -1633,14 +1667,14 @@ void MainWindow::startGoToObject(void) {
         ui->pbStopTracking->setDisabled(true);
         this->mountMotion.GoToIsActiveInRA=false;
     } else { // carry out the slews parallel
-        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA);
+        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA,false);
         while (!futureStepperBehaviourRA.isStarted()) {
         }
         this->mountMotion.GoToIsActiveInRA=true;
         this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
 
         timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
-        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl);
+        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) {
         }
         this->mountMotion.GoToIsActiveInDecl=true;
@@ -1690,14 +1724,14 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.GoToIsActiveInDecl=false;
         }
     }
-    //usleep(100);
+    usleep(100);
 
     this->stopRATracking();
     if (abs(timeDifference)>100) {
         corrsteps=(0.0041780746*((double)(timeDifference))/1000.0)*
                    convertDegreesToMicrostepsRA;
         futureStepperBehaviourRA_Corr = QtConcurrent::run(this->StepperDriveRA,
-                &QStepperPhidgetsRA::travelForNSteps,corrsteps, 1,10);
+                &QStepperPhidgetsRA::travelForNSteps,corrsteps, 1,10,false);
         while (!futureStepperBehaviourRA_Corr.isFinished()) {
            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
         }

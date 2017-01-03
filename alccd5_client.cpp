@@ -44,6 +44,7 @@ alccd5_client::alccd5_client() {
         this->myVec->insert(i, cval);
     }
     // setting colortable for grayscale QImages
+    this->expcounter=1;
 }
 
 //------------------------------------------
@@ -174,6 +175,7 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     ofstream fitsfile;
     int imgwidth, imgheight,widgetWidth,widgetHeight;
     float sfw,sfh;
+    QString *efilename;
 
     fitsdata = static_cast<char *>(bp->blob);
     // casting the INDI-BLOB containing the image data in FITS to an array of uints ...
@@ -189,7 +191,12 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     fitsqimage->setColorTable(*myVec);
     mimage = new QImage(fitsqimage->mirrored(0,1));
     // read the image data into a QImage, set a grayscale LUT, and mirror the image ...
-    //mimage->save("TestCameraImage.jpg",0,-1);
+    //efilename=new QString("TestCameraImage");
+    //efilename->append(QString::number((double)expcounter,1,0));
+    //efilename->append(".jpg");
+    //mimage->save(efilename->toLatin1(),0,-1);
+    //this->expcounter++;
+    //delete efilename;
     // uncomment if you want to see the QImage ...
 
     widgetWidth=g_AllData->getCameraDisplaySize(0);

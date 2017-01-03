@@ -84,8 +84,9 @@ void QStepperPhidgetsRA::startTracking(void) {
 }
 
 //-----------------------------------------------------------------------------
-bool QStepperPhidgetsRA::travelForNSteps(long steps,short direction, int factor) {
+bool QStepperPhidgetsRA::travelForNSteps(long steps,short direction, int factor, bool isHBSlew) {
 
+    this->hBoxSlewEnded = false;
     this->speedMax=factor*0.0041780746*
             (g_AllData->getGearData(0))*
             (g_AllData->getGearData(1))*
@@ -111,6 +112,9 @@ bool QStepperPhidgetsRA::travelForNSteps(long steps,short direction, int factor)
             (g_AllData->getGearData(2))*
             (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    if (isHBSlew == 1) {
+        this->hBoxSlewEnded=true;
+    }
     return true;
 }
 
@@ -228,4 +232,10 @@ this->speedMax=stepsPerSInRA;
 CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
 // 360°/sidereal day in seconds*gear ratios*microsteps/steps
 
+}
+
+//-------------------------------------------------------------------------------
+
+bool QStepperPhidgetsRA::hasHBoxSlewEnded(void) {
+    return this->hBoxSlewEnded;
 }

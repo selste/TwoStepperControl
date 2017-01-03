@@ -47,6 +47,7 @@ private:
    QVector<QRgb> *myVec;
    QString *serverMessage;
    INumberVectorProperty *ccd_exposure = NULL;
+   long expcounter;
 
 signals:
    void imageAvailable(void);

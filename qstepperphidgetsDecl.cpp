@@ -34,6 +34,7 @@ QStepperPhidgetsDecl::QStepperPhidgetsDecl(double lacc, double lcurr){
         this->acc = lacc;
     }
     this->currMax=lcurr;
+    this->hBoxSlewEnded=false;
     CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
     CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
     this->stopped=true;
@@ -59,8 +60,9 @@ QStepperPhidgetsDecl::~QStepperPhidgetsDecl(void){
 }
 
 //-----------------------------------------------------------------------------
-bool QStepperPhidgetsDecl::travelForNSteps(long steps,short direction, int factor) {
+bool QStepperPhidgetsDecl::travelForNSteps(long steps,short direction, int factor,bool isHBSlew) {
 
+    this->hBoxSlewEnded = false;
     this->speedMax=factor*0.0041780746*
             (g_AllData->getGearData(4))*
             (g_AllData->getGearData(5))*
@@ -86,6 +88,9 @@ bool QStepperPhidgetsDecl::travelForNSteps(long steps,short direction, int facto
             (g_AllData->getGearData(6))*
             (g_AllData->getGearData(8))/(g_AllData->getGearData(7));
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
+    if (isHBSlew == 1) {
+        this->hBoxSlewEnded=true;
+    }
     return true;
 }
 
@@ -200,4 +205,10 @@ void QStepperPhidgetsDecl::changeSpeedForGearChange(void) {
     this->speedMax=stepsPerSInDecl;
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     // 360°/sidereal day in seconds*gear ratios*microsteps/steps
+}
+
+//-------------------------------------------------------------------------------
+
+bool QStepperPhidgetsDecl::hasHBoxSlewEnded(void) {
+    return this->hBoxSlewEnded;
 }

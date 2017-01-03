@@ -18,12 +18,13 @@ private:
     int stopped;
     double stepsPerSInRA;
     short RADirection;
+    bool hBoxSlewEnded;
 
 public:
     QStepperPhidgetsRA(double,double);
     ~QStepperPhidgetsRA(void);
     void startTracking(void);
-    bool travelForNSteps(long,short,int);
+    bool travelForNSteps(long,short,int,bool);
     int retrievePhidgetStepperData (int);
     double getKinetics(short);
     void setStepperParams(double, short);
@@ -33,5 +34,6 @@ public:
     void engageDrive(void);
     void setRADirection(short);
     void changeSpeedForGearChange(void);
+    bool hasHBoxSlewEnded(void);
 };
 #endif // QSTEPPERPHIDGETSRA_H

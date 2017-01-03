@@ -17,11 +17,12 @@ private:
     double currMax;
     int stopped;
     double stepsPerSInDecl;
+    bool hBoxSlewEnded;
 
 public:
     QStepperPhidgetsDecl(double,double);
     ~QStepperPhidgetsDecl(void);
-    bool travelForNSteps(long,short,int);
+    bool travelForNSteps(long,short,int,bool);
     int retrievePhidgetStepperData (int);
     double getKinetics(short);
     void setStepperParams(double, short);
@@ -30,5 +31,6 @@ public:
     void stopDrive(void);
     void engageDrive(void);
     void changeSpeedForGearChange(void);
+    bool hasHBoxSlewEnded(void);
 };
 #endif // QSTEPPERPHIDGETSDECL_H

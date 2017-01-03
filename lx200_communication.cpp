@@ -385,7 +385,7 @@ void lx200_communication::assembleDeclinationString(void) {
     helper->setNum(abs(declDeg));
     replyStrLX->append(helper);
     helper->clear();
-    replyStrLX->append("°");
+    replyStrLX->append("*");
     if (declMin < 10) {
         replyStrLX->append("0");
     }
