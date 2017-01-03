@@ -1302,7 +1302,11 @@ void MainWindow::setControlsForRATravel(bool isEnabled)
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
     ui->pbPGRAMinus->setEnabled(isEnabled);
     ui->pbPGRAPlus->setEnabled(isEnabled);
-    ui->catTab->setEnabled(isEnabled);
+    ui->listWidgetCatalog->setEnabled(isEnabled);
+    ui->listWidgetObject->setEnabled(isEnabled);
+    ui->pbSync->setEnabled(isEnabled);
+    ui->pbGoTo->setEnabled(isEnabled);
+    ui->pbStop2->setEnabled(true);
 }
 
 //---------------------------------------------------------------------
@@ -1321,7 +1325,11 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled)
     ui->leMicrosteps->setEnabled(isEnabled);
     ui->pbPGDecMinus->setEnabled(isEnabled);
     ui->pbPGDecPlus->setEnabled(isEnabled);
-    ui->catTab->setEnabled(isEnabled);
+    ui->listWidgetCatalog->setEnabled(isEnabled);
+    ui->listWidgetObject->setEnabled(isEnabled);
+    ui->pbSync->setEnabled(isEnabled);
+    ui->pbGoTo->setEnabled(isEnabled);
+    ui->pbStop2->setEnabled(true);
 }
 
 //---------------------------------------------------------------------
@@ -1544,6 +1552,8 @@ void MainWindow::startGoToObject(void) {
     int timeForProcessingEventQueue = 100;
     bool RAtakesLonger, shortSlew;
 
+    // block sync and slew signals during slew
+    blockSignals(true);
     ui->pbGoTo->setEnabled(false);
     this->terminateAllMotion();
     this->setControlsForGoto(false);
@@ -1748,5 +1758,6 @@ void MainWindow::startGoToObject(void) {
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(true);
+    blockSignals(false);
     return;
 }
