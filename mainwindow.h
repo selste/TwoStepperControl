@@ -12,6 +12,7 @@
 #include "currentObjectCatalog.h"
 #include "QDisplay2D.h"
 #include "lx200_communication.h"
+#include "wiringPi.h"
 
 using namespace QtConcurrent;
 
@@ -81,6 +82,7 @@ private slots:
     void logLX200OutgoingCmdsDecl(void);
     void clearLXLog(void);
     void LXSetNumberFormatToSimple(void);
+    void enableCamImageStorage(void);
 
 private:
     struct mountMotionStruct {

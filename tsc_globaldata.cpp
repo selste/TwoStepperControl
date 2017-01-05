@@ -16,6 +16,7 @@ TSC_GlobalData::TSC_GlobalData() {
     cameraParameters.pixelSizeMicronsY=5.2;
     cameraParameters.chipWidth=1280;
     cameraParameters.chipHeight=1024;
+    this->currentCameraImage = new QImage();
     this->monotonicGlobalTimer=new QElapsedTimer();
     this->monotonicGlobalTimer->start();
     syncPosition.timeSinceSyncInMS=this->monotonicGlobalTimer->elapsed();
@@ -47,6 +48,19 @@ TSC_GlobalData::TSC_GlobalData() {
 
 //-----------------------------------------------
 TSC_GlobalData::~TSC_GlobalData(void){
+    delete currentCameraImage;
+    delete monotonicGlobalTimer;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::storeCameraImage(QImage inImg) {
+    delete currentCameraImage;
+    currentCameraImage=new QImage(inImg);
+}
+
+//-----------------------------------------------
+QImage* TSC_GlobalData::getCameraImage(void) {
+    return currentCameraImage;
 }
 
 //-----------------------------------------------

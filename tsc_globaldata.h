@@ -2,6 +2,7 @@
 #define TSC_GLOBALDATA_H
 
 #include <QElapsedTimer>
+#include <QImage>
 #include <fstream>
 #include <string>
 #include <iostream>
@@ -41,12 +42,15 @@ public:
     double getDriveParams(short, short); // 0 for RA, 1 for decl and 0 for speed, 1, for Acc and 2 for current
     double getActualScopePosition(short); // 0 for hour angle, 1 for decl, 2 for RA
     void incrementActualScopePosition(double, double); // add hour angle and decl increments
+    void storeCameraImage(QImage);
+    QImage* getCameraImage(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
     bool guideStarSelected;
     bool guidingIsOn;
     bool INDIServerIsConnected;
+    QImage *currentCameraImage;
 
     struct initialStarPosStruct {
         int screenx;

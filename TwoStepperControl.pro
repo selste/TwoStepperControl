@@ -24,7 +24,8 @@ SOURCES += \
     tsc_globaldata.cpp \
     qstepperphidgetsDecl.cpp \
     qstepperphidgetsRA.cpp \
-    lx200_communication.cpp
+    lx200_communication.cpp \
+    ocv_guiding.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -34,11 +35,13 @@ HEADERS  += \
     tsc_globaldata.h \
     qstepperphidgetsDecl.h \
     qstepperphidgetsRA.h \
-    lx200_communication.h
+    lx200_communication.h \
+    ocv_guiding.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/
 INCLUDEPATH += /home/pi/libindi/
+INCLUDEPATH +=/home/pi/opencv/opencv/include/
 
 FORMS    += mainwindow.ui
 
@@ -104,3 +107,10 @@ else:unix: LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/ -lpthread
 INCLUDEPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 DEPENDPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/release/ -lopencv_core
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/debug/ -lopencv_core
+else:unix: LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/ -lopencv_core
+
+INCLUDEPATH += $$PWD/../opencv/opencv/opencv_build/include
+DEPENDPATH += $$PWD/../opencv/opencv/opencv_build/include

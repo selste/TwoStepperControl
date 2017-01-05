@@ -34,6 +34,7 @@ extern TSC_GlobalData *g_AllData;
 alccd5_client::alccd5_client() {
     QRgb cval;
 
+    this->storeCamImages = false;
     this->alccd5 = NULL;
     this->fitsqimage = NULL;
     this->displayPMap = new QPixmap();
@@ -190,14 +191,16 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     fitsqimage = new QImage((uchar*)fitsdata, imgwidth, imgheight, QImage::Format_Indexed8);
     fitsqimage->setColorTable(*myVec);
     mimage = new QImage(fitsqimage->mirrored(0,1));
+    g_AllData->storeCameraImage(*mimage);
     // read the image data into a QImage, set a grayscale LUT, and mirror the image ...
-    //efilename=new QString("TestCameraImage");
-    //efilename->append(QString::number((double)expcounter,1,0));
-    //efilename->append(".jpg");
-    //mimage->save(efilename->toLatin1(),0,-1);
-    //this->expcounter++;
-    //delete efilename;
-    // uncomment if you want to see the QImage ...
+    if (this->storeCamImages==true) {
+        efilename=new QString("GuideCameraImage");
+        efilename->append(QString::number((double)expcounter,1,0));
+        efilename->append(".jpg");
+        mimage->save(efilename->toLatin1(),0,-1);
+        this->expcounter++;
+        delete efilename;
+    }
 
     widgetWidth=g_AllData->getCameraDisplaySize(0);
     widgetHeight=g_AllData->getCameraDisplaySize(1);
@@ -235,6 +238,12 @@ QPixmap* alccd5_client::getScaledPixmapFromCamera(void) {
 
 void alccd5_client::sayGoodbyeToINDIServer(void) {
     this->disconnectServer();
+}
+
+//------------------------------------------
+
+void alccd5_client::setStoreImageFlag(bool what) {
+    this->storeCamImages=what;
 }
 
 //------------------------------------------

@@ -19,6 +19,7 @@ class alccd5_client:public QObject, public INDI::BaseClient {
     QString* getINDIServerMessage(void);
     void sayGoodbyeToINDIServer(void);
     bool getCCDParameters(void);
+    void setStoreImageFlag(bool);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);
@@ -48,6 +49,7 @@ private:
    QString *serverMessage;
    INumberVectorProperty *ccd_exposure = NULL;
    long expcounter;
+   bool storeCamImages;
 
 signals:
    void imageAvailable(void);

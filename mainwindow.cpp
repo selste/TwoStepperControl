@@ -192,6 +192,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGoTo, SIGNAL(clicked()),this, SLOT(startGoToObject()));
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed()));
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection()));
+    connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage()));
     connect(ui->pbLX200Active, SIGNAL(clicked()), this, SLOT(switchToLX200()));
     connect(ui->pbGetCCDParams, SIGNAL(clicked()), this, SLOT(getCCDParameters()));
     connect(ui->pbStoreCCDParams, SIGNAL(clicked()), this, SLOT(storeCCDData()));
@@ -239,19 +240,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
 //------------------------------------------------------------------
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     delete StepperDriveRA;
     delete StepperDriveDecl;
     delete timer;
     delete textEntry;
     delete lx200port;
+    delete g_AllData;
     delete ui;
     exit(0);
 }
 //------------------------------------------------------------------
-void MainWindow::updateReadings()
-{
+void MainWindow::updateReadings() {
     qint64 topicalTime;
     double relativeTravelRA, relativeTravelDecl,totalGearRatio;
 
@@ -457,8 +457,7 @@ void MainWindow::setMaxStepperCurrentRA(void)
     delete leEntry;
 }
 //------------------------------------------------------------------
-void MainWindow::setMaxStepperCurrentDecl(void)
-{
+void MainWindow::setMaxStepperCurrentDecl(void) {
     double val;
     QString *leEntry;
 
@@ -469,8 +468,7 @@ void MainWindow::setMaxStepperCurrentDecl(void)
     delete leEntry;
 }
 //------------------------------------------------------------------
-void MainWindow::setINDISAddrAndPort(void)
-{
+void MainWindow::setINDISAddrAndPort(void) {
     QString saddr;
     int sport;
     bool isServerUp = 0;
@@ -487,11 +485,11 @@ void MainWindow::setINDISAddrAndPort(void)
         ui->pbCCDTakeDarks->setEnabled(true);
         ui->pbCCDTakeFlats->setEnabled(true);
         ui->pbTrainAxes->setEnabled(true);
+        ui->cbStoreGuideCamImgs->setEnabled(true);
     }
 }
 //------------------------------------------------------------------
-void MainWindow::takeSingleCamShot(void)
-{
+void MainWindow::takeSingleCamShot(void) {
    int exptime;
 
    exptime = (ui->sbExposureTime->value());
@@ -499,7 +497,15 @@ void MainWindow::takeSingleCamShot(void)
 }
 
 //------------------------------------------------------------------
+void MainWindow::enableCamImageStorage(void) {
+    if (ui->cbStoreGuideCamImgs->isChecked()==true) {
+        camera_client->setStoreImageFlag(true);
+    } else {
+        camera_client->setStoreImageFlag(false);
+    }
+}
 
+//------------------------------------------------------------------
 void MainWindow::handleServerMessage(void) {
     QString *indiMesg;
 
@@ -1633,11 +1639,6 @@ void MainWindow::startGoToObject(void) {
     ui->lcdGotoTime->display(round(gotoETA/1000.0));
     // determined the estimated duration of the GoTo - Process
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
-
-
-
-
-
 
  // let the games begin...
     bool RARideIsDone = false;

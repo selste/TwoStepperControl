@@ -62,7 +62,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <property name="movable">
      <bool>true</bool>
@@ -757,7 +757,7 @@
        </rect>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabGuideParams">
        <attribute name="title">
@@ -1263,6 +1263,22 @@
           </rect>
          </property>
         </widget>
+       </widget>
+       <widget class="QCheckBox" name="cbStoreGuideCamImgs">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>160</y>
+          <width>131</width>
+          <height>26</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Store images</string>
+        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tabCCDParams">
