@@ -13,6 +13,7 @@
 #include "QDisplay2D.h"
 #include "lx200_communication.h"
 #include "wiringPi.h"
+#include "ocv_guiding.h"
 
 using namespace QtConcurrent;
 
@@ -83,6 +84,8 @@ private slots:
     void clearLXLog(void);
     void LXSetNumberFormatToSimple(void);
     void enableCamImageStorage(void);
+    void selectGuideStar(void);
+    void doAutoGuiding(void);
 
 private:
     struct mountMotionStruct {
@@ -110,6 +113,7 @@ private:
     lx200_communication *lx200port;
     bool lx200IsOn;
     bool MountWasSynced;     // a flag indicating whether a sync occurred
+    bool guidingIsActive; // a flag that is true when autoguiding is up ...
     QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
     QFuture<void> futureStepperBehaviourDecl;
@@ -128,6 +132,7 @@ private:
     void setControlsForRATracking(bool);
     void setControlsForDeclTravel(bool);
     void setControlsForGoto(bool);
+    void setControlsForGuiding(bool);
     void terminateAllMotion(void);
     QDisplay2D *camView;
     float ra; // right ascension of a current object
@@ -138,6 +143,7 @@ private:
     QString *textEntry;
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
+    ocv_guiding *guiding;
 };
 
 #endif // MAINWINDOW_H

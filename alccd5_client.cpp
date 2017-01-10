@@ -190,8 +190,8 @@ void alccd5_client::newBLOB(IBLOB *bp) {
 
     fitsqimage = new QImage((uchar*)fitsdata, imgwidth, imgheight, QImage::Format_Indexed8);
     fitsqimage->setColorTable(*myVec);
+    g_AllData->storeCameraImage(*fitsqimage);
     mimage = new QImage(fitsqimage->mirrored(0,1));
-    g_AllData->storeCameraImage(*mimage);
     // read the image data into a QImage, set a grayscale LUT, and mirror the image ...
     if (this->storeCamImages==true) {
         efilename=new QString("GuideCameraImage");
@@ -212,6 +212,17 @@ void alccd5_client::newBLOB(IBLOB *bp) {
         g_AllData->setCameraImageScalingFactor(sfh);
     }
     // get the scaling factor for scaling the QImage to the QPixmap
+
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    // guide debugging code --- load a camera image for debugging here ...
+    delete mimage;
+    mimage = new QImage("GuideSimulatorImages/TestCameraImage42.jpg");
+    g_AllData->storeCameraImage(*mimage);
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
 
     smallQImage = new QImage(mimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));
     //smallQImage->save("SmallTestCameraImage.jpg",0,-1);

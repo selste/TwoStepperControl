@@ -99,8 +99,8 @@ void TSC_GlobalData::setInitialStarPosition(int screenx, int screeny) {
     this->initialStarPos.screeny = screeny;
     this->initialStarPos.ccdx=screenx/this->cameraDisplaySize.scalingFactor;
     this->initialStarPos.ccdy=screeny/this->cameraDisplaySize.scalingFactor;
-    this->initialStarPos.ccdy=(int)(-this->initialStarPos.ccdy+this->cameraParameters.chipHeight);
-    // the FITS image is mirrored before display, so we re-mirror it
+//    this->initialStarPos.ccdy=(int)(-this->initialStarPos.ccdy+this->cameraParameters.chipHeight);
+    // the FITS image is mirrored before display, so we re-mirror it ... this is probably bullshit!
 }
 
 //-----------------------------------------------

@@ -105,6 +105,7 @@ void QDisplay2D::currentViewStatusSlot(QPointF cursorPos) {
 
     if(this->imageLoaded) {
         changeLinePos(cursorPos.x(), cursorPos.y());
+        g_AllData->setInitialStarPosition(cursorPos.x(),cursorPos.y());
     }
 }
 

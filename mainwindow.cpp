@@ -10,6 +10,8 @@
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"
 
+// exposure has to be aborted in guiding!!!!
+
 TSC_GlobalData *g_AllData; // a global class that holds system specific parameters on drive, current mount position, gears and so on ...
 
 //------------------------------------------------------------------
@@ -82,6 +84,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.GoToIsActiveInRA = false;
     this->mountMotion.GoToIsActiveInDecl = false; // setting a few flags on drive states
     this->mountMotion.emergencyStopTriggered = false;
+    this->guidingIsActive=false;
     this->lx200IsOn = false;
     this->MountWasSynced = false;
     this->mountMotion.DeclDriveDirection = 1;
@@ -145,6 +148,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection);
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection);
+    guiding = new ocv_guiding();
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
@@ -201,11 +205,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop4, SIGNAL(clicked()), this, SLOT(emergencyStop()));
+    connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus()));
     connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus()));
     connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd()));
     connect(ui->pbPGRAMinus, SIGNAL(clicked()), this, SLOT(raPGBwd()));
     connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog()));
+    connect(ui->pbSelectGuideStar, SIGNAL(clicked()), this, SLOT(selectGuideStar()));
+    connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -486,6 +493,7 @@ void MainWindow::setINDISAddrAndPort(void) {
         ui->pbCCDTakeFlats->setEnabled(true);
         ui->pbTrainAxes->setEnabled(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
+        ui->pbSelectGuideStar->setEnabled(true);
     }
 }
 //------------------------------------------------------------------
@@ -503,6 +511,54 @@ void MainWindow::enableCamImageStorage(void) {
     } else {
         camera_client->setStoreImageFlag(false);
     }
+}
+
+//------------------------------------------------------------------
+void MainWindow::selectGuideStar(void) {
+    g_AllData->setStarSelectionState(true);
+    ui->pbGuiding->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::doAutoGuiding(void) {
+    if (ui->cbContinuous->isChecked()==true) {
+        ui->cbContinuous->setChecked(false);
+        // abort ccd-acqusition here ...
+    }
+    if (this->guidingIsActive==false) {
+        ui->cbContinuous->setChecked(true); // make sure that a constant stream of images is coming in
+        this->takeSingleCamShot(); // ... and take one so that the chain of "imageAvailable" signals is triggered ...
+        this->guidingIsActive=true;
+        this->setControlsForGuiding(false);
+        // take care of disabling the gui here ...
+        ui->pbGuiding->setText("Stop");
+        qDebug() << "Guiding instantiated";
+    } else {
+        ui->cbContinuous->setChecked(false);
+        this->guidingIsActive=false;
+        ui->pbGuiding->setText("Guide");
+        this->setControlsForGuiding(true);
+        // enable the GUI here again ...
+        // abort ccd-acqusition here ...
+    }
+}
+//------------------------------------------------------------------
+void MainWindow::setControlsForGuiding(bool isEnabled) {
+    ui->pbTrainAxes->setEnabled(isEnabled);
+    ui->sbPulseGuideDuration->setEnabled(isEnabled);
+    ui->pbPGDecMinus->setEnabled(isEnabled);
+    ui->pbPGDecPlus->setEnabled(isEnabled);
+    ui->pbPGRAMinus->setEnabled(isEnabled);
+    ui->pbPGRAPlus->setEnabled(isEnabled);
+    ui->pbSelectGuideStar->setEnabled(isEnabled);
+    ui->sbExposureTime->setEnabled(isEnabled);
+    ui->tabCCDAcq->setEnabled(isEnabled);
+    ui->tabCCDParams->setEnabled(isEnabled);
+    ui->gearTab->setEnabled(isEnabled);
+    ui->INDItab->setEnabled(isEnabled);
+    ui->LX200Tab->setEnabled(isEnabled);
+    ui->catTab->setEnabled(isEnabled);
+    ui->ctrlTab->setEnabled(isEnabled);
 }
 
 //------------------------------------------------------------------
@@ -626,6 +682,10 @@ void MainWindow::displayGuideCamImage(void) {
         this->updateCameraImage();
         if (ui->cbContinuous->isChecked()) {
           this->takeSingleCamShot();
+        }
+        if (this->guidingIsActive==true) {
+            this->guiding->determineCentroid();
+            qDebug() << "determined centroid";
         }
     }
 }

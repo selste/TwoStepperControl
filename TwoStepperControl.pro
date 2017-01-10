@@ -41,7 +41,7 @@ HEADERS  += \
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/
 INCLUDEPATH += /home/pi/libindi/
-INCLUDEPATH +=/home/pi/opencv/opencv/include/
+INCLUDEPATH += /usr/local/include/opencv2
 
 FORMS    += mainwindow.ui
 
@@ -114,3 +114,10 @@ else:unix: LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/ -lopencv_core
 
 INCLUDEPATH += $$PWD/../opencv/opencv/opencv_build/include
 DEPENDPATH += $$PWD/../opencv/opencv/opencv_build/include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_core
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_core
+else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_core
+
+INCLUDEPATH += $$PWD/../../../usr/local/include
+DEPENDPATH += $$PWD/../../../usr/local/include
