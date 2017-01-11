@@ -110,6 +110,14 @@ void QDisplay2D::currentViewStatusSlot(QPointF cursorPos) {
 }
 
 //---------------------------------------------------------------
+void QDisplay2D::currentViewStatusSlot(void) {
+    int newX, newY;
+
+    newX = g_AllData->getInitialStarPosition(0);
+    newY = g_AllData->getInitialStarPosition(1);
+    changeLinePos(newX, newY);
+}
+//---------------------------------------------------------------
 bool QDisplay2D::isImageLoaded() {
     return(this->imageLoaded);
 }

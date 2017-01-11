@@ -86,6 +86,8 @@ private slots:
     void enableCamImageStorage(void);
     void selectGuideStar(void);
     void doAutoGuiding(void);
+    void displayGuideStarPreview(void);
+    void changePrevThreshold(void);
 
 private:
     struct mountMotionStruct {
@@ -123,6 +125,7 @@ private:
     QFuture<void> futureStepperBehaviourDecl_Corr;
     alccd5_client *camera_client;
     QPixmap *camImg;
+    QPixmap *guideStarPrev;
     currentObjectCatalog *objCatalog;
     void updateCameraImage(void);
     void declinationPulseGuide(long, short);

@@ -149,6 +149,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection);
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection);
     guiding = new ocv_guiding();
+    guideStarPrev = new QPixmap();
+    connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()));
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
@@ -177,7 +179,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(takeSingleCamShot())); // take one shot from the ccd-camera
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*)));
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
-    connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view ...
+    connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
+    connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()));
     connect(ui->pbSync, SIGNAL(clicked()), this, SLOT(syncMount())); // reset the current position and timer, and set the global mount position to the actual coordinates
     connect(ui->pbStoreGears, SIGNAL(clicked()), this, SLOT(storeGearData()));
     connect(ui->pbStartTracking, SIGNAL(clicked()),this,SLOT(startRATracking()));
@@ -205,7 +208,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbStop4, SIGNAL(clicked()), this, SLOT(emergencyStop()));
-    connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop()));
     connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus()));
     connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus()));
     connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd()));
@@ -213,6 +215,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog()));
     connect(ui->pbSelectGuideStar, SIGNAL(clicked()), this, SLOT(selectGuideStar()));
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding()));
+    connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevThreshold()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -254,6 +257,8 @@ MainWindow::~MainWindow() {
     delete textEntry;
     delete lx200port;
     delete g_AllData;
+    delete camImg;
+    delete guideStarPrev;
     delete ui;
     exit(0);
 }
@@ -515,16 +520,30 @@ void MainWindow::enableCamImageStorage(void) {
 
 //------------------------------------------------------------------
 void MainWindow::selectGuideStar(void) {
-    g_AllData->setStarSelectionState(true);
-    ui->pbGuiding->setEnabled(true);
-}
+    int thrshld;
 
-//------------------------------------------------------------------
-void MainWindow::doAutoGuiding(void) {
+    ui->hsThreshold->setEnabled(true);
+    ui->pbGuiding->setEnabled(true);
+    thrshld = ui->hsThreshold->value();
+    g_AllData->setStarSelectionState(true);
     if (ui->cbContinuous->isChecked()==true) {
         ui->cbContinuous->setChecked(false);
         // abort ccd-acqusition here ...
     }
+    this->guiding->doGuideStarProcessing(thrshld);
+}
+
+//------------------------------------------------------------------
+void MainWindow::changePrevThreshold(void) {
+    int thrshld;
+
+    thrshld = ui->hsThreshold->value();
+    this->guiding->doGuideStarProcessing(thrshld);
+}
+
+//------------------------------------------------------------------
+void MainWindow::doAutoGuiding(void) {
+
     if (this->guidingIsActive==false) {
         ui->cbContinuous->setChecked(true); // make sure that a constant stream of images is coming in
         this->takeSingleCamShot(); // ... and take one so that the chain of "imageAvailable" signals is triggered ...
@@ -542,6 +561,28 @@ void MainWindow::doAutoGuiding(void) {
         // abort ccd-acqusition here ...
     }
 }
+
+//------------------------------------------------------------------
+void MainWindow::displayGuideCamImage(void) {
+
+    if (g_AllData->getINDIState() == true) {
+        this->updateCameraImage();
+        if (ui->cbContinuous->isChecked()) {
+          this->takeSingleCamShot();
+        }
+        if (this->guidingIsActive==true) {
+            this->guiding->computeCurrentCentroid();
+            qDebug() << "determined centroid";
+        }
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::displayGuideStarPreview(void) {
+    guideStarPrev = this->guiding->getGuideStarPreview();
+    ui->lPreview->setPixmap(*guideStarPrev);
+}
+
 //------------------------------------------------------------------
 void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbTrainAxes->setEnabled(isEnabled);
@@ -553,12 +594,11 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbSelectGuideStar->setEnabled(isEnabled);
     ui->sbExposureTime->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
-    ui->tabCCDParams->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
-    ui->INDItab->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
     ui->ctrlTab->setEnabled(isEnabled);
+    ui->hsThreshold->setEnabled(isEnabled);
 }
 
 //------------------------------------------------------------------
@@ -674,20 +714,6 @@ void MainWindow::updateCameraImage(void)
 {
     camImg=camera_client->getScaledPixmapFromCamera();
     this->camView->addBgImage(*camImg);
-}
-//------------------------------------------------------------------
-void MainWindow::displayGuideCamImage(void) {
-
-    if (g_AllData->getINDIState() == true) {
-        this->updateCameraImage();
-        if (ui->cbContinuous->isChecked()) {
-          this->takeSingleCamShot();
-        }
-        if (this->guidingIsActive==true) {
-            this->guiding->determineCentroid();
-            qDebug() << "determined centroid";
-        }
-    }
 }
 
 //------------------------------------------------------------------

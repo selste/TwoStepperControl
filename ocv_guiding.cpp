@@ -11,6 +11,7 @@ ocv_guiding::ocv_guiding(void) {
     currentImageQImg = new QImage();
     processedImage = new QImage();
     centroidOfGuideStar = new QPoint();
+    prevPMap = new QPixmap();
     this->myVec =new QVector<QRgb>(256);
     for(int i=0;i<256;i++) {
         cval = qRgb(i,i,i);
@@ -27,6 +28,7 @@ ocv_guiding::~ocv_guiding() {
     delete centroidOfGuideStar;
     delete myVec;
     delete processedImage;
+    delete prevPMap;
 }
 
 //---------------------------------------------------
@@ -53,9 +55,19 @@ void ocv_guiding::storeMatToFile(void) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::determineCentroid(void) {
+QPixmap* ocv_guiding::getGuideStarPreview(void) {
+    // deliver a small image of the segmented guide star
+    return prevPMap;
+}
+
+//---------------------------------------------------
+void ocv_guiding::doGuideStarProcessing(int gsThreshold) {
     int clicx,clicy;
-    Point tLeft, bRight;
+    Point tLeft, bRight, centroid;
+    QImage *prevImg;
+    cv::Mat mask;
+    cv::Moments cvmoms;
+    float scaleFact;
 
     if (g_AllData->getStarSelectionState()==true) {
         delete currentImageQImg;
@@ -81,10 +93,28 @@ void ocv_guiding::determineCentroid(void) {
         }
         Rect R(tLeft,bRight); //Create a rect
         this->currentImageOCVMat = this->currentImageOCVMat(R).clone(); //Crop the region of interest using above rect
-        qDebug() << tLeft.x << tLeft.y << bRight.x << bRight.y;
-  //      void circle(Mat& img, Point center, int radius, const Scalar& color, int thickness=1, int lineType=8, int shift=0)
-        storeMatToFile();
+        cv::threshold(this->currentImageOCVMat,this->currentImageOCVMat, gsThreshold, 255,0); // apply the selected threshold
+        convertMatToQImg();
+        prevImg = new QImage(*processedImage);
+        prevImg->scaled(180,180,Qt::KeepAspectRatio,Qt::FastTransformation);
+        prevPMap->convertFromImage(*prevImg,0);
+        delete prevImg;
+        cv::compare(this->currentImageOCVMat,Scalar(50),mask,CMP_GE);
+        cvmoms = moments(mask);
+        centroid.x=(cvmoms.m10/cvmoms.m00);
+        centroid.y=(cvmoms.m01/cvmoms.m00);
+
+        scaleFact=g_AllData->getCameraImageScalingFactor();
+        g_AllData->setInitialStarPosition(round((tLeft.x+centroid.x)*scaleFact),round((tLeft.y+centroid.y)*scaleFact));
+        // this is tricky - correct the position of the manually selected guide star,
+        // store this in the global struct and send a signal to the camera view to
+        // correct the camera view QGraphicsView ...
+        emit guideImagePreviewAvailable();
+        emit determinedGuideStarCentroid();
     }
 }
 
 //---------------------------------------------------
+void ocv_guiding::computeCurrentCentroid(void) {
+
+}

@@ -70,7 +70,6 @@ private:
     QGraphicsPixmapItem *bg;
     QPixmap *backGrndImg;
     void changeLinePos(int x, int y);
-  //  double viewScaleFactor;
     int xDrag;
     int yDrag;
     int xLineDrag;
@@ -78,13 +77,12 @@ private:
     qreal minScaleFactor;
     bool imageLoaded;
 
-private:
-
 signals:
     void currentViewStatusSignal(QPointF cursorPos);
 
 private slots:
     void currentViewStatusSlot(QPointF cursorPos);
+    void currentViewStatusSlot(void);
 };
 
 #endif // QDISPLAY2D_H
