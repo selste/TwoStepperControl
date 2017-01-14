@@ -86,6 +86,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.emergencyStopTriggered = false;
     this->guidingIsActive=false;
     this->lx200IsOn = false;
+    this->ccdCameraIsAcquiring=false;
     this->MountWasSynced = false;
     this->mountMotion.DeclDriveDirection = 1;
     this->mountMotion.RADriveDirection = 1; // 1 for forward, -1 for backward
@@ -176,7 +177,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills teh program, including killing the drives
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
-    connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(takeSingleCamShot())); // take one shot from the ccd-camera
+    connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition()));
+    connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition()));
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*)));
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
@@ -408,7 +410,7 @@ void MainWindow::stopRATracking(void) {
 }
 //------------------------------------------------------------------
 void MainWindow::shutDownProgram() {
-    ui->cbContinuous->setChecked(false);
+    this->ccdCameraIsAcquiring=false;
     sleep(ui->sbExposureTime->value());
     camera_client->sayGoodbyeToINDIServer();
     this->StepperDriveRA->stopDrive();
@@ -510,6 +512,20 @@ void MainWindow::takeSingleCamShot(void) {
 }
 
 //------------------------------------------------------------------
+void MainWindow::startCCDAcquisition(void) {
+    this->ccdCameraIsAcquiring=true;
+    ui->pbExpose->setEnabled(false);
+    ui->pbStopExposure->setEnabled(true);
+    takeSingleCamShot();
+}
+
+//------------------------------------------------------------------
+void MainWindow::stopCCDAcquisition(void) {
+    this->ccdCameraIsAcquiring=false;
+    ui->pbStopExposure->setEnabled(false);
+}
+
+//------------------------------------------------------------------
 void MainWindow::enableCamImageStorage(void) {
     if (ui->cbStoreGuideCamImgs->isChecked()==true) {
         camera_client->setStoreImageFlag(true);
@@ -526,11 +542,7 @@ void MainWindow::selectGuideStar(void) {
     ui->pbGuiding->setEnabled(true);
     thrshld = ui->hsThreshold->value();
     g_AllData->setStarSelectionState(true);
-    if (ui->cbContinuous->isChecked()==true) {
-        ui->cbContinuous->setChecked(false);
-        // abort ccd-acqusition here ...
-    }
-    this->guiding->doGuideStarProcessing(thrshld);
+    this->guiding->doGuideStarPreProcessing(thrshld);
 }
 
 //------------------------------------------------------------------
@@ -538,42 +550,43 @@ void MainWindow::changePrevThreshold(void) {
     int thrshld;
 
     thrshld = ui->hsThreshold->value();
-    this->guiding->doGuideStarProcessing(thrshld);
+    this->guiding->doGuideStarPreProcessing(thrshld);
 }
 
 //------------------------------------------------------------------
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingIsActive==false) {
-        ui->cbContinuous->setChecked(true); // make sure that a constant stream of images is coming in
-        this->takeSingleCamShot(); // ... and take one so that the chain of "imageAvailable" signals is triggered ...
         this->guidingIsActive=true;
         this->setControlsForGuiding(false);
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
         qDebug() << "Guiding instantiated";
     } else {
-        ui->cbContinuous->setChecked(false);
         this->guidingIsActive=false;
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
         // enable the GUI here again ...
-        // abort ccd-acqusition here ...
     }
 }
 
 //------------------------------------------------------------------
 void MainWindow::displayGuideCamImage(void) {
 
+    qDebug() << "entered displayGuideCamImage";
     if (g_AllData->getINDIState() == true) {
         this->updateCameraImage();
-        if (ui->cbContinuous->isChecked()) {
-          this->takeSingleCamShot();
+        qDebug() << "update";
+        if (this->ccdCameraIsAcquiring==true) {
+            this->takeSingleCamShot();
+            qDebug() << "take another one";
+            if (this->guidingIsActive==true) {
+                this->guiding->doGuideStarCurrentProcessing();
+            }
+        } else {
+           ui->pbExpose->setEnabled(true);
         }
-        if (this->guidingIsActive==true) {
-            this->guiding->computeCurrentCentroid();
-            qDebug() << "determined centroid";
-        }
+
     }
 }
 

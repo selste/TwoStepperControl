@@ -38,7 +38,8 @@ private slots:
     void setMaxStepperCurrentRA(void);
     void setMaxStepperCurrentDecl(void);
     void setINDISAddrAndPort(void);
-    void takeSingleCamShot(void);
+    void startCCDAcquisition(void);
+    void stopCCDAcquisition(void);
     void syncMount(void);
     void storeGearData(void);
     void storeDriveData(void);
@@ -116,6 +117,7 @@ private:
     bool lx200IsOn;
     bool MountWasSynced;     // a flag indicating whether a sync occurred
     bool guidingIsActive; // a flag that is true when autoguiding is up ...
+    bool ccdCameraIsAcquiring;
     QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
     QFuture<void> futureStepperBehaviourDecl;
@@ -137,6 +139,7 @@ private:
     void setControlsForGoto(bool);
     void setControlsForGuiding(bool);
     void terminateAllMotion(void);
+    void takeSingleCamShot(void);
     QDisplay2D *camView;
     float ra; // right ascension of a current object
     float decl;// declination of a current object

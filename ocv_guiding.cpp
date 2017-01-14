@@ -61,7 +61,7 @@ QPixmap* ocv_guiding::getGuideStarPreview(void) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarProcessing(int gsThreshold) {
+void ocv_guiding::doGuideStarPreProcessing(int gsThreshold) {
     int clicx,clicy;
     Point tLeft, bRight, centroid;
     QImage *prevImg;
@@ -115,6 +115,8 @@ void ocv_guiding::doGuideStarProcessing(int gsThreshold) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::computeCurrentCentroid(void) {
+void ocv_guiding::doGuideStarCurrentProcessing(void) {
 
 }
+
+//---------------------------------------------------

@@ -62,7 +62,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <property name="movable">
      <bool>true</bool>
@@ -1293,27 +1293,6 @@
           </item>
          </layout>
         </widget>
-        <widget class="QCheckBox" name="cbContinuous">
-         <property name="geometry">
-          <rect>
-           <x>1</x>
-           <y>60</y>
-           <width>192</width>
-           <height>26</height>
-          </rect>
-         </property>
-         <property name="font">
-          <font>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>Continuous acquisition</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
         <widget class="QPushButton" name="pbExpose">
          <property name="enabled">
           <bool>false</bool>
@@ -1429,6 +1408,39 @@
            </widget>
           </item>
          </layout>
+        </widget>
+        <widget class="QPushButton" name="pbStopExposure">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>60</y>
+           <width>200</width>
+           <height>30</height>
+          </rect>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>200</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>30</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Stop Exposure</string>
+         </property>
         </widget>
        </widget>
        <widget class="QGroupBox" name="gbDarksFlats">

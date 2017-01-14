@@ -217,13 +217,12 @@ void alccd5_client::newBLOB(IBLOB *bp) {
     //-----------------------------------------------------------------
     //-----------------------------------------------------------------
     // guide debugging code --- load a camera image for debugging here ...
-    delete mimage;
-    mimage = new QImage("GuideSimulatorImages/TestCameraImage42.jpg");
+    //delete mimage;
+    //mimage = new QImage("GuideSimulatorImages/TestCameraImage42.jpg");
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
+    //-----------------------------------------------------------------
     g_AllData->storeCameraImage(*mimage);
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-    //-----------------------------------------------------------------
-
     smallQImage = new QImage(mimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));
     //smallQImage->save("SmallTestCameraImage.jpg",0,-1);
     // uncomment if you want to see the QImage ...
