@@ -48,7 +48,7 @@ void QDisplay2D::addBgImage(QPixmap image) {
     this->bg = scene->addPixmap(image);
     bg->setZValue(0);
     bg->setPos(0, 0);
-    changeLinePos(g_AllData->getInitialStarPosition(0),g_AllData->getInitialStarPosition(1));
+    changeLinePos(round(g_AllData->getInitialStarPosition(0)),round(g_AllData->getInitialStarPosition(1)));
     // coordinate of the last click in widget coordinates
     if(!this->imageLoaded) {
         this->imageLoaded = true;
@@ -81,7 +81,7 @@ void QDisplay2D::mousePressEvent(QMouseEvent *event) {
             QPointF sceneEventpos =  this->mapToScene(event->pos());
             changeLinePos(sceneEventpos.x(), sceneEventpos.y());
             if(this->bg != NULL) {
-                g_AllData->setInitialStarPosition((int)sceneEventpos.x(),(int)sceneEventpos.y());
+                g_AllData->setInitialStarPosition((float)sceneEventpos.x(),(float)sceneEventpos.y());
                 // store the position of the mouseclick; the method also
                 // computes the position in CCD-chip coordinates
                 emit currentViewStatusSignal(QPointF(this->cursorV->line().x1(), this->cursorH->line().y1()));
@@ -105,7 +105,7 @@ void QDisplay2D::currentViewStatusSlot(QPointF cursorPos) {
 
     if(this->imageLoaded) {
         changeLinePos(cursorPos.x(), cursorPos.y());
-        g_AllData->setInitialStarPosition(cursorPos.x(),cursorPos.y());
+        g_AllData->setInitialStarPosition((float)cursorPos.x(),(float)cursorPos.y());
     }
 }
 
@@ -113,8 +113,8 @@ void QDisplay2D::currentViewStatusSlot(QPointF cursorPos) {
 void QDisplay2D::currentViewStatusSlot(void) {
     int newX, newY;
 
-    newX = g_AllData->getInitialStarPosition(0);
-    newY = g_AllData->getInitialStarPosition(1);
+    newX = round(g_AllData->getInitialStarPosition(0));
+    newY = round(g_AllData->getInitialStarPosition(1));
     changeLinePos(newX, newY);
 }
 //---------------------------------------------------------------

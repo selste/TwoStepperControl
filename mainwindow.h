@@ -108,8 +108,14 @@ private:
         qint64 RAGoToElapsedTimeInMS;
         qint64 DeclGoToElapsedTimeInMS;
     };
+    struct currentGuideStarPosition {
+        float centrX;
+        float centrY;
+    };
+
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
+    struct currentGuideStarPosition guideStarPosition;
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
@@ -140,6 +146,7 @@ private:
     void setControlsForGuiding(bool);
     void terminateAllMotion(void);
     void takeSingleCamShot(void);
+    double correctGuideStarPosition(float, float);
     QDisplay2D *camView;
     float ra; // right ascension of a current object
     float decl;// declination of a current object

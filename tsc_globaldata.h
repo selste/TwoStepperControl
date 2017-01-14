@@ -22,8 +22,8 @@ public:
     bool getGuidingOn(void);
     void setINDIState(bool); // true if INDI-Server is connected
     bool getINDIState(void);
-    void setInitialStarPosition(int, int); // store the coordinates of the last click - the routine converts it also to ccd-coordinates
-    int getInitialStarPosition(short); // 0 is screen x, 1 is screen y, 2 is ccd x and 3 is ccd y
+    void setInitialStarPosition(float, float); // store the coordinates of the last click - the routine converts it also to ccd-coordinates
+    float getInitialStarPosition(short); // 0 is screen x, 1 is screen y, 2 is ccd x and 3 is ccd y
     void setCameraDisplaySize(int, int); // set the size of the widget that displays the camera image
     int getCameraDisplaySize(short);
     float getCameraImageScalingFactor(void); // get the factor that is used to scale the CCD image to the widget size
@@ -53,10 +53,10 @@ private:
     QImage *currentCameraImage;
 
     struct initialStarPosStruct {
-        int screenx;
-        int screeny;
-        int ccdx;
-        int ccdy;
+        float screenx;
+        float screeny;
+        float ccdx;
+        float ccdy;
     };
     struct cameraDisplaySizeStruct {
         int width;

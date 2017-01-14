@@ -16,8 +16,7 @@ Q_OBJECT
         ocv_guiding(void);
         ~ocv_guiding();
         QPoint* getGuideStarCentroid(void);
-        void doGuideStarPreProcessing(int);
-        void doGuideStarCurrentProcessing(void);
+        void doGuideStarImgProcessing(int);
         QPixmap* getGuideStarPreview(void);
 
     private:

@@ -61,9 +61,10 @@ QPixmap* ocv_guiding::getGuideStarPreview(void) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarPreProcessing(int gsThreshold) {
+void ocv_guiding::doGuideStarImgProcessing(int gsThreshold) {
     int clicx,clicy;
-    Point tLeft, bRight, centroid;
+    Point tLeft, bRight;
+    float centroidX, centroidY;
     QImage *prevImg;
     cv::Mat mask;
     cv::Moments cvmoms;
@@ -72,13 +73,13 @@ void ocv_guiding::doGuideStarPreProcessing(int gsThreshold) {
     if (g_AllData->getStarSelectionState()==true) {
         delete currentImageQImg;
         this->currentImageQImg = new QImage(*g_AllData->getCameraImage());
-        clicx = g_AllData->getInitialStarPosition(2);
-        clicy = g_AllData->getInitialStarPosition(3);
+        clicx = round(g_AllData->getInitialStarPosition(2));
+        clicy = round(g_AllData->getInitialStarPosition(3));
         convertQImgToMat();
-        tLeft.x=clicx-100;
-        tLeft.y=clicy-100;
-        bRight.x=clicx+100;
-        bRight.y=clicy+100;
+        tLeft.x=clicx-90;
+        tLeft.y=clicy-90;
+        bRight.x=clicx+90;
+        bRight.y=clicy+90;
         if (tLeft.x < 0) {
             tLeft.x=0;
         }
@@ -101,22 +102,17 @@ void ocv_guiding::doGuideStarPreProcessing(int gsThreshold) {
         delete prevImg;
         cv::compare(this->currentImageOCVMat,Scalar(50),mask,CMP_GE);
         cvmoms = moments(mask);
-        centroid.x=(cvmoms.m10/cvmoms.m00);
-        centroid.y=(cvmoms.m01/cvmoms.m00);
+        centroidX=(cvmoms.m10/(float)cvmoms.m00);
+        centroidY=(cvmoms.m01/(float)cvmoms.m00);
 
         scaleFact=g_AllData->getCameraImageScalingFactor();
-        g_AllData->setInitialStarPosition(round((tLeft.x+centroid.x)*scaleFact),round((tLeft.y+centroid.y)*scaleFact));
+        g_AllData->setInitialStarPosition(((tLeft.x+centroidX)*scaleFact),((tLeft.y+centroidY)*scaleFact));
         // this is tricky - correct the position of the manually selected guide star,
         // store this in the global struct and send a signal to the camera view to
         // correct the camera view QGraphicsView ...
         emit guideImagePreviewAvailable();
         emit determinedGuideStarCentroid();
     }
-}
-
-//---------------------------------------------------
-void ocv_guiding::doGuideStarCurrentProcessing(void) {
-
 }
 
 //---------------------------------------------------

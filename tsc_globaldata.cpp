@@ -94,7 +94,7 @@ bool TSC_GlobalData::getINDIState(void) {
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setInitialStarPosition(int screenx, int screeny) {
+void TSC_GlobalData::setInitialStarPosition(float screenx, float screeny) {
     this->initialStarPos.screenx = screenx;
     this->initialStarPos.screeny = screeny;
     this->initialStarPos.ccdx=screenx/this->cameraDisplaySize.scalingFactor;
@@ -104,8 +104,8 @@ void TSC_GlobalData::setInitialStarPosition(int screenx, int screeny) {
 }
 
 //-----------------------------------------------
-int TSC_GlobalData::getInitialStarPosition(short what) {
-    int retval;
+float TSC_GlobalData::getInitialStarPosition(short what) {
+    float retval;
 
     switch (what) {
     case 0:

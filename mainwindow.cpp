@@ -152,6 +152,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     guiding = new ocv_guiding();
     guideStarPrev = new QPixmap();
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()));
+    guideStarPosition.centrX =0.0;
+    guideStarPosition.centrY =0.0;
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
@@ -542,7 +544,9 @@ void MainWindow::selectGuideStar(void) {
     ui->pbGuiding->setEnabled(true);
     thrshld = ui->hsThreshold->value();
     g_AllData->setStarSelectionState(true);
-    this->guiding->doGuideStarPreProcessing(thrshld);
+    this->guiding->doGuideStarImgProcessing(thrshld);
+    guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
+    guideStarPosition.centrY = g_AllData->getInitialStarPosition(3);
 }
 
 //------------------------------------------------------------------
@@ -550,7 +554,7 @@ void MainWindow::changePrevThreshold(void) {
     int thrshld;
 
     thrshld = ui->hsThreshold->value();
-    this->guiding->doGuideStarPreProcessing(thrshld);
+    this->guiding->doGuideStarImgProcessing(thrshld);
 }
 
 //------------------------------------------------------------------
@@ -572,22 +576,36 @@ void MainWindow::doAutoGuiding(void) {
 
 //------------------------------------------------------------------
 void MainWindow::displayGuideCamImage(void) {
+    int thrshld;
+    float newX, newY;
 
-    qDebug() << "entered displayGuideCamImage";
+    thrshld = ui->hsThreshold->value();
     if (g_AllData->getINDIState() == true) {
         this->updateCameraImage();
-        qDebug() << "update";
         if (this->ccdCameraIsAcquiring==true) {
             this->takeSingleCamShot();
-            qDebug() << "take another one";
             if (this->guidingIsActive==true) {
-                this->guiding->doGuideStarCurrentProcessing();
+                this->guiding->doGuideStarImgProcessing(thrshld);
+                newX = g_AllData->getInitialStarPosition(2);
+                newY = g_AllData->getInitialStarPosition(3);
+                correctGuideStarPosition(newX,newY);
             }
         } else {
            ui->pbExpose->setEnabled(true);
         }
-
     }
+}
+
+//------------------------------------------------------------------
+double MainWindow::correctGuideStarPosition(float cx, float cy) {
+    float residualX, residualY;
+
+    residualX=this->guideStarPosition.centrX - cx;
+    residualY=this->guideStarPosition.centrY - cy;
+    qDebug() << "Relative Move" << residualX << residualY;
+    // do something here, and get a new centroid ...
+    this->guideStarPosition.centrX = cx;
+    this->guideStarPosition.centrY = cy;
 }
 
 //------------------------------------------------------------------
@@ -607,6 +625,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbSelectGuideStar->setEnabled(isEnabled);
     ui->sbExposureTime->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
+    ui->tabImageProc->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
