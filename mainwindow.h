@@ -91,6 +91,9 @@ private slots:
     void changePrevImgProc(void);
     void changeGuideScopeFL(void);
     void storeGuideScopeFL(void);
+    void setHalfFOV(void);
+    void setDoubleFOV(void);
+    void setRegularFOV(void);
 
 private:
     struct mountMotionStruct {
@@ -159,6 +162,7 @@ private:
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     ocv_guiding *guiding;
+    float guidingFOVFactor;
 };
 
 #endif // MAINWINDOW_H

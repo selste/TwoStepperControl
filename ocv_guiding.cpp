@@ -83,7 +83,7 @@ double ocv_guiding::getArcSecsPerPix(short what) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness) {
+void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness,float FOVfact) {
     int clicx,clicy;
     Point tLeft, bRight;
     float centroidX, centroidY;
@@ -98,10 +98,10 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float c
         clicx = round(g_AllData->getInitialStarPosition(2));
         clicy = round(g_AllData->getInitialStarPosition(3));
         convertQImgToMat();
-        tLeft.x=clicx-90;
-        tLeft.y=clicy-90;
-        bRight.x=clicx+90;
-        bRight.y=clicy+90;
+        tLeft.x=clicx-(90*FOVfact);
+        tLeft.y=clicy-(90*FOVfact);
+        bRight.x=clicx+(90*FOVfact);
+        bRight.y=clicy+(90*FOVfact);
         if (tLeft.x < 0) {
             tLeft.x=0;
         }
@@ -121,9 +121,8 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float c
         if (medianOn== true) {
             cv::medianBlur(this->currentImageOCVMat,this->currentImageOCVMat, 3);
         } // run a 3x3 median filter if desired
-        convertMatToQImg();
-        prevImg = new QImage(*processedImage);
-        prevImg->scaled(180,180,Qt::KeepAspectRatio,Qt::FastTransformation);
+        convertMatToQImg(); 
+        prevImg = new QImage(processedImage->scaled(180,180,Qt::KeepAspectRatio,Qt::FastTransformation));
         prevPMap->convertFromImage(*prevImg,0);
         delete prevImg;
         cvmoms = moments(this->currentImageOCVMat,true);

@@ -76,7 +76,7 @@ void QDisplay2D::wheelEvent(QWheelEvent *event) {
 //---------------------------------------------------------------
 void QDisplay2D::mousePressEvent(QMouseEvent *event) {
 
-    if(this->imageLoaded) {
+    if((this->imageLoaded) && (g_AllData->getGuidingOn()==false)) {
         if(event->buttons() == Qt::LeftButton) {
             QPointF sceneEventpos =  this->mapToScene(event->pos());
             changeLinePos(sceneEventpos.x(), sceneEventpos.y());

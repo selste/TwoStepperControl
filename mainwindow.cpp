@@ -154,6 +154,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()));
     guideStarPosition.centrX =0.0;
     guideStarPosition.centrY =0.0;
+    this->guidingFOVFactor=1.0;
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir();
@@ -175,6 +176,22 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     this->camView = new QDisplay2D(ui->camTab,425,340); // make the clicakble scene view of 425 x 340 pixels
     this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0),g_AllData->getCameraDisplaySize(1)); // store the size of the scene view in the global parameter class
+
+    RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
+    g_AllData->storeGlobalData();
+    g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+
+    ui->sbFLGuideScope->setValue(g_AllData->getGuideScopeFocalLength());
+    this->guiding->setFocalLengthOfGuidescope(g_AllData->getGuideScopeFocalLength());
+
+    this->lx200port= new lx200_communication();
+    if (this->lx200port->getPortState() == 1) {
+        ui->cbRS232Open->setChecked(true);
+    }
+    this->LXSetNumberFormatToSimple();
+
+    this->StepperDriveRA->stopDrive();
+    this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills teh program, including killing the drives
@@ -225,19 +242,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc()));
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL()));
     connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL()));
-
-    RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
-    g_AllData->storeGlobalData();
-    g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
-
-    ui->sbFLGuideScope->setValue(g_AllData->getGuideScopeFocalLength());
-    this->guiding->setFocalLengthOfGuidescope(g_AllData->getGuideScopeFocalLength());
-
-    this->lx200port= new lx200_communication();
-    if (this->lx200port->getPortState() == 1) {
-        ui->cbRS232Open->setChecked(true);
-    }
-    this->LXSetNumberFormatToSimple();
+    connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV()));
+    connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV()));
+    connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV()));
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -258,8 +265,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection);
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple()));
-    this->StepperDriveRA->stopDrive();
-    this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
 //------------------------------------------------------------------
 MainWindow::~MainWindow() {
@@ -559,7 +564,7 @@ void MainWindow::selectGuideStar(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     g_AllData->setStarSelectionState(true);
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
     guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
     guideStarPosition.centrY = g_AllData->getInitialStarPosition(3);
 }
@@ -574,22 +579,21 @@ void MainWindow::changePrevImgProc(void) {
     medianOn=ui->cbMedianFilter->isChecked();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta, this->guidingFOVFactor);
 }
 
 //------------------------------------------------------------------
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingIsActive==false) {
-        this->camView->blockSignals(false);
+        g_AllData->setGuidingOn(true);
         this->guidingIsActive=true;
         this->setControlsForGuiding(false);
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
-        qDebug() << "Guiding instantiated";
     } else {
-        this->camView->blockSignals(true);
         this->guidingIsActive=false;
+        g_AllData->setGuidingOn(false);
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
         // enable the GUI here again ...
@@ -611,7 +615,7 @@ void MainWindow::displayGuideCamImage(void) {
         if (this->ccdCameraIsAcquiring==true) {
             this->takeSingleCamShot();
             if (this->guidingIsActive==true) {
-                this->guiding->doGuideStarImgProcessing(thrshld, medianOn,alpha,beta);
+                this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
                 newX = g_AllData->getInitialStarPosition(2);
                 newY = g_AllData->getInitialStarPosition(3);
                 correctGuideStarPosition(newX,newY);
@@ -628,6 +632,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 
     residualX=(this->guideStarPosition.centrX - cx)*this->guiding->getArcSecsPerPix(0);
     residualY=(this->guideStarPosition.centrY - cy)*this->guiding->getArcSecsPerPix(1);
+    ui->leXDev->setText(textEntry->number(residualX));
+    ui->leYDev->setText(textEntry->number(residualY));
     qDebug() << "Relative Move" << residualX << residualY;
     // do something here, and get a new centroid ...
     this->guideStarPosition.centrX = cx;
@@ -654,6 +660,48 @@ void MainWindow::changeGuideScopeFL(void) {
 void MainWindow::storeGuideScopeFL(void) {
     this->changeGuideScopeFL();
     g_AllData->storeGlobalData();
+}
+
+//------------------------------------------------------------------
+void MainWindow::setHalfFOV(void) {
+    int thrshld,beta;
+    float alpha;
+    bool medianOn;
+
+    this->guidingFOVFactor=0.5;
+    thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    medianOn=ui->cbMedianFilter->isChecked();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
+}
+
+//------------------------------------------------------------------
+void MainWindow::setDoubleFOV(void) {
+    int thrshld,beta;
+    float alpha;
+    bool medianOn;
+
+    this->guidingFOVFactor=2.0;
+    thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    medianOn=ui->cbMedianFilter->isChecked();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
+}
+
+//------------------------------------------------------------------
+void MainWindow::setRegularFOV(void) {
+    int thrshld,beta;
+    float alpha;
+    bool medianOn;
+
+    this->guidingFOVFactor=1.0;
+    thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    medianOn=ui->cbMedianFilter->isChecked();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
 }
 
 //------------------------------------------------------------------

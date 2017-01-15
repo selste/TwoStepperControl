@@ -16,7 +16,7 @@ Q_OBJECT
         ocv_guiding(void);
         ~ocv_guiding();
         QPoint* getGuideStarCentroid(void);
-        void doGuideStarImgProcessing(int,bool,float,int);
+        void doGuideStarImgProcessing(int,bool,float,int,float);
         QPixmap* getGuideStarPreview(void);
         double getArcSecsPerPix(short);
         void setFocalLengthOfGuidescope(int);
@@ -25,7 +25,7 @@ Q_OBJECT
         cv::Mat currentImageOCVMat;
         QImage* currentImageQImg;
         QImage* processedImage;
-        QPixmap *prevPMap;
+        QPixmap* prevPMap;
         QPoint* centroidOfGuideStar;
         QVector<QRgb> *myVec;
         void convertQImgToMat(void);
