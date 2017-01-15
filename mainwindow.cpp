@@ -219,7 +219,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog()));
     connect(ui->pbSelectGuideStar, SIGNAL(clicked()), this, SLOT(selectGuideStar()));
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding()));
-    connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevThreshold()));
+    connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc()));
+    connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc()));
+    connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc()));
+    connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -538,23 +541,35 @@ void MainWindow::enableCamImageStorage(void) {
 
 //------------------------------------------------------------------
 void MainWindow::selectGuideStar(void) {
-    int thrshld;
+    int thrshld,beta;
+    bool medianOn;
+    float alpha;
 
     ui->hsThreshold->setEnabled(true);
+    ui->hsIContrast->setEnabled(true);
+    ui->hsIBrightness->setEnabled(true);
+    medianOn=ui->cbMedianFilter->isChecked();
     ui->pbGuiding->setEnabled(true);
     thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
     g_AllData->setStarSelectionState(true);
-    this->guiding->doGuideStarImgProcessing(thrshld);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta);
     guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
     guideStarPosition.centrY = g_AllData->getInitialStarPosition(3);
 }
 
 //------------------------------------------------------------------
-void MainWindow::changePrevThreshold(void) {
-    int thrshld;
+void MainWindow::changePrevImgProc(void) {
+    int thrshld,beta;
+    bool medianOn;
+    float alpha;
 
     thrshld = ui->hsThreshold->value();
-    this->guiding->doGuideStarImgProcessing(thrshld);
+    medianOn=ui->cbMedianFilter->isChecked();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta);
 }
 
 //------------------------------------------------------------------
@@ -576,16 +591,20 @@ void MainWindow::doAutoGuiding(void) {
 
 //------------------------------------------------------------------
 void MainWindow::displayGuideCamImage(void) {
-    int thrshld;
-    float newX, newY;
+    int thrshld,beta;
+    float newX, newY,alpha;
+    bool medianOn;
 
     thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    medianOn=ui->cbMedianFilter->isChecked();
     if (g_AllData->getINDIState() == true) {
         this->updateCameraImage();
         if (this->ccdCameraIsAcquiring==true) {
             this->takeSingleCamShot();
             if (this->guidingIsActive==true) {
-                this->guiding->doGuideStarImgProcessing(thrshld);
+                this->guiding->doGuideStarImgProcessing(thrshld, medianOn,alpha,beta);
                 newX = g_AllData->getInitialStarPosition(2);
                 newY = g_AllData->getInitialStarPosition(3);
                 correctGuideStarPosition(newX,newY);
@@ -606,6 +625,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     // do something here, and get a new centroid ...
     this->guideStarPosition.centrX = cx;
     this->guideStarPosition.centrY = cy;
+    return 0.0;
 }
 
 //------------------------------------------------------------------
@@ -706,7 +726,7 @@ void MainWindow::clearLXLog(void) {
 //------------------------------------------------------------------
 
 void MainWindow::deployINDICommand(void) {
-    int retval;
+    int retval=0;
 
     if (ui->rbQHYINDI->isChecked()== true) {
         retval = system("indiserver -v -m 100 indi_qhy_ccd &");
@@ -796,7 +816,7 @@ void MainWindow::catalogObjectChosen(void)
             meeusN=(20.0468-0.0085*((ui->sbEpoch->value()-1900)/100.0))/(3600.0);  // factor n, in degrees
             raRadians=epRA/180.0*3.141592653589793;
             raRadians=epDecl/180.0*3.141592653589793;
-            deltaRA = meeusM+meeusN*sin(raRadians)*tan(raRadians);
+            deltaRA = meeusM+meeusN*sin(raRadians)*tan(declRadians);
             deltaDecl = meeusN*cos(raRadians);
             this->ra=epRA+deltaRA*((double)(ui->sbEpoch->value()-ui->lcdCatEpoch->value()));
             this->decl=epDecl+deltaDecl*((double)(ui->sbEpoch->value()-ui->lcdCatEpoch->value()));

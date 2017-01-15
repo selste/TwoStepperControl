@@ -88,7 +88,7 @@ private slots:
     void selectGuideStar(void);
     void doAutoGuiding(void);
     void displayGuideStarPreview(void);
-    void changePrevThreshold(void);
+    void changePrevImgProc(void);
 
 private:
     struct mountMotionStruct {
