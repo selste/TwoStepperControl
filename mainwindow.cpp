@@ -223,10 +223,15 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc()));
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc()));
     connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc()));
+    connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL()));
+    connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL()));
 
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+
+    ui->sbFLGuideScope->setValue(g_AllData->getGuideScopeFocalLength());
+    this->guiding->setFocalLengthOfGuidescope(g_AllData->getGuideScopeFocalLength());
 
     this->lx200port= new lx200_communication();
     if (this->lx200port->getPortState() == 1) {
@@ -576,12 +581,14 @@ void MainWindow::changePrevImgProc(void) {
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingIsActive==false) {
+        this->camView->blockSignals(false);
         this->guidingIsActive=true;
         this->setControlsForGuiding(false);
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
         qDebug() << "Guiding instantiated";
     } else {
+        this->camView->blockSignals(true);
         this->guidingIsActive=false;
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
@@ -619,8 +626,8 @@ void MainWindow::displayGuideCamImage(void) {
 double MainWindow::correctGuideStarPosition(float cx, float cy) {
     float residualX, residualY;
 
-    residualX=this->guideStarPosition.centrX - cx;
-    residualY=this->guideStarPosition.centrY - cy;
+    residualX=(this->guideStarPosition.centrX - cx)*this->guiding->getArcSecsPerPix(0);
+    residualY=(this->guideStarPosition.centrY - cy)*this->guiding->getArcSecsPerPix(1);
     qDebug() << "Relative Move" << residualX << residualY;
     // do something here, and get a new centroid ...
     this->guideStarPosition.centrX = cx;
@@ -635,6 +642,21 @@ void MainWindow::displayGuideStarPreview(void) {
 }
 
 //------------------------------------------------------------------
+void MainWindow::changeGuideScopeFL(void) {
+    int focalLength;
+
+    focalLength=ui->sbFLGuideScope->value();
+    this->guiding->setFocalLengthOfGuidescope(focalLength);
+    g_AllData->setGuideScopeFocalLength(focalLength);
+}
+
+//------------------------------------------------------------------
+void MainWindow::storeGuideScopeFL(void) {
+    this->changeGuideScopeFL();
+    g_AllData->storeGlobalData();
+}
+
+//------------------------------------------------------------------
 void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbTrainAxes->setEnabled(isEnabled);
     ui->sbPulseGuideDuration->setEnabled(isEnabled);
@@ -645,7 +667,14 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbSelectGuideStar->setEnabled(isEnabled);
     ui->sbExposureTime->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
-    ui->tabImageProc->setEnabled(isEnabled);
+    ui->pbSelectGuideStar->setEnabled(isEnabled);
+    ui->hsThreshold->setEnabled(isEnabled);
+    ui->hsIContrast->setEnabled(isEnabled);
+    ui->hsIBrightness->setEnabled(isEnabled);
+    ui->cbMedianFilter->setEnabled(isEnabled);
+    ui->rbFOVDbl->setEnabled(isEnabled);
+    ui->rbFOVHalf->setEnabled(isEnabled);
+    ui->rbFOVStd->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);

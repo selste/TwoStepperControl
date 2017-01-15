@@ -5,6 +5,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->guideStarSelected=false;
     this->guidingIsOn=false;
     this->INDIServerIsConnected=false;
+    this->guideScopeFocalLength=1000;
     initialStarPos.screenx=0;
     initialStarPos.screeny=0;
     initialStarPos.ccdx=0;
@@ -50,6 +51,15 @@ TSC_GlobalData::TSC_GlobalData() {
 TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
+}
+//-----------------------------------------------
+void TSC_GlobalData::setGuideScopeFocalLength(int fl) {
+    this->guideScopeFocalLength=fl;
+}
+
+//-----------------------------------------------
+int TSC_GlobalData::getGuideScopeFocalLength(void) {
+    return this->guideScopeFocalLength;
 }
 
 //-----------------------------------------------
@@ -461,6 +471,10 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Chip width y for guiding camera.\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr = std::to_string(this->guideScopeFocalLength );
+    ostr.append("// Focal length of guidescope\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -550,6 +564,10 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream iscframey(line);
     iscframey >> this->cameraParameters.chipHeight;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream iscguidescopefl(line);
+    iscguidescopefl >> this->guideScopeFocalLength;
     infile.close(); // close the reading file for preference
     return true;
 }

@@ -18,6 +18,8 @@ Q_OBJECT
         QPoint* getGuideStarCentroid(void);
         void doGuideStarImgProcessing(int,bool,float,int);
         QPixmap* getGuideStarPreview(void);
+        double getArcSecsPerPix(short);
+        void setFocalLengthOfGuidescope(int);
 
     private:
         cv::Mat currentImageOCVMat;
@@ -31,6 +33,9 @@ Q_OBJECT
         void storeMatToFile(void);
         int maxX;
         int maxY;
+        double gScopeFL;
+        double arcsecPerPixX;
+        double arcsecPerPixY;
 
     signals:
         void guideImagePreviewAvailable(void);

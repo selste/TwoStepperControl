@@ -18,8 +18,11 @@ ocv_guiding::ocv_guiding(void) {
         this->myVec->insert(i, cval);
     }
     // setting colortable for grayscale QImages
-    maxX = g_AllData->getCameraChipPixels(0);
-    maxY = g_AllData->getCameraChipPixels(1); // get the chip size
+    this->maxX = g_AllData->getCameraChipPixels(0);
+    this->maxY = g_AllData->getCameraChipPixels(1); // get the chip size
+    this->gScopeFL = 1000;
+    this->arcsecPerPixX=1.07276;
+    this->arcsecPerPixY=1.07276;
 }
 
 //---------------------------------------------------
@@ -61,7 +64,26 @@ QPixmap* ocv_guiding::getGuideStarPreview(void) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst, int briteness) {
+void ocv_guiding::setFocalLengthOfGuidescope(int fl) {
+
+    this->gScopeFL=(double)fl;
+    qDebug() << g_AllData->getCameraPixelSize(0) << this->gScopeFL;
+
+    this->arcsecPerPixX=206.3*g_AllData->getCameraPixelSize(0)/(this->gScopeFL);
+    this->arcsecPerPixY=206.3*g_AllData->getCameraPixelSize(1)/(this->gScopeFL);
+    qDebug() << "resolution" << this->arcsecPerPixX << this->arcsecPerPixY;
+}
+//---------------------------------------------------
+double ocv_guiding::getArcSecsPerPix(short what) {
+    if (what == 0) {
+        return this->arcsecPerPixX;
+    } else {
+        return this->arcsecPerPixY;
+    }
+}
+
+//---------------------------------------------------
+void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness) {
     int clicx,clicy;
     Point tLeft, bRight;
     float centroidX, centroidY;

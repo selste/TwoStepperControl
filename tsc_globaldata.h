@@ -29,7 +29,7 @@ public:
     float getCameraImageScalingFactor(void); // get the factor that is used to scale the CCD image to the widget size
     void setCameraImageScalingFactor(float);
     void setCameraParameters(float, float, int, int); // set ccd pixelsize x, y and ccd chip width and height in pixels
-    float getCameraPixelSize(short); // 0 for width in microns, 1 for y
+    float getCameraPixelSize(short); // 0 for width in microns in x, 1 for y
     int getCameraChipPixels(short); // get ccd width and height, 0 for x and 1 for y
     void setSyncPosition(float, float); // when syncing, set RA and decl in decimal format (degrees)
     float getSyncPositionCoords(short); // 0 for decimal RA, 1 for declination- the monotonic timer "monotonicGlobalTimer" starts
@@ -43,6 +43,8 @@ public:
     double getActualScopePosition(short); // 0 for hour angle, 1 for decl, 2 for RA
     void incrementActualScopePosition(double, double); // add hour angle and decl increments
     void storeCameraImage(QImage);
+    void setGuideScopeFocalLength(int);
+    int getGuideScopeFocalLength(void);
     QImage* getCameraImage(void);
 
 private:
@@ -50,6 +52,7 @@ private:
     bool guideStarSelected;
     bool guidingIsOn;
     bool INDIServerIsConnected;
+    int  guideScopeFocalLength;
     QImage *currentCameraImage;
 
     struct initialStarPosStruct {
