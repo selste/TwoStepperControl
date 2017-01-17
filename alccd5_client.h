@@ -50,7 +50,6 @@ private:
    INumberVectorProperty *ccd_exposure = NULL;
    long expcounter;
    bool storeCamImages;
-   short simulatorCounter; // a helper for loading images during development
 
 signals:
    void imageAvailable(void);
