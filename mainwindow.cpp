@@ -1060,6 +1060,14 @@ void MainWindow::calibrateAutoGuider(void) {
     long pulseDuration;
     double currentCentroidX, currentCentroidY;
     short stepCounter;
+    int thrshld,beta;
+    float alpha;
+    bool medianOn;
+
+    thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
 
     for (stepCounter = 0; stepCounter < 3; stepCounter++) {
         g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
@@ -1069,9 +1077,9 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         qDebug() << "got an image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->changePrevImgProc(); // carry out centroid computation
-        currentCentroidX=this->guideStarPosition.centrX;
-        currentCentroidY=this->guideStarPosition.centrY;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroidX = g_AllData->getInitialStarPosition(2);
+        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->raPGFwd();
@@ -1084,9 +1092,9 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         qDebug() << "got an image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->changePrevImgProc(); // carry out centroid computation
-        currentCentroidX=this->guideStarPosition.centrX;
-        currentCentroidY=this->guideStarPosition.centrY;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroidX = g_AllData->getInitialStarPosition(2);
+        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->raPGBwd();
@@ -1099,9 +1107,9 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         qDebug() << "got an image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->changePrevImgProc(); // carry out centroid computation
-        currentCentroidX=this->guideStarPosition.centrX;
-        currentCentroidY=this->guideStarPosition.centrY;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroidX = g_AllData->getInitialStarPosition(2);
+        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->raPGFwd();
@@ -1115,9 +1123,9 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         qDebug() << "got an image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->changePrevImgProc(); // carry out centroid computation
-        currentCentroidX=this->guideStarPosition.centrX;
-        currentCentroidY=this->guideStarPosition.centrY;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroidX = g_AllData->getInitialStarPosition(2);
+        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->declPGPlus();
@@ -1130,9 +1138,9 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         qDebug() << "got an image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->changePrevImgProc(); // carry out centroid computation
-        currentCentroidX=this->guideStarPosition.centrX;
-        currentCentroidY=this->guideStarPosition.centrY;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroidX = g_AllData->getInitialStarPosition(2);
+        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->declPGMinus();
@@ -1145,9 +1153,9 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         qDebug() << "got an image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->changePrevImgProc(); // carry out centroid computation
-        currentCentroidX=this->guideStarPosition.centrX;
-        currentCentroidY=this->guideStarPosition.centrY;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroidX = g_AllData->getInitialStarPosition(2);
+        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->declPGPlus();
