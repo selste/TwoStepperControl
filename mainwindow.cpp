@@ -1057,7 +1057,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 // pulse guide commands in each direction and back are carried out.
 // the pixel/ms is then evaluated for each direction - UNDER CONSTRUCTION
 void MainWindow::calibrateAutoGuider(void) {
-    long pulseDuration;
+    int pulseDuration;
     double currentCentroidX, currentCentroidY;
     short stepCounter;
     int thrshld,beta;
@@ -1069,13 +1069,20 @@ void MainWindow::calibrateAutoGuider(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
 
-    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
+    pulseDuration = 100;
+    ui->sbPulseGuideDuration->setValue(pulseDuration);
+    for (stepCounter = 0; stepCounter < 5; stepCounter++) {
         g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
         g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
         while (g_AllData->getGuideScopeFlags(5) == false) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         }
         qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got another image";
         g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
         currentCentroidX = g_AllData->getInitialStarPosition(2);
@@ -1083,83 +1090,10 @@ void MainWindow::calibrateAutoGuider(void) {
         qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
         g_AllData->setGuideScopeFlags(false,5);
         this->raPGFwd();
-    }
-    for (stepCounter = 0; stepCounter < 6; stepCounter++) {
-        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got an image";
-        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-        currentCentroidX = g_AllData->getInitialStarPosition(2);
-        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
-        g_AllData->setGuideScopeFlags(false,5);
-        this->raPGBwd();
-    }
-    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
-        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got an image";
-        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-        currentCentroidX = g_AllData->getInitialStarPosition(2);
-        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
-        g_AllData->setGuideScopeFlags(false,5);
-        this->raPGFwd();
+        pulseDuration*=2;
+        ui->sbPulseGuideDuration->setValue(pulseDuration);
     }
 
-    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
-        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got an image";
-        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-        currentCentroidX = g_AllData->getInitialStarPosition(2);
-        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
-        g_AllData->setGuideScopeFlags(false,5);
-        this->declPGPlus();
-    }
-    for (stepCounter = 0; stepCounter < 6; stepCounter++) {
-        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got an image";
-        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-        currentCentroidX = g_AllData->getInitialStarPosition(2);
-        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
-        g_AllData->setGuideScopeFlags(false,5);
-        this->declPGMinus();
-    }
-    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
-        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got an image";
-        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-        currentCentroidX = g_AllData->getInitialStarPosition(2);
-        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
-        g_AllData->setGuideScopeFlags(false,5);
-        this->declPGPlus();
-    }
 
     g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
     g_AllData->setGuideScopeFlags(true,4); // "systemIsCalibrated" - flag set to true
