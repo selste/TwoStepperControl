@@ -260,7 +260,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
-
+    connect(this->ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider()));
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
@@ -959,6 +959,10 @@ void MainWindow::displayGuideCamImage(void) {
         this->updateCameraImage(); // get a pixmap from the camera class
         if (this->ccdCameraIsAcquiring==true) { // if the flag for taking another one is true ...
             this->takeSingleCamShot(); // ... request another one from INDI
+            if (g_AllData->getGuideScopeFlags(3) == true) { // autoguider is calibrating
+                g_AllData->setGuideScopeFlags(true,5); // in calibration, this camera image is to be used
+                qDebug() << "getting an calibration image";
+            }
             if (this->guidingIsActive==true) { // if autoguiding is active ...
                 this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
                 newX = g_AllData->getInitialStarPosition(2);
@@ -1032,21 +1036,127 @@ void MainWindow::updateCameraImage(void) {
 // routines for auto guiding
 //------------------------------------------------------------------
 //------------------------------------------------------------------
- //------------------------------------------------------------------
- // THIS IS NOT DONE - correct guide star position here ....
- double MainWindow::correctGuideStarPosition(float cx, float cy) {
-     float residualX, residualY;
+//------------------------------------------------------------------
+// THIS IS NOT DONE - correct guide star position here ....
+double MainWindow::correctGuideStarPosition(float cx, float cy) {
+    float residualX, residualY;
 
-     residualX=(this->guideStarPosition.centrX - cx)*this->guiding->getArcSecsPerPix(0);
-     residualY=(this->guideStarPosition.centrY - cy)*this->guiding->getArcSecsPerPix(1);
-     ui->leXDev->setText(textEntry->number(residualX));
-     ui->leYDev->setText(textEntry->number(residualY));
-     qDebug() << "Relative Move" << residualX << residualY;
+    residualX=(this->guideStarPosition.centrX - cx)*this->guiding->getArcSecsPerPix(0);
+    residualY=(this->guideStarPosition.centrY - cy)*this->guiding->getArcSecsPerPix(1);
+    ui->leXDev->setText(textEntry->number(residualX));
+    ui->leYDev->setText(textEntry->number(residualY));
+    qDebug() << "Relative Move" << residualX << residualY;
      // do something here, and get a new centroid ...
-     this->guideStarPosition.centrX = cx;
-     this->guideStarPosition.centrY = cy;
-     return 0.0;
- }
+    this->guideStarPosition.centrX = cx;
+    this->guideStarPosition.centrY = cy;
+    return 0.0;
+}
+
+//------------------------------------------------------------------
+// calibrate the system. the selected star is located and three
+// pulse guide commands in each direction and back are carried out.
+// the pixel/ms is then evaluated for each direction - UNDER CONSTRUCTION
+void MainWindow::calibrateAutoGuider(void) {
+    long pulseDuration;
+    double currentCentroidX, currentCentroidY;
+    short stepCounter;
+
+    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
+        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+        this->changePrevImgProc(); // carry out centroid computation
+        currentCentroidX=this->guideStarPosition.centrX;
+        currentCentroidY=this->guideStarPosition.centrY;
+        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
+        g_AllData->setGuideScopeFlags(false,5);
+        this->raPGFwd();
+    }
+    for (stepCounter = 0; stepCounter < 6; stepCounter++) {
+        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+        this->changePrevImgProc(); // carry out centroid computation
+        currentCentroidX=this->guideStarPosition.centrX;
+        currentCentroidY=this->guideStarPosition.centrY;
+        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
+        g_AllData->setGuideScopeFlags(false,5);
+        this->raPGBwd();
+    }
+    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
+        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+        this->changePrevImgProc(); // carry out centroid computation
+        currentCentroidX=this->guideStarPosition.centrX;
+        currentCentroidY=this->guideStarPosition.centrY;
+        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
+        g_AllData->setGuideScopeFlags(false,5);
+        this->raPGFwd();
+    }
+
+    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
+        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+        this->changePrevImgProc(); // carry out centroid computation
+        currentCentroidX=this->guideStarPosition.centrX;
+        currentCentroidY=this->guideStarPosition.centrY;
+        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
+        g_AllData->setGuideScopeFlags(false,5);
+        this->declPGPlus();
+    }
+    for (stepCounter = 0; stepCounter < 6; stepCounter++) {
+        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+        this->changePrevImgProc(); // carry out centroid computation
+        currentCentroidX=this->guideStarPosition.centrX;
+        currentCentroidY=this->guideStarPosition.centrY;
+        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
+        g_AllData->setGuideScopeFlags(false,5);
+        this->declPGMinus();
+    }
+    for (stepCounter = 0; stepCounter < 3; stepCounter++) {
+        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+        while (g_AllData->getGuideScopeFlags(5) == false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        qDebug() << "got an image";
+        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+        this->changePrevImgProc(); // carry out centroid computation
+        currentCentroidX=this->guideStarPosition.centrX;
+        currentCentroidY=this->guideStarPosition.centrY;
+        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
+        g_AllData->setGuideScopeFlags(false,5);
+        this->declPGPlus();
+    }
+
+    g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
+    g_AllData->setGuideScopeFlags(true,4); // "systemIsCalibrated" - flag set to true
+    qDebug() << "Calibration is done";
+}
 
 //------------------------------------------------------------------
 // prepare the GUI and the flags for autoguiding; the actual work is done
@@ -1054,14 +1164,14 @@ void MainWindow::updateCameraImage(void) {
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingIsActive==false) {
-        g_AllData->setGuidingOn(true);
+        g_AllData->setGuideScopeFlags(true,2);
         this->guidingIsActive=true;
         this->setControlsForGuiding(false);
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
     } else {
         this->guidingIsActive=false;
-        g_AllData->setGuidingOn(false);
+        g_AllData->setGuideScopeFlags(false,2);
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
         // enable the GUI here again ...
@@ -1076,6 +1186,9 @@ void MainWindow::selectGuideStar(void) {
     bool medianOn;
     float alpha;
 
+    if (this->mountMotion.RATrackingIsOn==false) {
+        this->startRATracking();
+    } // turn on tracking if it is not running when a guide star is selected
     ui->pbGuiding->setEnabled(true);
     ui->hsThreshold->setEnabled(true);
     ui->hsIContrast->setEnabled(true);
@@ -1084,7 +1197,7 @@ void MainWindow::selectGuideStar(void) {
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value(); // get image processing parameters
-    g_AllData->setStarSelectionState(true); // set flag for a selected star
+    g_AllData->setGuideScopeFlags(true,1); // set flag for a selected star
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
     guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
     guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData

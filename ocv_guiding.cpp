@@ -92,7 +92,7 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float c
     cv::Moments cvmoms;
     float scaleFact;
 
-    if (g_AllData->getStarSelectionState()==true) {
+    if (g_AllData->getGuideScopeFlags(1)==true) {
         delete currentImageQImg;
         this->currentImageQImg = new QImage(*g_AllData->getCameraImage());
         clicx = round(g_AllData->getInitialStarPosition(2));

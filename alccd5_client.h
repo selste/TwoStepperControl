@@ -50,6 +50,7 @@ private:
    INumberVectorProperty *ccd_exposure = NULL;
    long expcounter;
    bool storeCamImages;
+   short simulatorCounter; // a helper for debugging
 
 signals:
    void imageAvailable(void);

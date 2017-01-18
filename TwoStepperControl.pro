@@ -14,7 +14,6 @@ TEMPLATE = app
 
 CONFIG += c++11
 
-
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
@@ -107,24 +106,16 @@ else:unix: LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/ -lpthread
 INCLUDEPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 DEPENDPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/release/ -lopencv_core
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/debug/ -lopencv_core
-else:unix: LIBS += -L$$PWD/../opencv/opencv/opencv_build/lib/ -lopencv_core
-
-INCLUDEPATH += $$PWD/../opencv/opencv/opencv_build/include
-DEPENDPATH += $$PWD/../opencv/opencv/opencv_build/include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_core
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_core
-else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_core
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_imgproc
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_imgproc
+else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_imgproc
 
 INCLUDEPATH += $$PWD/../../../usr/local/include
 DEPENDPATH += $$PWD/../../../usr/local/include
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_imgproc
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_imgproc
-else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_imgproc
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_core
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_core
+else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_core
 
 INCLUDEPATH += $$PWD/../../../usr/local/include
 DEPENDPATH += $$PWD/../../../usr/local/include

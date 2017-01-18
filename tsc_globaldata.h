@@ -16,10 +16,6 @@ public:
     ~TSC_GlobalData(void);
     void storeGlobalData(void);
     bool loadGlobalData(void); // trying to load a "TSC_Preferences.tsc" datafile in the home directory
-    bool getStarSelectionState(void); // true if a guidestar was found in the CCCD-camera
-    void setStarSelectionState(bool);
-    void setGuidingOn(bool); // true if guiding routiones are running
-    bool getGuidingOn(void);
     void setINDIState(bool); // true if INDI-Server is connected
     bool getINDIState(void);
     void setInitialStarPosition(float, float); // store the coordinates of the last click - the routine converts it also to ccd-coordinates
@@ -46,13 +42,12 @@ public:
     void setGuideScopeFocalLength(int);
     int getGuideScopeFocalLength(void);
     QImage* getCameraImage(void);
+    void setGuideScopeFlags(bool, short); //set various flags on the state of guiding. 1=guideStarSelected, 2=guidingIsOn, 3=calibrationIsRunning, 4=systemIsCalibrated, 5=calibrationImageReceived
+    bool getGuideScopeFlags(short); // get the flags - see above for values of "what".
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
-    bool guideStarSelected;
-    bool guidingIsOn;
     bool INDIServerIsConnected;
-    int  guideScopeFocalLength;
     QImage *currentCameraImage;
 
     struct initialStarPosStruct {
@@ -106,6 +101,16 @@ private:
         double actualRA;
     };
 
+    struct guidingStateStruct {
+        bool guideStarSelected;
+        bool guidingIsOn;
+        bool calibrationIsRunning;
+        bool systemIsCalibrated;
+        bool calibrationImageReceived;
+        int  guideScopeFocalLength;
+    };
+
+    struct guidingStateStruct guidingState;
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
     struct cameraParametersStruct cameraParameters;

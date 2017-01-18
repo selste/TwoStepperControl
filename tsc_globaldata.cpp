@@ -2,10 +2,7 @@
 #include <QDebug>
 
 TSC_GlobalData::TSC_GlobalData() {
-    this->guideStarSelected=false;
-    this->guidingIsOn=false;
     this->INDIServerIsConnected=false;
-    this->guideScopeFocalLength=1000;
     initialStarPos.screenx=0;
     initialStarPos.screeny=0;
     initialStarPos.ccdx=0;
@@ -28,6 +25,11 @@ TSC_GlobalData::TSC_GlobalData() {
     actualScopePosition.actualRA=0.0;
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
+    guidingState.guideStarSelected=false;
+    guidingState.guidingIsOn=false;
+    guidingState.calibrationIsRunning=false;
+    guidingState.systemIsCalibrated=false;
+    guidingState.calibrationImageReceived=false;
     if (this->loadGlobalData() == false) {
         gearData.planetaryRatioRA=9;
         gearData.gearRatioRA=1;
@@ -44,6 +46,7 @@ TSC_GlobalData::TSC_GlobalData() {
         this->driveData.driveAccDecl=10000;
         this->driveData.driveCurrRA=1.0;
         this->driveData.driveCurrDecl=1.0;
+        guidingState.guideScopeFocalLength=1000;
     }
 }
 
@@ -52,14 +55,50 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
 }
+
+//-----------------------------------------------
+void TSC_GlobalData::setGuideScopeFlags(bool flagState, short what) {
+    switch (what) {
+        case 1: guidingState.guideStarSelected=flagState;
+            break;
+        case 2: guidingState.guidingIsOn=flagState;
+            break;
+        case 3: guidingState.calibrationIsRunning=flagState;
+            break;
+        case 4: guidingState.systemIsCalibrated=flagState;
+            break;
+        case 5: guidingState.calibrationImageReceived=flagState;
+            break;
+    }
+}
+
+//-----------------------------------------------
+bool TSC_GlobalData::getGuideScopeFlags(short what) {
+    bool retval;
+
+    switch (what) {
+        case 1: retval=guidingState.guideStarSelected;
+            break;
+        case 2: retval=guidingState.guidingIsOn;
+            break;
+        case 3: retval=guidingState.calibrationIsRunning;
+            break;
+        case 4: retval=guidingState.systemIsCalibrated;
+            break;
+        case 5: retval=guidingState.calibrationImageReceived;
+            break;
+    }
+    return retval;
+}
+
 //-----------------------------------------------
 void TSC_GlobalData::setGuideScopeFocalLength(int fl) {
-    this->guideScopeFocalLength=fl;
+    guidingState.guideScopeFocalLength=fl;
 }
 
 //-----------------------------------------------
 int TSC_GlobalData::getGuideScopeFocalLength(void) {
-    return this->guideScopeFocalLength;
+    return guidingState.guideScopeFocalLength;
 }
 
 //-----------------------------------------------
@@ -71,26 +110,6 @@ void TSC_GlobalData::storeCameraImage(QImage inImg) {
 //-----------------------------------------------
 QImage* TSC_GlobalData::getCameraImage(void) {
     return currentCameraImage;
-}
-
-//-----------------------------------------------
-bool TSC_GlobalData::getStarSelectionState(void) {
-    return this->guideStarSelected;
-}
-
-//-----------------------------------------------
-void TSC_GlobalData::setStarSelectionState(bool starSelected) {
-    this->guideStarSelected=starSelected;
-}
-
-//-----------------------------------------------
-void TSC_GlobalData::setGuidingOn(bool guidingOn) {
-    this->guidingIsOn=guidingOn;
-}
-
-//-----------------------------------------------
-bool TSC_GlobalData::getGuidingOn(void){
-    return this->guidingIsOn;
 }
 
 //-----------------------------------------------
@@ -471,7 +490,7 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Chip width y for guiding camera.\n");
     outfile << ostr.data();
     ostr.clear();
-    ostr = std::to_string(this->guideScopeFocalLength );
+    ostr = std::to_string(this->guidingState.guideScopeFocalLength );
     ostr.append("// Focal length of guidescope\n");
     outfile << ostr.data();
     ostr.clear();
@@ -567,7 +586,7 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, '\n');
     std::getline(infile, line, delimiter);
     std::istringstream iscguidescopefl(line);
-    iscguidescopefl >> this->guideScopeFocalLength;
+    iscguidescopefl >> this->guidingState.guideScopeFocalLength;
     infile.close(); // close the reading file for preference
     return true;
 }

@@ -94,6 +94,7 @@ private slots:
     void setHalfFOV(void);
     void setDoubleFOV(void);
     void setRegularFOV(void);
+    void calibrateAutoGuider(void);
 
 private:
     struct mountMotionStruct {
