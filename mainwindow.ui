@@ -1793,7 +1793,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="camTab">
+      <widget class="QWidget" name="ccdTab">
        <attribute name="title">
         <string>CCD</string>
        </attribute>
@@ -1831,8 +1831,11 @@
            </item>
            <item>
             <widget class="QSpinBox" name="sbPulseGuideDuration">
+             <property name="minimum">
+              <number>0</number>
+             </property>
              <property name="maximum">
-              <number>25000</number>
+              <number>100000</number>
              </property>
              <property name="singleStep">
               <number>50</number>
@@ -1954,6 +1957,32 @@
            <string>Dec -</string>
           </property>
          </widget>
+        </widget>
+       </widget>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>200</y>
+          <width>191</width>
+          <height>161</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Status</string>
+        </property>
+        <widget class="QPlainTextEdit" name="teCalibrationStatus">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>181</width>
+           <height>131</height>
+          </rect>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
         </widget>
        </widget>
       </widget>

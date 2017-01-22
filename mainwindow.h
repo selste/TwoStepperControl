@@ -150,9 +150,11 @@ private:
     void setControlsForDeclTravel(bool);
     void setControlsForGoto(bool);
     void setControlsForGuiding(bool);
+    void setControlsForAutoguiderCalibration(bool);
     void terminateAllMotion(void);
     void takeSingleCamShot(void);
     double correctGuideStarPosition(float, float);
+    void waitForCalibrationImage(void);
     QDisplay2D *camView;
     float ra; // right ascension of a current object
     float decl;// declination of a current object
@@ -164,6 +166,7 @@ private:
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     ocv_guiding *guiding;
     float guidingFOVFactor;
+
 };
 
 #endif // MAINWINDOW_H

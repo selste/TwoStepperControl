@@ -961,7 +961,6 @@ void MainWindow::displayGuideCamImage(void) {
             this->takeSingleCamShot(); // ... request another one from INDI
             if (g_AllData->getGuideScopeFlags(3) == true) { // autoguider is calibrating
                 g_AllData->setGuideScopeFlags(true,5); // in calibration, this camera image is to be used
-                qDebug() << "getting an calibration image";
             }
             if (this->guidingIsActive==true) { // if autoguiding is active ...
                 this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
@@ -1058,46 +1057,106 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 // the pixel/ms is then evaluated for each direction - UNDER CONSTRUCTION
 void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
-    double currentCentroidX, currentCentroidY;
-    short stepCounter;
+    double currentCentroid[2], initialCentroid[2], raPlusUnitVector[2],arcsecPPix[2],ccdFOVInArcSec,
+            travelPerMSInRACorr,travelPerMSInDeclCorr,travelTimeInMSForOnePixRA,lengthOfTravel;
     int thrshld,beta;
     float alpha;
     bool medianOn;
+    QString statMesg;
 
+    setControlsForAutoguiderCalibration(false);
+    ui->teCalibrationStatus->appendPlainText("Entering calibration...");
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
+    raPlusUnitVector[0]=0.0;
+    raPlusUnitVector[1]=0.0; // initialize a vector of length 1 that gives the direction of RA+ travel on the chip
+    arcsecPPix[0] = this->guiding->getArcSecsPerPix(0);
+    arcsecPPix[1] = this->guiding->getArcSecsPerPix(1); // get the ratio "/pixel from the guiding class
+    if (g_AllData->getCameraChipPixels(0)*arcsecPPix[0] > g_AllData->getCameraChipPixels(1)*arcsecPPix[1]) {
+        ccdFOVInArcSec=g_AllData->getCameraChipPixels(1)*arcsecPPix[1];
+    } else {
+        ccdFOVInArcSec=g_AllData->getCameraChipPixels(0)*arcsecPPix[0];
+    } // determine the smaller dimension of the chip to determine the possible travel over the chip in arcseconds...
+    travelPerMSInRACorr=0.001*(3600.0)*g_AllData->getDriveParams(0,0)*(g_AllData->getGearData(3)/g_AllData->getGearData(8))/
+        (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
+    travelPerMSInDeclCorr=0.001*(3600.0)*g_AllData->getDriveParams(1,0)*(g_AllData->getGearData(7)/g_AllData->getGearData(8))/
+        (g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6));
+        // computed the travel in arcseconds per millisecond pulse guiding
+    travelTimeInMSForOnePixRA=arcsecPPix[0]/travelPerMSInRACorr;
+    statMesg.append("FOV: ");
+    statMesg.append(QString::number((double)(ccdFOVInArcSec/60.0),'g',2));
+    statMesg.append("'");
+    ui->teCalibrationStatus->appendPlainText(statMesg);
+    statMesg.clear();
+    ui->teCalibrationStatus->appendPlainText("Time for 1 pix (RA):");
+    statMesg.append(QString::number((double)travelTimeInMSForOnePixRA,'g',2));
+    statMesg.append(" ms");
+    ui->teCalibrationStatus->appendPlainText(statMesg);
+    statMesg.clear();
 
-    pulseDuration = 100;
-    ui->sbPulseGuideDuration->setValue(pulseDuration);
-    for (stepCounter = 0; stepCounter < 5; stepCounter++) {
-        g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got an image";
-        g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
-        while (g_AllData->getGuideScopeFlags(5) == false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-        qDebug() << "got another image";
-        g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-        currentCentroidX = g_AllData->getInitialStarPosition(2);
-        currentCentroidY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-        qDebug() << "centroid in calibration" << currentCentroidX << currentCentroidY;
-        g_AllData->setGuideScopeFlags(false,5);
-        this->raPGFwd();
-        pulseDuration*=2;
-        ui->sbPulseGuideDuration->setValue(pulseDuration);
-    }
+    // now determine the direction of RA Travel as a unit vector; travel for 10 pix ...
+    pulseDuration = 10*travelTimeInMSForOnePixRA;
+    ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+    this->waitForCalibrationImage();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the 10 pixel slew
+    ui->teCalibrationStatus->appendPlainText("Slewing 10 pix ...");
+    this->raPGFwd();
+    ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+    this->waitForCalibrationImage();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+    currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+    currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+    raPlusUnitVector[0] = currentCentroid[0]-initialCentroid[0];
+    raPlusUnitVector[1] = currentCentroid[1]-initialCentroid[1];
+    lengthOfTravel=sqrt(raPlusUnitVector[0]*raPlusUnitVector[0]+raPlusUnitVector[1]*raPlusUnitVector[1]);
+    raPlusUnitVector[0]/= lengthOfTravel;
+    raPlusUnitVector[1]/= lengthOfTravel; // computed the direction vector of length one for RA+ travel
+    qDebug() << "Unit vector" << raPlusUnitVector[0] << raPlusUnitVector[1];
+    ui->teCalibrationStatus->appendPlainText("Slewing back...");
+    this->raPGBwd(); // going back to initial position
+    ui->teCalibrationStatus->appendPlainText("Direction RA:");
+    statMesg = QString::number((double)raPlusUnitVector[0],'g',3);
+    statMesg.append("/");
+    statMesg.append(QString::number((double)raPlusUnitVector[1],'g',3));
+    ui->teCalibrationStatus->appendPlainText(statMesg);
+    statMesg.clear();
+
+    // now get the centroid again and do a bigger slew in RA plus direction for a more exact position determination
+    ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+    this->waitForCalibrationImage();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // get the current centroid
+
+
 
 
     g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
     g_AllData->setGuideScopeFlags(true,4); // "systemIsCalibrated" - flag set to true
-    qDebug() << "Calibration is done";
+    setControlsForAutoguiderCalibration(true);
+    ui->teCalibrationStatus->appendPlainText("Calibration is finished...");
+}
+
+//------------------------------------------------------------------
+// a subroutine that waits for two images from the ccd. needed in
+// "calibrateAutoGuider"
+void MainWindow::waitForCalibrationImage(void) {
+    g_AllData->setGuideScopeFlags(true,3); // "calibrationIsRunning" - flag set to true
+    g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+    while (g_AllData->getGuideScopeFlags(5) == false) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    }
+    g_AllData->setGuideScopeFlags(false,5); // "calibrationImageReceived" - flag is set to false
+    while (g_AllData->getGuideScopeFlags(5) == false) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    }
+    // read two images to make sure that an image is not taken during slew ...
+    g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
 }
 
 //------------------------------------------------------------------
@@ -1986,6 +2045,19 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
     ui->pbSync->setEnabled(isEnabled);
     ui->pbGoTo->setEnabled(isEnabled);
     ui->pbStop2->setEnabled(true);
+}
+
+//---------------------------------------------------------------------
+void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
+    ui->ctrlTab->setEnabled(isEnabled);
+    ui->catTab->setEnabled(isEnabled);
+    ui->LX200Tab->setEnabled(isEnabled);
+    ui->camTab->setEnabled(isEnabled);
+    ui->tabCCDAcq->setEnabled(isEnabled);
+    ui->tabGuideParams->setEnabled(isEnabled);
+    ui->tabImageProc->setEnabled(isEnabled);
+    ui->ccdTab->setEnabled(isEnabled);
+    ui->gearTab->setEnabled(isEnabled);
 }
 
 //------------------------------------------------------------------
