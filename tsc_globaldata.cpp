@@ -30,6 +30,9 @@ TSC_GlobalData::TSC_GlobalData() {
     guidingState.calibrationIsRunning=false;
     guidingState.systemIsCalibrated=false;
     guidingState.calibrationImageReceived=false;
+    guidingState.travelTimeRA_ms = 50;
+    guidingState.travelTimeDecl_ms = 50;
+    guidingState.rotationAngle=0.0;
     if (this->loadGlobalData() == false) {
         gearData.planetaryRatioRA=9;
         gearData.gearRatioRA=1;
@@ -99,6 +102,28 @@ void TSC_GlobalData::setGuideScopeFocalLength(int fl) {
 //-----------------------------------------------
 int TSC_GlobalData::getGuideScopeFocalLength(void) {
     return guidingState.guideScopeFocalLength;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setGuidingData(double travelRA, double travelDecl, double angle) {
+    guidingState.travelTimeRA_ms = travelRA;
+    guidingState.travelTimeDecl_ms = travelDecl;
+    guidingState.rotationAngle = angle;
+}
+
+//-----------------------------------------------
+double TSC_GlobalData::getGuidingData(short what) {
+    double retval=0;
+
+    switch (what) {
+        case 1: retval=guidingState.travelTimeRA_ms;
+            break;
+        case 2: retval=guidingState.travelTimeDecl_ms;
+            break;
+        case 3: retval=guidingState.rotationAngle;
+            break;
+    }
+    return retval;
 }
 
 //-----------------------------------------------

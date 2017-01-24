@@ -1054,15 +1054,21 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 //------------------------------------------------------------------
 // calibrate the system. the selected star is located and three
 // pulse guide commands in each direction and back are carried out.
-// the pixel/ms is then evaluated for each direction - UNDER CONSTRUCTION
+// the pixel/ms is then evaluated for each direction. 8 slews from the
+// center of the search image are carried out, and the relative angle between
+// a coordinate system defined by ra/decl movement and by the x/y frame
+// coordinate system is defined. a log displays status messages ...
+// UNDER CONSTRUCTION
 void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
-    double currentCentroid[2], initialCentroid[2], raPlusUnitVector[2],arcsecPPix[2],ccdFOVInArcSec,
-            travelPerMSInRACorr,travelPerMSInDeclCorr,travelTimeInMSForOnePixRA,lengthOfTravel;
-    int thrshld,beta;
+    double currentCentroid[2], initialCentroid[2], slewVector[2],arcsecPPix[2],
+        travelPerMSInRACorr,travelPerMSInDeclCorr,travelTimeInMSForOnePixRA,travelTimeInMSForOnePixDecl,
+        lengthOfTravel,relativeAngle[8], avrgAngle;
+    int thrshld,beta,imgProcWindowSize;
     float alpha;
     bool medianOn;
     QString statMesg;
+    short slewCounter;
 
     setControlsForAutoguiderCalibration(false);
     ui->teCalibrationStatus->appendPlainText("Entering calibration...");
@@ -1070,75 +1076,181 @@ void MainWindow::calibrateAutoGuider(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
-    raPlusUnitVector[0]=0.0;
-    raPlusUnitVector[1]=0.0; // initialize a vector of length 1 that gives the direction of RA+ travel on the chip
     arcsecPPix[0] = this->guiding->getArcSecsPerPix(0);
     arcsecPPix[1] = this->guiding->getArcSecsPerPix(1); // get the ratio "/pixel from the guiding class
-    if (g_AllData->getCameraChipPixels(0)*arcsecPPix[0] > g_AllData->getCameraChipPixels(1)*arcsecPPix[1]) {
-        ccdFOVInArcSec=g_AllData->getCameraChipPixels(1)*arcsecPPix[1];
-    } else {
-        ccdFOVInArcSec=g_AllData->getCameraChipPixels(0)*arcsecPPix[0];
-    } // determine the smaller dimension of the chip to determine the possible travel over the chip in arcseconds...
     travelPerMSInRACorr=0.001*(3600.0)*g_AllData->getDriveParams(0,0)*(g_AllData->getGearData(3)/g_AllData->getGearData(8))/
         (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
     travelPerMSInDeclCorr=0.001*(3600.0)*g_AllData->getDriveParams(1,0)*(g_AllData->getGearData(7)/g_AllData->getGearData(8))/
         (g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6));
         // computed the travel in arcseconds per millisecond pulse guiding
-    travelTimeInMSForOnePixRA=arcsecPPix[0]/travelPerMSInRACorr;
-    statMesg.append("FOV: ");
-    statMesg.append(QString::number((double)(ccdFOVInArcSec/60.0),'g',2));
-    statMesg.append("'");
-    ui->teCalibrationStatus->appendPlainText(statMesg);
-    statMesg.clear();
+    travelTimeInMSForOnePixRA=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
+    travelTimeInMSForOnePixDecl=arcsecPPix[1]/travelPerMSInDeclCorr; // travel time for one pix in decl direction in milliseconds
     ui->teCalibrationStatus->appendPlainText("Time for 1 pix (RA):");
     statMesg.append(QString::number((double)travelTimeInMSForOnePixRA,'g',2));
     statMesg.append(" ms");
     ui->teCalibrationStatus->appendPlainText(statMesg);
     statMesg.clear();
-
-    // now determine the direction of RA Travel as a unit vector; travel for 10 pix ...
-    pulseDuration = 10*travelTimeInMSForOnePixRA;
-    ui->teCalibrationStatus->appendPlainText("Waiting for image...");
-    this->waitForCalibrationImage();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the 10 pixel slew
-    ui->teCalibrationStatus->appendPlainText("Slewing 10 pix ...");
-    this->raPGFwd();
-    ui->teCalibrationStatus->appendPlainText("Waiting for image...");
-    this->waitForCalibrationImage();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-    currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-    currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-    raPlusUnitVector[0] = currentCentroid[0]-initialCentroid[0];
-    raPlusUnitVector[1] = currentCentroid[1]-initialCentroid[1];
-    lengthOfTravel=sqrt(raPlusUnitVector[0]*raPlusUnitVector[0]+raPlusUnitVector[1]*raPlusUnitVector[1]);
-    raPlusUnitVector[0]/= lengthOfTravel;
-    raPlusUnitVector[1]/= lengthOfTravel; // computed the direction vector of length one for RA+ travel
-    qDebug() << "Unit vector" << raPlusUnitVector[0] << raPlusUnitVector[1];
-    ui->teCalibrationStatus->appendPlainText("Slewing back...");
-    this->raPGBwd(); // going back to initial position
-    ui->teCalibrationStatus->appendPlainText("Direction RA:");
-    statMesg = QString::number((double)raPlusUnitVector[0],'g',3);
-    statMesg.append("/");
-    statMesg.append(QString::number((double)raPlusUnitVector[1],'g',3));
+    ui->teCalibrationStatus->appendPlainText("Time for 1 pix (Decl):");
+    statMesg.append(QString::number((double)travelTimeInMSForOnePixDecl,'g',2));
+    statMesg.append(" ms");
     ui->teCalibrationStatus->appendPlainText(statMesg);
     statMesg.clear();
 
-    // now get the centroid again and do a bigger slew in RA plus direction for a more exact position determination
-    ui->teCalibrationStatus->appendPlainText("Waiting for image...");
-    this->waitForCalibrationImage();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
-    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // get the current centroid
+    // now determine the direction of RA+ Travel as a unit vector; travel for "imgProcWindowSize" pix ...
+    for (slewCounter=0; slewCounter < 2; slewCounter++) {
+        imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
+        pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixRA; // that gives the pulse duration
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage(); // small subroutine  -waits for 2 images
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+        statMesg=QString("RA+ slew (pix): ");
+        statMesg.append(QString::number((double)imgProcWindowSize,'g',3));
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+        this->raPGFwd(); // carry out travel
+        ui->pbPGRAMinus->setEnabled(false);
+        ui->pbPGRAPlus->setEnabled(false);
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+        slewVector[0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
+        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
+        relativeAngle[slewCounter]=acos((slewVector[0])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
+        ui->teCalibrationStatus->appendPlainText("Slewing back...");
+        this->raPGBwd(); // going back to initial position
+        ui->pbPGRAMinus->setEnabled(false);
+        ui->pbPGRAPlus->setEnabled(false);
+        statMesg = QString("Relative Angle: ");
+        statMesg.append(QString::number((relativeAngle[slewCounter]*(180.0/3.14159)),'g',4));
+        statMesg.append("°");
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+    }
 
+    // now determine the direction of RA- Travel as a unit vector; travel for "imgProcWindowSize" pix ...
+    for (slewCounter=2; slewCounter < 4; slewCounter++) {
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+        statMesg=QString("RA- slew (pix): ");
+        statMesg.append(QString::number((double)imgProcWindowSize,'g',3));
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+        this->raPGBwd();
+        ui->pbPGRAMinus->setEnabled(false);
+        ui->pbPGRAPlus->setEnabled(false);
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+        slewVector[0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[1] = currentCentroid[1]-initialCentroid[1];
+        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]);
+        relativeAngle[slewCounter]=acos((slewVector[0])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
+        ui->teCalibrationStatus->appendPlainText("Slewing back...");
+        this->raPGFwd(); // going back to initial position
+        ui->pbPGRAMinus->setEnabled(false);
+        ui->pbPGRAPlus->setEnabled(false);
+        statMesg = QString("Relative Angle: ");
+        statMesg.append(QString::number((relativeAngle[slewCounter]*(180.0/3.14159)),'g',4));
+        statMesg.append("°");
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+    }
 
+    // now determine the direction of Decl+ Travel as a unit vector; travel for "imgProcWindowSize" pix ...
+    for (slewCounter=4; slewCounter < 6; slewCounter++) {
+        pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixDecl;
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+        statMesg=QString("Decl+ slew (pix): ");
+        statMesg.append(QString::number((double)imgProcWindowSize,'g',3));
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+        this->declPGPlus();
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+        slewVector[0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[1] = currentCentroid[1]-initialCentroid[1];
+        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]);
+        relativeAngle[slewCounter]=acos((slewVector[1])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
+        ui->teCalibrationStatus->appendPlainText("Slewing back...");
+        this->declPGMinus(); // going back to initial position
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        statMesg = QString("Relative Angle: ");
+        statMesg.append(QString::number((relativeAngle[slewCounter]*(180.0/3.14159)),'g',4));
+        statMesg.append("°");
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+    }
 
+    // now determine the direction of Decl- Travel as a unit vector; travel for "imgProcWindowSize" pix ...
+    for (slewCounter=6; slewCounter < 8; slewCounter++) {
+        pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixDecl;
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+        statMesg=QString("Decl- slew (pix): ");
+        statMesg.append(QString::number((double)imgProcWindowSize,'g',3));
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+        this->declPGMinus();
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+        slewVector[0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[1] = currentCentroid[1]-initialCentroid[1];
+        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]);
+        relativeAngle[slewCounter]=acos((slewVector[1])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
+        ui->teCalibrationStatus->appendPlainText("Slewing back...");
+        this->declPGPlus(); // going back to initial position
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        statMesg = QString("Relative Angle: ");
+        statMesg.append(QString::number((relativeAngle[slewCounter]*(180.0/3.14159)),'g',4));
+        statMesg.append("°");
+        ui->teCalibrationStatus->appendPlainText(statMesg);
+        statMesg.clear();
+    }
 
+    avrgAngle=(relativeAngle[0]+relativeAngle[1]+relativeAngle[2]+relativeAngle[3]+
+               relativeAngle[4]+relativeAngle[5]+relativeAngle[6]+relativeAngle[7])/8.0;
+    statMesg = QString("Rotation Angle: ");
+    statMesg.append(QString::number((avrgAngle*(180.0/3.14159)),'g',4));
+    statMesg.append("°");
+    ui->teCalibrationStatus->appendPlainText(statMesg);
+    statMesg.clear();
     g_AllData->setGuideScopeFlags(false,3); // "calibrationIsRunning" - flag set to false
     g_AllData->setGuideScopeFlags(true,4); // "systemIsCalibrated" - flag set to true
     setControlsForAutoguiderCalibration(true);
+    g_AllData->setGuidingData(travelTimeInMSForOnePixRA, travelTimeInMSForOnePixDecl,avrgAngle);
     ui->teCalibrationStatus->appendPlainText("Calibration is finished...");
 }
 
@@ -1202,6 +1314,7 @@ void MainWindow::selectGuideStar(void) {
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
     guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
     guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor);
 }
 
 //------------------------------------------------------------------
@@ -2052,12 +2165,18 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->ctrlTab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
-    ui->camTab->setEnabled(isEnabled);
+    this->camView->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
     ui->tabGuideParams->setEnabled(isEnabled);
     ui->tabImageProc->setEnabled(isEnabled);
-    ui->ccdTab->setEnabled(isEnabled);
+    ui->pbTrainAxes->setEnabled(isEnabled);
+    ui->sbPulseGuideDuration->setEnabled(isEnabled);
+    ui->pbPGDecPlus->setEnabled(isEnabled);
+    ui->pbPGDecMinus->setEnabled(isEnabled);
+    ui->pbPGRAMinus->setEnabled(isEnabled);
+    ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
+    ui->teCalibrationStatus->setEnabled(true);
 }
 
 //------------------------------------------------------------------

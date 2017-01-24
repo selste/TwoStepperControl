@@ -44,6 +44,8 @@ public:
     QImage* getCameraImage(void);
     void setGuideScopeFlags(bool, short); //set various flags on the state of guiding. 1=guideStarSelected, 2=guidingIsOn, 3=calibrationIsRunning, 4=systemIsCalibrated, 5=calibrationImageReceived
     bool getGuideScopeFlags(short); // get the flags - see above for values of "what".
+    void setGuidingData(double, double, double); // results of guider calibration; travel in ra and decl in ms and rel. angle of coordinate systems
+    double getGuidingData(short); // 1 is travel time in RA, 2, is travel time in Decl, 3 is relative angle
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -108,6 +110,9 @@ private:
         bool systemIsCalibrated;
         bool calibrationImageReceived;
         int  guideScopeFocalLength;
+        double travelTimeRA_ms;
+        double travelTimeDecl_ms;
+        double rotationAngle;
     };
 
     struct guidingStateStruct guidingState;
