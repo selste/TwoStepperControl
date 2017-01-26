@@ -83,7 +83,7 @@ double ocv_guiding::getArcSecsPerPix(short what) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness,float FOVfact) {
+void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness,float FOVfact,bool starSelected) {
     int clicx,clicy;
     Point tLeft, bRight;
     float centroidX, centroidY;
@@ -92,7 +92,7 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float c
     cv::Moments cvmoms;
     float scaleFact;
 
-    if (g_AllData->getGuideScopeFlags(1)==true) {
+    if (starSelected==true) {
         delete currentImageQImg;
         this->currentImageQImg = new QImage(*g_AllData->getCameraImage());
         clicx = round(g_AllData->getInitialStarPosition(2));

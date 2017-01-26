@@ -25,14 +25,7 @@ TSC_GlobalData::TSC_GlobalData() {
     actualScopePosition.actualRA=0.0;
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
-    guidingState.guideStarSelected=false;
-    guidingState.guidingIsOn=false;
-    guidingState.calibrationIsRunning=false;
-    guidingState.systemIsCalibrated=false;
-    guidingState.calibrationImageReceived=false;
-    guidingState.travelTimeRA_ms = 50;
-    guidingState.travelTimeDecl_ms = 50;
-    guidingState.rotationAngle=0.0;
+    this->guidingState=false;
     if (this->loadGlobalData() == false) {
         gearData.planetaryRatioRA=9;
         gearData.gearRatioRA=1;
@@ -49,7 +42,7 @@ TSC_GlobalData::TSC_GlobalData() {
         this->driveData.driveAccDecl=10000;
         this->driveData.driveCurrRA=1.0;
         this->driveData.driveCurrDecl=1.0;
-        guidingState.guideScopeFocalLength=1000;
+        guideScopeFocalLength=1000;
     }
 }
 
@@ -60,70 +53,23 @@ TSC_GlobalData::~TSC_GlobalData(void){
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setGuideScopeFlags(bool flagState, short what) {
-    switch (what) {
-        case 1: guidingState.guideStarSelected=flagState;
-            break;
-        case 2: guidingState.guidingIsOn=flagState;
-            break;
-        case 3: guidingState.calibrationIsRunning=flagState;
-            break;
-        case 4: guidingState.systemIsCalibrated=flagState;
-            break;
-        case 5: guidingState.calibrationImageReceived=flagState;
-            break;
-    }
+bool TSC_GlobalData::getGuidingState(void) {
+    return this->guidingState;
 }
 
 //-----------------------------------------------
-bool TSC_GlobalData::getGuideScopeFlags(short what) {
-    bool retval;
-
-    switch (what) {
-        case 1: retval=guidingState.guideStarSelected;
-            break;
-        case 2: retval=guidingState.guidingIsOn;
-            break;
-        case 3: retval=guidingState.calibrationIsRunning;
-            break;
-        case 4: retval=guidingState.systemIsCalibrated;
-            break;
-        case 5: retval=guidingState.calibrationImageReceived;
-            break;
-    }
-    return retval;
+void TSC_GlobalData::setGuidingState(bool state) {
+    this->guidingState = state;
 }
 
 //-----------------------------------------------
 void TSC_GlobalData::setGuideScopeFocalLength(int fl) {
-    guidingState.guideScopeFocalLength=fl;
+    guideScopeFocalLength=fl;
 }
 
 //-----------------------------------------------
 int TSC_GlobalData::getGuideScopeFocalLength(void) {
-    return guidingState.guideScopeFocalLength;
-}
-
-//-----------------------------------------------
-void TSC_GlobalData::setGuidingData(double travelRA, double travelDecl, double angle) {
-    guidingState.travelTimeRA_ms = travelRA;
-    guidingState.travelTimeDecl_ms = travelDecl;
-    guidingState.rotationAngle = angle;
-}
-
-//-----------------------------------------------
-double TSC_GlobalData::getGuidingData(short what) {
-    double retval=0;
-
-    switch (what) {
-        case 1: retval=guidingState.travelTimeRA_ms;
-            break;
-        case 2: retval=guidingState.travelTimeDecl_ms;
-            break;
-        case 3: retval=guidingState.rotationAngle;
-            break;
-    }
-    return retval;
+    return guideScopeFocalLength;
 }
 
 //-----------------------------------------------
@@ -515,7 +461,7 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Chip width y for guiding camera.\n");
     outfile << ostr.data();
     ostr.clear();
-    ostr = std::to_string(this->guidingState.guideScopeFocalLength );
+    ostr = std::to_string(this->guideScopeFocalLength );
     ostr.append("// Focal length of guidescope\n");
     outfile << ostr.data();
     ostr.clear();
@@ -611,7 +557,7 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, '\n');
     std::getline(infile, line, delimiter);
     std::istringstream iscguidescopefl(line);
-    iscguidescopefl >> this->guidingState.guideScopeFocalLength;
+    iscguidescopefl >> this->guideScopeFocalLength;
     infile.close(); // close the reading file for preference
     return true;
 }

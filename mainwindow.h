@@ -119,16 +119,28 @@ private:
         float centrY;
     };
 
+    struct guidingStateStruct {
+        bool guideStarSelected;
+        bool guidingIsOn;
+        bool calibrationIsRunning;
+        bool systemIsCalibrated;
+        bool calibrationImageReceived;
+        double travelTime_ms;
+        double rotationAngle;
+        double maxDevInArcSec;
+    };
+
+
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
+    struct guidingStateStruct guidingState;
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
     lx200_communication *lx200port;
     bool lx200IsOn;
     bool MountWasSynced;     // a flag indicating whether a sync occurred
-    bool guidingIsActive; // a flag that is true when autoguiding is up ...
     bool ccdCameraIsAcquiring;
     QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
@@ -166,6 +178,7 @@ private:
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     ocv_guiding *guiding;
     float guidingFOVFactor;
+    double rotMatrixGuiding[2][2];
 
 };
 

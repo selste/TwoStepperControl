@@ -30,9 +30,9 @@ QStepperPhidgetsRA::QStepperPhidgetsRA(double lacc, double lcurr) {
     CPhidgetStepper_getAccelerationMax((CPhidgetStepperHandle)SH,0,&amax);
     this->speedMin=smin;
     if (amax < lacc) {
-        this->acc == amax;
+        this->acc = amax;
     } else {
-        this->acc == lacc;
+        this->acc = lacc;
     }
     this->currMax=lcurr;
     CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
