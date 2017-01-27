@@ -1260,6 +1260,9 @@
       <string>Guiding</string>
      </attribute>
      <widget class="QTabWidget" name="tabWidget">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>560</x>
@@ -1481,57 +1484,6 @@
          </layout>
         </widget>
        </widget>
-       <widget class="QGroupBox" name="gbDarksFlats">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>260</y>
-          <width>181</width>
-          <height>101</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>Darks and Flats</string>
-        </property>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>20</y>
-           <width>175</width>
-           <height>70</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_4">
-          <item row="0" column="0">
-           <widget class="QPushButton" name="pbCCDTakeDarks">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Acquire Darks</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="sbNoOfDarks"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="pbCCDTakeFlats">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>Acquire Flats</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="sbNoOfFlats"/>
-          </item>
-         </layout>
-        </widget>
-       </widget>
        <widget class="QCheckBox" name="cbStoreGuideCamImgs">
         <property name="enabled">
          <bool>false</bool>
@@ -1614,6 +1566,31 @@
             <string>Store Guidescope FL</string>
            </property>
           </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>260</y>
+          <width>201</width>
+          <height>33</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_17">
+         <item>
+          <widget class="QPushButton" name="pbCCDTakeDarks">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Acquire Darks</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="sbNoOfDarks"/>
          </item>
         </layout>
        </widget>
@@ -1827,7 +1804,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>10</y>
+          <y>0</y>
           <width>191</width>
           <height>72</height>
          </rect>
@@ -1861,13 +1838,13 @@
               <number>0</number>
              </property>
              <property name="maximum">
-              <number>100000</number>
+              <number>5000</number>
              </property>
              <property name="singleStep">
               <number>50</number>
              </property>
              <property name="value">
-              <number>200</number>
+              <number>500</number>
              </property>
             </widget>
            </item>
@@ -1879,7 +1856,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>90</y>
+          <y>80</y>
           <width>181</width>
           <height>101</height>
          </rect>
@@ -1989,9 +1966,9 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>200</y>
+          <y>180</y>
           <width>191</width>
-          <height>161</height>
+          <height>151</height>
          </rect>
         </property>
         <property name="title">
@@ -2001,25 +1978,25 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>30</y>
+           <y>20</y>
            <width>181</width>
            <height>131</height>
           </rect>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>11</pointsize>
+          </font>
          </property>
          <property name="readOnly">
           <bool>true</bool>
          </property>
         </widget>
        </widget>
-      </widget>
-      <widget class="QWidget" name="tabGuideParams">
-       <attribute name="title">
-        <string>Gde</string>
-       </attribute>
-       <widget class="QPushButton" name="pbStop4">
+       <widget class="QPushButton" name="pbStop5">
         <property name="geometry">
          <rect>
-          <x>10</x>
+          <x>20</x>
           <y>340</y>
           <width>180</width>
           <height>30</height>
@@ -2044,6 +2021,11 @@
          <string>Emergency Stop</string>
         </property>
        </widget>
+      </widget>
+      <widget class="QWidget" name="tabGuideParams">
+       <attribute name="title">
+        <string>Gde</string>
+       </attribute>
        <widget class="QPushButton" name="pbGuiding">
         <property name="enabled">
          <bool>false</bool>
@@ -2051,7 +2033,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>310</y>
+          <y>330</y>
           <width>180</width>
           <height>30</height>
          </rect>
@@ -2076,7 +2058,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>90</y>
+          <y>80</y>
           <width>208</width>
           <height>104</height>
          </rect>
@@ -2112,13 +2094,13 @@
            <property name="minimumSize">
             <size>
              <width>110</width>
-             <height>30</height>
+             <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>110</width>
-             <height>30</height>
+             <height>25</height>
             </size>
            </property>
            <property name="readOnly">
@@ -2156,13 +2138,13 @@
            <property name="minimumSize">
             <size>
              <width>110</width>
-             <height>30</height>
+             <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>110</width>
-             <height>30</height>
+             <height>25</height>
             </size>
            </property>
            <property name="readOnly">
@@ -2200,13 +2182,13 @@
            <property name="minimumSize">
             <size>
              <width>110</width>
-             <height>30</height>
+             <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>110</width>
-             <height>30</height>
+             <height>25</height>
             </size>
            </property>
            <property name="readOnly">
@@ -2233,7 +2215,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>200</y>
+          <y>180</y>
           <width>191</width>
           <height>16</height>
          </rect>
@@ -2242,11 +2224,11 @@
          <enum>Qt::Horizontal</enum>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>1</x>
-          <y>220</y>
+          <y>190</y>
           <width>208</width>
           <height>74</height>
          </rect>
@@ -2276,13 +2258,13 @@
            <property name="minimumSize">
             <size>
              <width>100</width>
-             <height>0</height>
+             <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>100</width>
-             <height>16777215</height>
+             <height>25</height>
             </size>
            </property>
            <property name="readOnly">
@@ -2314,13 +2296,13 @@
            <property name="minimumSize">
             <size>
              <width>100</width>
-             <height>0</height>
+             <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>100</width>
-             <height>16777215</height>
+             <height>25</height>
             </size>
            </property>
            <property name="readOnly">
@@ -2330,7 +2312,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -2383,6 +2365,64 @@
            </property>
            <property name="value">
             <double>0.300000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>270</y>
+          <width>210</width>
+          <height>58</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lRAPulse">
+           <property name="text">
+            <string>Pulse RA [ms]:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="lePulseRAMS">
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="DeclPulse">
+           <property name="text">
+            <string>Pulse Decl [ms]:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="lePulseDeclMS">
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
            </property>
           </widget>
          </item>

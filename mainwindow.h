@@ -125,9 +125,11 @@ private:
         bool calibrationIsRunning;
         bool systemIsCalibrated;
         bool calibrationImageReceived;
+        short declinationDriveDirection;
         double travelTime_ms;
         double rotationAngle;
         double maxDevInArcSec;
+        double backlashCompensationInMS;
     };
 
 
