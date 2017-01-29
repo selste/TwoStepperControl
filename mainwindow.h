@@ -14,6 +14,7 @@
 #include "lx200_communication.h"
 #include "wiringPi.h"
 #include "ocv_guiding.h"
+#include "bt_serialcomm.h"
 
 using namespace QtConcurrent;
 
@@ -95,6 +96,8 @@ private slots:
     void setDoubleFOV(void);
     void setRegularFOV(void);
     void calibrateAutoGuider(void);
+    void startBTComm(void);
+    void stopBTComm(void);
 
 private:
     struct mountMotionStruct {
@@ -141,6 +144,8 @@ private:
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
     lx200_communication *lx200port;
+    bt_serialcomm *bt_Handbox;
+    bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
     bool MountWasSynced;     // a flag indicating whether a sync occurred
     bool ccdCameraIsAcquiring;
@@ -158,6 +163,8 @@ private:
     void updateCameraImage(void);
     void declinationPulseGuide(long, short);
     void raPulseGuide(long, short);
+    void declinationPulseGuideInGuiding(long, short);
+    void raPulseGuideInGuiding(long, short);
     void emergencyShutdown(short);
     void setControlsForRATravel(bool);
     void setControlsForRATracking(bool);
@@ -181,6 +188,10 @@ private:
     ocv_guiding *guiding;
     float guidingFOVFactor;
     double rotMatrixGuiding[2][2];
+    void declPGPlusGd(void);
+    void declPGMinusGd(void);
+    void raPGFwdGd(void);
+    void raPGBwdGd(void);
 
 };
 

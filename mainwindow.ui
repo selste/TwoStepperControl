@@ -745,13 +745,13 @@
     </widget>
     <widget class="QWidget" name="LX200Tab">
      <attribute name="title">
-      <string>LX200 and INDI</string>
+      <string>LX200, INDI and BT</string>
      </attribute>
      <widget class="QPushButton" name="pbStop3">
       <property name="geometry">
        <rect>
-        <x>390</x>
-        <y>360</y>
+        <x>400</x>
+        <y>350</y>
         <width>350</width>
         <height>50</height>
        </rect>
@@ -778,7 +778,7 @@
         <x>0</x>
         <y>0</y>
         <width>361</width>
-        <height>391</height>
+        <height>261</height>
        </rect>
       </property>
       <property name="title">
@@ -788,9 +788,9 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>100</y>
-         <width>199</width>
-         <height>311</height>
+         <y>90</y>
+         <width>341</width>
+         <height>171</height>
         </rect>
        </property>
        <property name="autoFillBackground">
@@ -808,7 +808,7 @@
           <x>0</x>
           <y>30</y>
           <width>161</width>
-          <height>191</height>
+          <height>71</height>
          </rect>
         </property>
         <property name="font">
@@ -826,8 +826,8 @@
        <widget class="QCheckBox" name="cbLX200Logs">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>230</y>
+          <x>170</x>
+          <y>40</y>
           <width>151</width>
           <height>26</height>
          </rect>
@@ -839,8 +839,8 @@
        <widget class="QPushButton" name="pbClearLXLog">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>260</y>
+          <x>170</x>
+          <y>70</y>
           <width>151</width>
           <height>31</height>
          </rect>
@@ -849,12 +849,106 @@
          <string>Clear Log</string>
         </property>
        </widget>
+       <widget class="QWidget" name="layoutWidget_4">
+        <property name="geometry">
+         <rect>
+          <x>170</x>
+          <y>110</y>
+          <width>148</width>
+          <height>35</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_19">
+         <item>
+          <widget class="QLabel" name="lLXDecl">
+           <property name="minimumSize">
+            <size>
+             <width>40</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Decl:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leLX200Decl">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>110</y>
+          <width>148</width>
+          <height>35</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_18">
+         <item>
+          <widget class="QLabel" name="lLXRA">
+           <property name="minimumSize">
+            <size>
+             <width>40</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>RA:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leLX200RA">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>80</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QPushButton" name="pbLX200Active">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>40</y>
+         <y>30</y>
          <width>150</width>
          <height>50</height>
         </rect>
@@ -879,7 +973,7 @@
        <property name="geometry">
         <rect>
          <x>170</x>
-         <y>70</y>
+         <y>60</y>
          <width>181</width>
          <height>26</height>
         </rect>
@@ -891,80 +985,11 @@
         <bool>false</bool>
        </property>
       </widget>
-      <widget class="QGroupBox" name="gbLX200Coords">
-       <property name="geometry">
-        <rect>
-         <x>180</x>
-         <y>130</y>
-         <width>171</width>
-         <height>121</height>
-        </rect>
-       </property>
-       <property name="title">
-        <string>Received Coordinates </string>
-       </property>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>13</x>
-          <y>33</y>
-          <width>151</width>
-          <height>80</height>
-         </rect>
-        </property>
-        <layout class="QGridLayout" name="gridLayout">
-         <item row="0" column="0">
-          <widget class="QLabel" name="lLXRA">
-           <property name="minimumSize">
-            <size>
-             <width>40</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>40</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>RA:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="leLX200RA"/>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="lLXDecl">
-           <property name="minimumSize">
-            <size>
-             <width>40</width>
-             <height>39</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>40</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Decl:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="leLX200Decl"/>
-         </item>
-        </layout>
-       </widget>
-      </widget>
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>170</x>
-         <y>40</y>
+         <y>30</y>
          <width>156</width>
          <height>23</height>
         </rect>
@@ -1008,7 +1033,7 @@
         <x>380</x>
         <y>0</y>
         <width>371</width>
-        <height>351</height>
+        <height>331</height>
        </rect>
       </property>
       <property name="title">
@@ -1018,7 +1043,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>250</y>
+         <y>220</y>
          <width>361</width>
          <height>101</height>
         </rect>
@@ -1156,7 +1181,7 @@
          <x>10</x>
          <y>110</y>
          <width>351</width>
-         <height>131</height>
+         <height>101</height>
         </rect>
        </property>
        <property name="title">
@@ -1165,8 +1190,8 @@
        <widget class="QPushButton" name="pbStartINDIServer">
         <property name="geometry">
          <rect>
-          <x>210</x>
-          <y>100</y>
+          <x>200</x>
+          <y>60</y>
           <width>141</width>
           <height>30</height>
          </rect>
@@ -1253,6 +1278,87 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
+     </widget>
+     <widget class="Line" name="line_7">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>240</y>
+        <width>341</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="gbBluetooth">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>260</y>
+        <width>331</width>
+        <height>151</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Bluetooth</string>
+      </property>
+      <widget class="QPushButton" name="pbConnectBT">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>131</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Connect BT</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbDisonnectBT">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>70</y>
+         <width>131</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Disconnect BT</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>1</x>
+         <y>111</y>
+         <width>118</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_20">
+        <item>
+         <widget class="QCheckBox" name="cbBTIsUp">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lBTPort">
+          <property name="text">
+           <string>BT port is up</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="camTab">
@@ -2370,7 +2476,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>

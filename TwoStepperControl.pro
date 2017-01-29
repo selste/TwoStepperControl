@@ -24,7 +24,8 @@ SOURCES += \
     qstepperphidgetsDecl.cpp \
     qstepperphidgetsRA.cpp \
     lx200_communication.cpp \
-    ocv_guiding.cpp
+    ocv_guiding.cpp \
+    bt_serialcomm.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -35,7 +36,8 @@ HEADERS  += \
     qstepperphidgetsDecl.h \
     qstepperphidgetsRA.h \
     lx200_communication.h \
-    ocv_guiding.h
+    ocv_guiding.h \
+    bt_serialcomm.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/

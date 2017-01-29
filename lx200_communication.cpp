@@ -14,7 +14,7 @@ lx200_communication::lx200_communication(void) {
     rs232port.setDataBits(QSerialPort::Data8);
     rs232port.setParity(QSerialPort::NoParity);
     rs232port.setStopBits(QSerialPort::OneStop);
-    rs232port.setFlowControl(QSerialPort::SoftwareControl);
+    rs232port.setFlowControl(QSerialPort::NoFlowControl);
     replyStrLX = new QString();
     assembledString = new QString();
     this->serialData = new QByteArray();
@@ -68,7 +68,7 @@ lx200_communication::~lx200_communication(void) {
 //--------------------------------------------------------
 
 void lx200_communication::shutDownPort(void) {
-    qDebug() << "Break enabled:" << rs232port.setBreakEnabled(true);
+    rs232port.setBreakEnabled(true);
     portIsUp = 0;
     rs232port.clear(QSerialPort::AllDirections);
     rs232port.close();
@@ -79,12 +79,9 @@ void lx200_communication::shutDownPort(void) {
 
 void lx200_communication::openPort(void) {
     portIsUp = 1;
-    qDebug() << "Trying to open serial port";
     if (!rs232port.open(QIODevice::ReadWrite)) {
-        qDebug() << "Open port failed";
         portIsUp = 0;
     } else {
-        qDebug() << "Open port succeeded";
         rs232port.setBreakEnabled(false);
         portIsUp = 1;
         rs232port.clear(QSerialPort::AllDirections);
@@ -167,7 +164,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
     // if LX200 sends <ACK> -> reply with P for forks, G for german equatorials or A for Alt/Az
         bytesWritten = rs232port.write("P");
-        qDebug() << "Sent 'P' as a reply for <ACK> ...";
         return true; // exit here
     }
     commandList = cmd.split('#',QString::SkipEmptyParts,Qt::CaseSensitive);
@@ -217,7 +213,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 declSign = 1;
             }
             decldeg=(numSubStr->left(3)).toDouble();
-            qDebug() << "Deg substring" << (numSubStr->left(3)).toLatin1();
             numSubStr->clear();
             numSubStr->append(lx200cmd->right(5));
             declmin=(numSubStr->left(2)).toDouble();
@@ -226,9 +221,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             } else {
                 declsec = 0.0;
             }
-            qDebug() << "Decl is" << declSign << decldeg << declmin << declsec;
             this->receivedDeclFromLX =declSign*(fabs(decldeg)+declmin/60.0+declsec/3600.0);
-            qDebug() << "in decimal:" << this->receivedDeclFromLX;
             delete numSubStr;
             gotDeclCoordinates = true;
             this->sendCommand(2);
