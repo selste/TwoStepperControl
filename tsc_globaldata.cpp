@@ -26,6 +26,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
     this->guidingState=false;
+    this->BTMACAddress=new QString("98:D3:31:FB:2A:8C");
     if (this->loadGlobalData() == false) {
         gearData.planetaryRatioRA=9;
         gearData.gearRatioRA=1;
@@ -50,6 +51,12 @@ TSC_GlobalData::TSC_GlobalData() {
 TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
+    delete BTMACAddress;
+}
+
+//-----------------------------------------------
+QString* TSC_GlobalData::getBTMACAddress(void) {
+    return this->BTMACAddress;
 }
 
 //-----------------------------------------------
@@ -461,8 +468,8 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Chip width y for guiding camera.\n");
     outfile << ostr.data();
     ostr.clear();
-    ostr = std::to_string(this->guideScopeFocalLength );
-    ostr.append("// Focal length of guidescope\n");
+    ostr = std::to_string(this->guideScopeFocalLength);
+    ostr.append("// Focal length of guidescope.\n");
     outfile << ostr.data();
     ostr.clear();
     outfile.close();

@@ -2,9 +2,14 @@
 #include <QDebug>
 
 //---------------------------------------------------
-bt_serialcomm::bt_serialcomm(void) {
-    system("sudo rfcomm bind hci0 98:D3:31:FB:2A:8C");
+bt_serialcomm::bt_serialcomm(QString bt_MACaddr) {
+    QString startupRFPort;
     this->portIsUp=false;
+
+    startupRFPort.append("sudo rfcomm connect hci0 ");
+    startupRFPort.append(bt_MACaddr);
+    startupRFPort.append(" &");
+    system(startupRFPort.toLatin1());
     rfcommport.setPortName("/dev/rfcomm0");
     rfcommport.setBaudRate(QSerialPort::Baud9600);
     rfcommport.setDataBits(QSerialPort::Data8);
@@ -55,21 +60,25 @@ bool bt_serialcomm::getPortState(void) {
 //---------------------------------------------------
 qint64 bt_serialcomm::getDataFromSerialPort(void) {
     char buf[1024];
-    qint64 lineLength;
+    qint64 lineLength=0;
 
-    if (rfcommport.canReadLine() == true) {
-        lineLength = rfcommport.readLine(buf, sizeof(buf));
-        if (lineLength != -1) {
-            this->incomingCommand->clear();
-            this->incomingCommand->append(buf);
-            this->incomingCommand->chop(2);
-            qDebug() << incomingCommand->toLatin1();
+    if (rfcommport.bytesAvailable() > 0) {
+        if (rfcommport.canReadLine() == true) {
+            lineLength = rfcommport.readLine(buf, sizeof(buf));
+            if (lineLength != -1) {
+                this->incomingCommand->clear();
+                this->incomingCommand->append(buf);
+                this->incomingCommand->chop(2);
+                rfcommport.clear(QSerialPort::AllDirections);
+                emit this->btDataReceived();
+            }
         }
     }
     return lineLength;
 }
 
 //---------------------------------------------------
-
-
+QString* bt_serialcomm::getTSCcommand(void) {
+    return this->incomingCommand;
+}
 

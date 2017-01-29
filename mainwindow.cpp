@@ -197,7 +197,13 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->LXSetNumberFormatToSimple(); // LX200 knows a simple and a complex number format for RA and Decl - set format to simple here ...
 
         // instantiate communications with handbox
-    bt_Handbox = new bt_serialcomm();
+    ui->leBTMACAddress->setText(*(g_AllData->getBTMACAddress()));
+    this->bt_Handbox = new bt_serialcomm(*(g_AllData->getBTMACAddress()));
+    this->bt_HandboxCommand=new QString(); // a string that holds the data from the bluetooth-handbox
+    this->mountMotion.btMoveNorth=0;
+    this->mountMotion.btMoveEast=0;
+    this->mountMotion.btMoveSouth=0;
+    this->mountMotion.btMoveWest=0;
 
         // connecting signals and slots
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
@@ -275,6 +281,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
+    connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection);
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider()));
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm()));
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm()));
@@ -288,10 +295,12 @@ MainWindow::~MainWindow() {
     delete StepperDriveDecl;
     delete timer;
     delete textEntry;
+    delete bt_HandboxCommand;
     delete lx200port;
     delete g_AllData;
     delete camImg;
     delete guideStarPrev;
+    delete bt_Handbox;
     delete ui;
     exit(0);
 }
@@ -301,14 +310,15 @@ MainWindow::~MainWindow() {
 void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
+    qint64 bytesRead;
 
     if (this->lx200IsOn) { // check the serial port for LX 200 commands
         if (lx200port->getPortState() == 1) {
             lx200port->getDataFromSerialPort();
         }
     }
-    if (this->bt_Handbox->getPortState() == true) {
-        this->bt_Handbox->getDataFromSerialPort();
+    if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
+        bytesRead=this->bt_Handbox->getDataFromSerialPort();
     }
     if (this->mountMotion.RATrackingIsOn == true) { // standard mode - mount compensates for earth motion
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
@@ -698,6 +708,9 @@ void MainWindow::shutDownProgram() {
     delete StepperDriveRA;
     this->StepperDriveDecl->stopDrive();
     delete StepperDriveDecl;
+    this->bt_Handbox->shutDownPort();
+    delete bt_HandboxCommand;
+    delete textEntry;
     exit(0);
 }
 
@@ -2515,7 +2528,7 @@ void MainWindow::storeDriveData(void) {
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
 //----------------------------------------------------------------------
-void MainWindow::startBTComm(void) {
+void MainWindow::startBTComm(void) { // start BT communications
     this->bt_Handbox->openPort();
     if (this->bt_Handbox->getPortState()==true) {
         ui->cbBTIsUp->setChecked(true);
@@ -2523,7 +2536,68 @@ void MainWindow::startBTComm(void) {
 }
 
 //----------------------------------------------------------------------
-void MainWindow::stopBTComm(void) {
+void MainWindow::stopBTComm(void) {  // stop BT communications
     this->bt_Handbox->shutDownPort();
     ui->cbBTIsUp->setChecked(false);
 }
+//----------------------------------------------------------------------
+// slot that responds to the strings received from the handbox via bluetooth.
+// the arduino sends a string consisting of 5 characters. "1000" is north,
+// "0100" is east, "0010" is south and "0001" is west. the fifth value is 0
+// if the speed is single, and 1 if the speed is the "move" speed.
+void MainWindow::handleBTHandbox(void) {
+    QString *localBTCommand; // make a deep copy of the command string
+    short speedSwitchState; // set to 1 or 0 concerning the motion speed
+
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+        // ignore this if system is in guiding or autoguider calibration
+        this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
+        localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
+        speedSwitchState=(localBTCommand->right(1)).toInt(); // the last digit is the motion state
+        localBTCommand->chop(1); // remove the last character
+        if (speedSwitchState == 1) {
+            this->setMoveSpeed();
+        } else {
+            this->setCorrectionSpeed();
+        } // set speeds according to the last digit
+        if (localBTCommand->compare("1000") == 0) {
+            this->mountMotion.btMoveNorth = 1;
+            this->declinationMoveHandboxUp();
+        }
+        if (localBTCommand->compare("0100") == 0) {
+            this->mountMotion.btMoveEast = 1;
+            this->RAMoveHandboxBwd();
+        }
+        if (localBTCommand->compare("0010") == 0) {
+            this->mountMotion.btMoveSouth = 1;
+            this->declinationMoveHandboxDown();
+        }
+        if (localBTCommand->compare("0001") == 0) {
+            this->mountMotion.btMoveWest = 1;
+            this->RAMoveHandboxFwd();
+        } // start motions according the first 4 digits.
+        if (localBTCommand->compare("0000") == 0) {
+
+            if (this->mountMotion.btMoveNorth == 1) {
+                this->mountMotion.btMoveNorth = 0;
+                this->declinationMoveHandboxUp();
+            }
+            if (this->mountMotion.btMoveEast == 1) {
+                this->mountMotion.btMoveEast = 0;
+                this->RAMoveHandboxBwd();
+            }
+            if (this->mountMotion.btMoveSouth == 1) {
+                this->mountMotion.btMoveSouth = 0;
+                this->declinationMoveHandboxDown();
+            }
+            if (this->mountMotion.btMoveWest == 1) {
+                this->mountMotion.btMoveWest = 0;
+                this->RAMoveHandboxFwd();
+            }
+        } // stop the respective motions
+        delete localBTCommand; // delete the local deep copy of the command string
+    }
+}
+
+
+

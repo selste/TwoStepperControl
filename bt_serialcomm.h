@@ -10,7 +10,7 @@
 class bt_serialcomm :public QObject {
     Q_OBJECT
 public:
-    bt_serialcomm(void);
+    bt_serialcomm(QString);
     ~bt_serialcomm(void);
     void shutDownPort(void);
     void openPort(void);
@@ -22,6 +22,9 @@ private:
     QSerialPort rfcommport;
     QString *incomingCommand;
     bool portIsUp;
+
+signals:
+    void btDataReceived();
 };
 #endif
 // BT_SERIALCOMM_H

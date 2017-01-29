@@ -1297,49 +1297,50 @@
        <rect>
         <x>10</x>
         <y>260</y>
-        <width>331</width>
+        <width>341</width>
         <height>151</height>
        </rect>
       </property>
       <property name="title">
        <string>Bluetooth</string>
       </property>
-      <widget class="QPushButton" name="pbConnectBT">
+      <widget class="QPushButton" name="pbSaveBTMACAddress">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>30</y>
-         <width>131</width>
+         <x>0</x>
+         <y>110</y>
+         <width>281</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>Connect BT</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pbDisonnectBT">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>70</y>
-         <width>131</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Disconnect BT</string>
+        <string>Save BT MAC Address</string>
        </property>
       </widget>
       <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
          <x>1</x>
-         <y>111</y>
-         <width>118</width>
-         <height>23</height>
+         <y>31</y>
+         <width>337</width>
+         <height>33</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_20">
+        <item>
+         <widget class="QPushButton" name="pbConnectBT">
+          <property name="text">
+           <string>Connect BT</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbDisonnectBT">
+          <property name="text">
+           <string>Disconnect BT</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QCheckBox" name="cbBTIsUp">
           <property name="enabled">
@@ -1353,7 +1354,33 @@
         <item>
          <widget class="QLabel" name="lBTPort">
           <property name="text">
-           <string>BT port is up</string>
+           <string>BT port up</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>70</y>
+         <width>281</width>
+         <height>35</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_21">
+        <item>
+         <widget class="QLabel" name="lMACAddrBT">
+          <property name="text">
+           <string>BT-MAC Addr:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leBTMACAddress">
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>

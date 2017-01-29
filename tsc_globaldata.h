@@ -44,6 +44,7 @@ public:
     bool getGuidingState(void);
     void setGuidingState(bool);
     QImage* getCameraImage(void);
+    QString* getBTMACAddress(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -51,6 +52,7 @@ private:
     bool guidingState;
     QImage *currentCameraImage;
     int guideScopeFocalLength;
+    QString *BTMACAddress;
 
     struct initialStarPosStruct {
         float screenx;

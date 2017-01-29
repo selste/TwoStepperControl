@@ -98,6 +98,7 @@ private slots:
     void calibrateAutoGuider(void);
     void startBTComm(void);
     void stopBTComm(void);
+    void handleBTHandbox(void);
 
 private:
     struct mountMotionStruct {
@@ -116,6 +117,10 @@ private:
         qint64 DeclMoveElapsedTimeInMS; // timestamp for elapsed time of the tracking since last call to clock-sync
         qint64 RAGoToElapsedTimeInMS;
         qint64 DeclGoToElapsedTimeInMS;
+        bool btMoveNorth;
+        bool btMoveEast;
+        bool btMoveSouth;
+        bool btMoveWest;
     };
     struct currentGuideStarPosition {
         float centrX;
@@ -183,6 +188,7 @@ private:
     QElapsedTimer *elapsedGoToTime;
     short RAdriveDirectionForNorthernHemisphere;
     QString *textEntry;
+    QString *bt_HandboxCommand;
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     ocv_guiding *guiding;
@@ -192,7 +198,6 @@ private:
     void declPGMinusGd(void);
     void raPGFwdGd(void);
     void raPGBwdGd(void);
-
 };
 
 #endif // MAINWINDOW_H
