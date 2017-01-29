@@ -9,9 +9,9 @@ SoftwareSerial tscHB(10,11); //RX, TX
 void setup() {
   // put your setup code here, to run once:
   pinMode(2,INPUT); // north
-  pinMode(3,INPUT); // east
-  pinMode(4,INPUT); // south
-  pinMode(5,INPUT); // west
+  pinMode(4,INPUT); // east
+  pinMode(7,INPUT); // south
+  pinMode(12,INPUT); // west
   Serial.begin(9600);
   while (!Serial) {}
   tscHB.begin(9600);
@@ -23,16 +23,16 @@ if (digitalRead(2) != nSwitch) {
   nSwitch = digitalRead(2);
   switchStateChanged=1;
 }
-if (digitalRead(3) != eSwitch) {
-  eSwitch = digitalRead(3);
+if (digitalRead(4) != eSwitch) {
+  eSwitch = digitalRead(4);
   switchStateChanged=1;
 }
-if (digitalRead(4) != sSwitch) {
-  sSwitch = digitalRead(4);
+if (digitalRead(7) != sSwitch) {
+  sSwitch = digitalRead(7);
   switchStateChanged=1;
 }
-if (digitalRead(5) != wSwitch) {
-  wSwitch = digitalRead(5);
+if (digitalRead(12) != wSwitch) {
+  wSwitch = digitalRead(12);
   switchStateChanged=1;
 }
 if (switchStateChanged == 1) {
