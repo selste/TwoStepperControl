@@ -166,10 +166,8 @@ private:
     QPixmap *guideStarPrev;
     currentObjectCatalog *objCatalog;
     void updateCameraImage(void);
-    void declinationPulseGuide(long, short);
-    void raPulseGuide(long, short);
-    void declinationPulseGuideInGuiding(long, short);
-    void raPulseGuideInGuiding(long, short);
+    void declinationPulseGuide(long, short,bool);
+    void raPulseGuide(long, short,bool);
     void emergencyShutdown(short);
     void setControlsForRATravel(bool);
     void setControlsForRATracking(bool);

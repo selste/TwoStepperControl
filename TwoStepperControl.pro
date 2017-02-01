@@ -60,18 +60,12 @@ else:unix: LIBS += -L$$PWD/../../../../usr/lib/ -lindiclient
 INCLUDEPATH += $$PWD/../../../../usr/include
 DEPENDPATH += $$PWD/../../../../usr/include
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../../../../usr/lib/release/libindiclient.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../../../../usr/lib/debug/libindiclient.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../../../../usr/lib/release/indiclient.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../../../../usr/lib/debug/indiclient.lib
-else:unix: PRE_TARGETDEPS += $$PWD/../../../../usr/lib/libindiclient.a
-
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/release/ -lindi
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/debug/ -lindi
 else:unix: LIBS += -L$$PWD/../../../../usr/lib/ -lindi
 
-INCLUDEPATH += $$PWD/../../../../usr/include
-DEPENDPATH += $$PWD/../../../../usr/include
+INCLUDEPATH += $$PWD/../../../../usr/include/libindi
+DEPENDPATH += $$PWD/../../../../usr/include/libindi
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/release/ -lnova
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/debug/ -lnova
@@ -108,16 +102,12 @@ else:unix: LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/ -lpthread
 INCLUDEPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 DEPENDPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_imgproc
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_imgproc
-else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_imgproc
+unix:!macx: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_core
 
 INCLUDEPATH += $$PWD/../../../usr/local/include
 DEPENDPATH += $$PWD/../../../usr/local/include
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/release/ -lopencv_core
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/local/lib/debug/ -lopencv_core
-else:unix: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_core
+unix:!macx: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_imgproc
 
 INCLUDEPATH += $$PWD/../../../usr/local/include
 DEPENDPATH += $$PWD/../../../usr/local/include

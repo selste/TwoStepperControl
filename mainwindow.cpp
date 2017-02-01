@@ -1172,7 +1172,7 @@ void MainWindow::calibrateAutoGuider(void) {
         ui->teCalibrationStatus->appendPlainText("0/4 ...");
         imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
         pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
-/*        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
+        ui->teCalibrationStatus->appendPlainText("Waiting for image...");
         this->waitForCalibrationImage(); // small subroutine - waits for 2 images
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1243,10 +1243,10 @@ void MainWindow::calibrateAutoGuider(void) {
         statMesg.append("°");
         ui->teCalibrationStatus->appendPlainText(statMesg);
         statMesg.clear(); // rotation angle determined
-*/
+
     //-----------------------------------------
     // debugging code
-     avrgAngle=0.0;
+    //avrgAngle=0.0;
     //-----------------------------------------
 
     // now determine the rotation matrix from ccd x/y to ra/decl
@@ -1535,7 +1535,8 @@ void MainWindow::clearLXLog(void) {
 void MainWindow::LXsyncMount(void) {
     QString lestr;
 
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if (this->StepperDriveRA->getStopped() == false) {
             this->stopRATracking();
         }
@@ -1574,7 +1575,8 @@ void MainWindow::LXstopMotion(void) {
 // slew via LX 200
 void MainWindow::LXslewMount(void) {
     QString lestr;
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
             if (this->MountWasSynced == true) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
@@ -1595,7 +1597,8 @@ void MainWindow::LXslewMount(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXmoveEast(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)){
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+            && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) {
             if (this->mountMotion.RADriveIsMoving == true) {
@@ -1611,7 +1614,8 @@ void MainWindow::LXmoveEast(void) {
 // motion via LX 200
 void MainWindow::LXmoveWest(void) {
 
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+         && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) {
             if (this->mountMotion.RADriveIsMoving == true) {
@@ -1625,7 +1629,8 @@ void MainWindow::LXmoveWest(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXmoveNorth(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) {
             if (this->mountMotion.DeclDriveIsMoving == true) {
@@ -1640,7 +1645,8 @@ void MainWindow::LXmoveNorth(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXmoveSouth(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) {
             if (this->mountMotion.DeclDriveIsMoving == true) {
@@ -1655,7 +1661,8 @@ void MainWindow::LXmoveSouth(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXstopMoveEast(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if (((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) &&
                 (mountMotion.RADriveIsMoving == true))  {
@@ -1667,7 +1674,8 @@ void MainWindow::LXstopMoveEast(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXstopMoveWest(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if (((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) &&
                 (mountMotion.RADriveIsMoving == true))  {
@@ -1679,7 +1687,8 @@ void MainWindow::LXstopMoveWest(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXstopMoveNorth(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)){
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if (((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) &&
                 (mountMotion.DeclDriveIsMoving == true))  {
@@ -1691,7 +1700,8 @@ void MainWindow::LXstopMoveNorth(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXstopMoveSouth(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if (((mountMotion.GoToIsActiveInRA==false) ||
                 (mountMotion.GoToIsActiveInDecl==false)) &&
                 (mountMotion.DeclDriveIsMoving == true))  {
@@ -1703,7 +1713,8 @@ void MainWindow::LXstopMoveSouth(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXslowSpeed(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         ui->rbCorrSpeed->setChecked(true);
         this->setCorrectionSpeed();
     }
@@ -1712,7 +1723,8 @@ void MainWindow::LXslowSpeed(void) {
 //---------------------------------------------------------------------
 // motion via LX 200
 void MainWindow::LXhiSpeed(void) {
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         ui->rbMoveSpeed->setChecked(true);
         this->setMoveSpeed();
     }
@@ -1970,7 +1982,7 @@ void MainWindow::declPGPlus(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    declinationPulseGuide(duration, 1);
+    declinationPulseGuide(duration, 1,true);
 }
 
 //--------------------------------------------------------------
@@ -1978,7 +1990,7 @@ void MainWindow::declPGMinusGd(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    declinationPulseGuideInGuiding(duration, -1);
+    declinationPulseGuide(duration, -1,false);
 }
 
 //--------------------------------------------------------------
@@ -1986,7 +1998,7 @@ void MainWindow::declPGPlusGd(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    declinationPulseGuideInGuiding(duration, 1);
+    declinationPulseGuide(duration, 1,false);
 }
 
 //--------------------------------------------------------------
@@ -1994,10 +2006,10 @@ void MainWindow::declPGMinus(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    declinationPulseGuide(duration, -1);
+    declinationPulseGuide(duration, -1,true);
 }
 //--------------------------------------------------------------
-void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) {
+void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, bool isThreaded) {
     long steps;
     double declSpeed;
     short ldir;
@@ -2031,11 +2043,20 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) 
         this->mountMotion.DeclDriveDirection=ldir;
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         this->mountMotion.DeclDriveIsMoving=true;
-        futureStepperBehaviourDecl = QtConcurrent::run(this->StepperDriveDecl,
-            &QStepperPhidgetsDecl::travelForNSteps,steps,
-            this->mountMotion.DeclDriveDirection,this->mountMotion.DeclSpeedFactor,0);
-        while (!futureStepperBehaviourDecl.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        if (isThreaded == true) {
+            futureStepperBehaviourDecl = QtConcurrent::run(this->StepperDriveDecl,
+                &QStepperPhidgetsDecl::travelForNSteps,steps,
+                this->mountMotion.DeclDriveDirection,this->mountMotion.DeclSpeedFactor,0);
+            while (!futureStepperBehaviourDecl.isFinished()) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            }
+        } else {
+            if (pulseDurationInMS < 2000) { // don't do corrections > 2 s in guiding
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                this->StepperDriveDecl->travelForNSteps(steps,this->mountMotion.DeclDriveDirection,
+                    this->mountMotion.DeclSpeedFactor,0);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            }
         }
     }
     this->mountMotion.DeclDriveIsMoving=false;
@@ -2047,56 +2068,11 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) 
 }
 
 //---------------------------------------------------------------------
-// does the same as before, but without threading - for quick moves in guiding
-void MainWindow::declinationPulseGuideInGuiding(long pulseDurationInMS, short direction) {
-    long steps;
-    double declSpeed;
-    short ldir;
-
-    this->setControlsForDeclTravel(false);
-    ui->pbDeclDown->setEnabled(false);
-    ui->pbDeclUp->setEnabled(false);
-    ui->pbRAMinus->setEnabled(false);
-    ui->pbRAPlus->setEnabled(false);
-    if (this->mountMotion.DeclDriveIsMoving==true){
-        this->mountMotion.DeclDriveIsMoving=false;
-        this->StepperDriveDecl->stopDrive();
-        while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-    } // if the decl drive was moving, it is now set to stop
-    this->setCorrectionSpeed();
-    ui->rbCorrSpeed->setChecked(true); // switch to correction speed
-    declSpeed = 0.0041780746*
-            (g_AllData->getGearData(4))*
-            (g_AllData->getGearData(5))*
-            (g_AllData->getGearData(6))*
-            (g_AllData->getGearData(8))/(g_AllData->getGearData(7));
-    if (direction < 0) {
-        ldir = -1;
-    } else {
-        ldir = 1;
-    }
-    steps = declSpeed*(pulseDurationInMS/1000.0);
-    if (steps > 1) { // controller cannot do only one microstep
-        this->mountMotion.DeclDriveIsMoving=true;
-        this->mountMotion.DeclDriveDirection=ldir;
-        this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        this->StepperDriveDecl->travelForNSteps(steps,this->mountMotion.DeclDriveDirection,
-                                                this->mountMotion.DeclSpeedFactor,0);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-    }
-    this->mountMotion.DeclDriveIsMoving=false;
-    this->setControlsForDeclTravel(true);
-}
-
-//---------------------------------------------------------------------
 void MainWindow::raPGFwd(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    raPulseGuide(duration,1);
+    raPulseGuide(duration,1,true);
 }
 
 //---------------------------------------------------------------------
@@ -2105,7 +2081,7 @@ void MainWindow::raPGBwd(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    raPulseGuide(duration,-1);
+    raPulseGuide(duration,-1,true);
 }
 
 //---------------------------------------------------------------------
@@ -2113,7 +2089,7 @@ void MainWindow::raPGFwdGd(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    raPulseGuideInGuiding(duration,1);
+    raPulseGuide(duration,1,false);
 }
 
 //---------------------------------------------------------------------
@@ -2121,10 +2097,10 @@ void MainWindow::raPGBwdGd(void) {
     long duration;
 
     duration = ui->sbPulseGuideDuration->value();
-    raPulseGuideInGuiding(duration,-1);
+    raPulseGuide(duration,-1,false);
 }
 //---------------------------------------------------------------------
-void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) {
+void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isThreaded) {
     long steps;
     double raSpeed,pgFactor;
     QElapsedTimer *localTimer;
@@ -2166,12 +2142,20 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) {
         if (steps>1) { // controller cannot do only one microstep
             this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
             this->mountMotion.RADriveIsMoving=true;
-            this->futureStepperBehaviourRA =
-                    QtConcurrent::run(this->StepperDriveRA,
-                        &QStepperPhidgetsRA::travelForNSteps,steps,
+            if (isThreaded == true) {
+                this->futureStepperBehaviourRA =
+                    QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgetsRA::travelForNSteps,steps,
                         this->mountMotion.RADriveDirection,pgFactor,false);
-            while (!futureStepperBehaviourRA.isFinished()) {
+                while (!futureStepperBehaviourRA.isFinished()) {
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                }
+            } else {
+                if (pulseDurationInMS < 2000) { // in guiding, do less that 2 s corrections
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                    this->StepperDriveRA->travelForNSteps(steps,this->mountMotion.RADriveDirection,
+                        pgFactor,false);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                }
             }
         }
     } else {
@@ -2188,69 +2172,6 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) {
     ui->pbRAPlus->setEnabled(1);
     ui->pbDeclDown->setEnabled(1);
     ui->pbDeclUp->setEnabled(1);
-    this->setControlsForRATravel(true);
-    this->startRATracking();
-}
-
-//------------------------------------------------------------------------
-// same as before, but without threading for fast moves in guiding
-void MainWindow::raPulseGuideInGuiding(long pulseDurationInMS, short direction) {
-    long steps;
-    double raSpeed,pgFactor;
-    QElapsedTimer *localTimer;
-
-    if (this->mountMotion.RATrackingIsOn) {
-        this->stopRATracking();
-    }
-    if (this->mountMotion.RADriveIsMoving==true){
-        this->mountMotion.RADriveIsMoving=false;
-        this->StepperDriveRA->stopDrive();
-        while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-    }
-    this->setControlsForRATravel(false);
-    ui->pbStartTracking->setEnabled(0);
-    ui->pbStopTracking->setEnabled(0);
-    ui->pbRAMinus->setEnabled(0);
-    ui->pbRAPlus->setEnabled(0); // if the RA drive was moving, it is now set to stop
-    ui->pbDeclDown->setEnabled(0);
-    ui->pbDeclUp->setEnabled(0);
-    this->setCorrectionSpeed();
-    ui->rbCorrSpeed->setChecked(true); // switch to correction speed
-    if (direction < 0) {
-        direction = -1;
-         pgFactor=this->mountMotion.RASpeedFactor-1;
-    } else {
-        direction = 1;
-        pgFactor=this->mountMotion.RASpeedFactor+1;
-    }
-    if (direction == 1) {
-        this->mountMotion.RADriveDirection=direction;
-        raSpeed=0.0041780746*
-                (g_AllData->getGearData(0))*
-                (g_AllData->getGearData(1))*
-                (g_AllData->getGearData(2))*
-                (g_AllData->getGearData(8))/(g_AllData->getGearData(3));
-        steps = direction*pgFactor*raSpeed*(pulseDurationInMS/1000.0);
-        if (steps > 1) { // controller cannot do only one microstep
-            this->mountMotion.RADriveIsMoving=true;
-            this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-            this->StepperDriveRA->travelForNSteps(steps,this->mountMotion.RADriveDirection,
-                                                  pgFactor,false);
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        }
-    } else {
-        localTimer = new QElapsedTimer();
-        localTimer->start();
-        while (localTimer->elapsed() < pulseDurationInMS) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-            // that one is easy - just stop the drive for a given amount of time
-        }
-        delete localTimer;
-    }
-    this->mountMotion.RADriveIsMoving=false;
     this->setControlsForRATravel(true);
     this->startRATracking();
 }
@@ -2549,7 +2470,8 @@ void MainWindow::handleBTHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
     short speedSwitchState; // set to 1 or 0 concerning the motion speed
 
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)) {
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false) &&
+            (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA==false)) {
         // ignore this if system is in guiding or autoguider calibration
         this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
         localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command

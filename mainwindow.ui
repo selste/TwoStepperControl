@@ -96,7 +96,7 @@
           <number>250</number>
          </property>
          <property name="value">
-          <number>100</number>
+          <number>120</number>
          </property>
         </widget>
        </item>
@@ -137,7 +137,7 @@
           <number>200</number>
          </property>
          <property name="value">
-          <number>4</number>
+          <number>20</number>
          </property>
         </widget>
        </item>
@@ -1317,7 +1317,7 @@
         <string>Save BT MAC Address</string>
        </property>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>1</x>
@@ -1360,7 +1360,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>0</x>

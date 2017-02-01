@@ -1,6 +1,6 @@
-#include "indidevapi.h"
-#include "indicom.h"
-#include "indibase/baseclient.h"
+#include <indidevapi.h>
+#include <indicom.h>
+#include <baseclient.h>
 #include <QString>
 #include <QImage>
 #include <QPixmap>

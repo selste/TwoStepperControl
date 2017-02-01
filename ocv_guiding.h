@@ -1,10 +1,10 @@
 #ifndef OCV_GUIDING_H
 #define OCV_GUIDING_H
 
-#include "opencv2/core.hpp"
+#include <opencv2/core.hpp>
 #include <opencv2/opencv.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/imgproc/types_c.h"
+#include <opencv2/imgproc.hpp>
+//#include <types_c.h>
 #include <QImage>
 #include <QPixmap>
 
