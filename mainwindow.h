@@ -41,6 +41,7 @@ private slots:
     void setINDISAddrAndPort(void);
     void startCCDAcquisition(void);
     void stopCCDAcquisition(void);
+    void changeCCDGain(void);
     void syncMount(void);
     void storeGearData(void);
     void storeDriveData(void);

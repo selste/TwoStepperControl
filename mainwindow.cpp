@@ -156,7 +156,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leFrameSizeY->setText(textEntry->number(g_AllData->getCameraChipPixels(1)));
     textEntry->clear();
 
-        // camera nd guiding class are instantiated
+        // camera and guiding class are instantiated
     camera_client = new alccd5_client(); // install a camera client for guiding via INDI
     guiding = new ocv_guiding();
     guideStarPrev = new QPixmap(); // a pixmap for showing the preview window
@@ -211,6 +211,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition())); // start acquiring images from the guidecam. a signal is emitted if an image arrived.
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
+    connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain()));
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
@@ -890,7 +891,7 @@ void MainWindow::setMaxStepperCurrentDecl(void) {
 // read the address and port from the GUI and start connect the camera to the INDI server
 void MainWindow::setINDISAddrAndPort(void) {
     QString saddr;
-    int sport;
+    int sport, gainVal;
     bool isServerUp = 0;
 
     saddr=ui->leINDIServer->text();
@@ -904,6 +905,9 @@ void MainWindow::setINDISAddrAndPort(void) {
         ui->pbGetCCDParams->setEnabled(true);
         ui->pbCCDTakeDarks->setEnabled(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
+        sleep(1);
+        gainVal=ui->sbCCDGain->value();
+        camera_client->sendGain(gainVal);
     }
 }
 
@@ -943,7 +947,7 @@ void MainWindow::deployINDICommand(void) {
 void MainWindow::takeSingleCamShot(void) {
    int exptime;
 
-   exptime = (ui->sbExposureTime->value());
+   exptime = ui->sbExposureTime->value();;
    camera_client->takeExposure(exptime);
 }
 
@@ -977,9 +981,18 @@ void MainWindow::enableCamImageStorage(void) {
 }
 
 //------------------------------------------------------------------
+// slot for changing the gain settings of the guidecamera
+void MainWindow::changeCCDGain(void) {
+    int gainSet;
+
+    gainSet = ui->sbCCDGain->value();
+    camera_client->sendGain(gainSet);
+}
+
+//------------------------------------------------------------------
 // does a lot - stores the camera image in the mainwindow class,
 // displays the bigger image, but if a guidestar is selected, it also
-// takes care of precessing the preview image. also polls new images
+// takes care of processing the preview image. also polls new images
 // if the appropriate flag is set
 void MainWindow::displayGuideCamImage(void) {
     int thrshld,beta;
@@ -2496,24 +2509,19 @@ void MainWindow::handleBTHandbox(void) {
         } else {
             this->setCorrectionSpeed();
         } // set speeds according to the last digit
-        if (localBTCommand->compare("1000") == 0) {
+        if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
             this->mountMotion.btMoveNorth = 1;
             this->declinationMoveHandboxUp();
-        }
-        if (localBTCommand->compare("0100") == 0) {
+        } else if (localBTCommand->compare("0100") == 0) {
             this->mountMotion.btMoveEast = 1;
             this->RAMoveHandboxBwd();
-        }
-        if (localBTCommand->compare("0010") == 0) {
+        } else if (localBTCommand->compare("0010") == 0) {
             this->mountMotion.btMoveSouth = 1;
             this->declinationMoveHandboxDown();
-        }
-        if (localBTCommand->compare("0001") == 0) {
+        } else if (localBTCommand->compare("0001") == 0) {
             this->mountMotion.btMoveWest = 1;
             this->RAMoveHandboxFwd();
-        } // start motions according the first 4 digits.
-        if (localBTCommand->compare("0000") == 0) {
-
+        } else {
             if (this->mountMotion.btMoveNorth == 1) {
                 this->mountMotion.btMoveNorth = 0;
                 this->declinationMoveHandboxUp();

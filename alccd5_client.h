@@ -14,6 +14,7 @@ class alccd5_client:public QObject, public INDI::BaseClient {
     alccd5_client();
     ~alccd5_client();
     void takeExposure(int);
+    void sendGain(int);
     bool setINDIServer(QString, int);
     QPixmap* getScaledPixmapFromCamera(void);
     QString* getINDIServerMessage(void);
@@ -28,7 +29,7 @@ protected:
     virtual void removeProperty(INDI::Property *property) {}
     virtual void newBLOB(IBLOB *bp);
     virtual void newSwitch(ISwitchVectorProperty *svp) {}
-    virtual void newNumber(INumberVectorProperty *nvp);
+    virtual void newNumber(INumberVectorProperty *nvp) {}
     virtual void newMessage(INDI::BaseDevice *dp, int messageID);
     virtual void newText(ITextVectorProperty *tvp) {}
     virtual void newLight(ILightVectorProperty *lvp) {}
@@ -48,6 +49,7 @@ private:
    QVector<QRgb> *myVec;
    QString *serverMessage;
    INumberVectorProperty *ccd_exposure = NULL;
+   INumberVectorProperty *ccd_gain = NULL;
    long expcounter;
    bool storeCamImages;
    short simulatorCounter; // a helper for debugging

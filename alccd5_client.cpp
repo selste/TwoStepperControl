@@ -1,16 +1,16 @@
 // derived from INDI client example; currently, it connects only to the QHY5
 
-#include <string>
-#include <iostream>
-#include <fstream>
+//#include <string>
+//#include <iostream>
+//#include <fstream>
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
 #include <unistd.h>
 #include <time.h>
-#include <memory>
-#include <sys/types.h>
-#include <sys/stat.h>
+//#include <memory>
+//#include <sys/types.h>
+//#include <sys/stat.h>
 //#include <config.h>
 #include <qdebug.h>
 #include <qcolor.h>
@@ -98,11 +98,35 @@ void alccd5_client::takeExposure(int expTime) {
         if ((fexpt > 0.001) && (fexpt < 3600)) {
             sendNewNumber(ccd_exposure);
         }
-    } else {
-        qDebug() << "Cam not connected...";
     }
 }
 
+//------------------------------------------
+void alccd5_client::sendGain(int gain) {
+    float fgain;
+    QElapsedTimer *localTimer;
+
+    if (alccd5->isConnected()) {
+        fgain=(float)gain;
+        ccd_gain = alccd5->getNumber("CCD_GAIN");
+        if (ccd_gain==NULL) {
+            return;
+        }
+        localTimer = new QElapsedTimer(); // INDIserver needs a few ms to digest the command ...
+        localTimer->start();
+        fgain=(float)gain;
+        while (localTimer->elapsed() < 100) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        localTimer->restart();
+        ccd_gain->np[0].value = fgain;
+        while (localTimer->elapsed() < 100) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        }
+        delete localTimer;
+        sendNewNumber(ccd_gain);
+    }
+}
 //------------------------------------------
 void alccd5_client::newDevice(INDI::BaseDevice *dp) {
     if (!strcmp(dp->getDeviceName(), MYCCD)) {
@@ -127,9 +151,6 @@ void alccd5_client::newProperty(INDI::Property *property) {
         return;
     }
 }
-
-//------------------------------------------
-void alccd5_client::newNumber(INumberVectorProperty *nvp) { }
 
 //------------------------------------------
 void alccd5_client::newMessage(INDI::BaseDevice *dp, int messageID) {

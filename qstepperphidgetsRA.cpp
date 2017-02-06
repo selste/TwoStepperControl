@@ -64,7 +64,6 @@ QStepperPhidgetsRA::~QStepperPhidgetsRA(void){
 //-----------------------------------------------------------------------------
 
 void QStepperPhidgetsRA::startTracking(void) {
-    double v;
 
     this->speedMax=0.0041780746*
             (g_AllData->getGearData(0))*
