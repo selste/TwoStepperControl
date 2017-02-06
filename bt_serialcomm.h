@@ -11,6 +11,7 @@ class bt_serialcomm :public QObject {
     Q_OBJECT
 public:
     bt_serialcomm(QString);
+    void bt_serialcommTryRestart(QString);
     ~bt_serialcomm(void);
     void shutDownPort(void);
     void openPort(void);

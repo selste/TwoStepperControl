@@ -20,6 +20,25 @@ bt_serialcomm::bt_serialcomm(QString bt_MACaddr) {
 }
 
 //---------------------------------------------------
+
+void bt_serialcomm::bt_serialcommTryRestart(QString bt_MACaddr) {
+    QString startupRFPort;
+    this->portIsUp=false;
+
+    startupRFPort.append("sudo rfcomm connect hci0 ");
+    startupRFPort.append(bt_MACaddr);
+    startupRFPort.append(" &");
+    system(startupRFPort.toLatin1());
+    qDebug() << "Issued a restart of BT ...";
+    rfcommport.setPortName("/dev/rfcomm0");
+    rfcommport.setBaudRate(QSerialPort::Baud9600);
+    rfcommport.setDataBits(QSerialPort::Data8);
+    rfcommport.setParity(QSerialPort::NoParity);
+    rfcommport.setStopBits(QSerialPort::OneStop);
+    rfcommport.setFlowControl(QSerialPort::NoFlowControl);
+}
+
+//----------------------------------------------------
 bt_serialcomm::~bt_serialcomm(void) {
     if (portIsUp == 1) {
         rfcommport.setBreakEnabled(true);

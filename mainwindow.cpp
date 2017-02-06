@@ -258,6 +258,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
     connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
+    connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -499,7 +500,6 @@ void MainWindow::startGoToObject(void) {
 
     blockSignals(true); // block sync and slew signals during slew
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
-    this->terminateAllMotion(); // stop the drives
     this->setControlsForGoto(false); // set some controls on disabled
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
     shortSlew=false; // we do not know how long the slew takes, so this flag is false
@@ -585,9 +585,10 @@ void MainWindow::startGoToObject(void) {
 
         // let the games begin ... GOTO is ready to start ...
     RARideIsDone = false; // RA slew not finished yet ...
+    this->terminateAllMotion(); // stop the drives
     this->elapsedGoToTime->start(); // a second timer in the class to measure the time elapsed during goto - needed for updates in the event queue
-
     if (shortSlew == true) { // is the target is nearby, carry out the slews one after another ...
+        this->startRATracking(); // RA still has to track while decl slews here ...
         futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) { // wait for thread to start
         }
@@ -602,6 +603,7 @@ void MainWindow::startGoToObject(void) {
             }
         }
         this->mountMotion.GoToIsActiveInDecl=false; // goto in Decl is now done, so start travel in RA. set also the flag for decl-goto ...
+        this->stopRATracking(); // now, the decl slew is done and slewing in RA starts - therefore tracking is stopped
         futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA,false);
         while (!futureStepperBehaviourRA.isStarted()) { // wait for thread to start
         }
@@ -2460,6 +2462,18 @@ void MainWindow::startBTComm(void) { // start BT communications
 void MainWindow::stopBTComm(void) {  // stop BT communications
     this->bt_Handbox->shutDownPort();
     ui->cbBTIsUp->setChecked(false);
+}
+
+//----------------------------------------------------------------------
+void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it failed in initialisation
+
+    ui->leBTMACAddress->setText(*(g_AllData->getBTMACAddress()));
+    this->bt_Handbox->bt_serialcommTryRestart(*(g_AllData->getBTMACAddress()));
+    this->mountMotion.btMoveNorth=0;
+    this->mountMotion.btMoveEast=0;
+    this->mountMotion.btMoveSouth=0;
+    this->mountMotion.btMoveWest=0;
+
 }
 //----------------------------------------------------------------------
 // slot that responds to the strings received from the handbox via bluetooth.

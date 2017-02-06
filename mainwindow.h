@@ -98,6 +98,7 @@ private slots:
     void calibrateAutoGuider(void);
     void startBTComm(void);
     void stopBTComm(void);
+    void restartBTComm(void);
     void handleBTHandbox(void);
 
 private:
