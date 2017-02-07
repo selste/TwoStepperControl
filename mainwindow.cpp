@@ -498,7 +498,6 @@ void MainWindow::startGoToObject(void) {
     bool RAtakesLonger, shortSlew; // two flags. RAtakes longer = true: RAtravel longer than Decl travel. short sles of a few seconds are carried out one after another to avaid timing problems
     bool RARideIsDone; // a flag set to true when slew in RA is done
 
-    blockSignals(true); // block sync and slew signals during slew
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
     this->setControlsForGoto(false); // set some controls on disabled
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
@@ -589,6 +588,7 @@ void MainWindow::startGoToObject(void) {
     this->elapsedGoToTime->start(); // a second timer in the class to measure the time elapsed during goto - needed for updates in the event queue
     if (shortSlew == true) { // is the target is nearby, carry out the slews one after another ...
         this->startRATracking(); // RA still has to track while decl slews here ...
+        ui->pbStopTracking->setEnabled(false);
         futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) { // wait for thread to start
         }
@@ -604,6 +604,7 @@ void MainWindow::startGoToObject(void) {
         }
         this->mountMotion.GoToIsActiveInDecl=false; // goto in Decl is now done, so start travel in RA. set also the flag for decl-goto ...
         this->stopRATracking(); // now, the decl slew is done and slewing in RA starts - therefore tracking is stopped
+        ui->pbStartTracking->setEnabled(false);
         futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QStepperPhidgetsRA::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA,false);
         while (!futureStepperBehaviourRA.isStarted()) { // wait for thread to start
         }
@@ -628,6 +629,7 @@ void MainWindow::startGoToObject(void) {
         this->mountMotion.GoToIsActiveInRA=true;
         this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
         timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
+        ui->pbStartTracking->setEnabled(false);
         futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QStepperPhidgetsDecl::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) {
         }
@@ -687,7 +689,7 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.emergencyStopTriggered=false;
             return;
         }
-    } // coorrection is now done as well
+    } // correction is now done as well
     this->ra=targetRA;
     this->decl=targetDecl;
     this->syncMount(); // sync the mount
@@ -696,7 +698,6 @@ void MainWindow::startGoToObject(void) {
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(true); // set GUI back in base state
-    blockSignals(false); // allow for signals again - this is especially important for LX200 stuff ...
     return;
 }
 
@@ -926,10 +927,9 @@ void MainWindow::handleServerMessage(void) {
 // deploy a system command to start an INDI server locally with standard parameters.
 // type of server is defined by radiobuttons, only QHY until now supported ...
 void MainWindow::deployINDICommand(void) {
-    int retval=0;
 
     if (ui->rbQHYINDI->isChecked()== true) {
-        retval = system("indiserver -v -m 100 indi_qhy_ccd &");
+        system("indiserver -v -m 100 indi_qhy_ccd &");
     }
     ui->pbStartINDIServer->setEnabled(false);
 }
@@ -2374,6 +2374,9 @@ void MainWindow::catalogObjectChosen(void)
             deltaRA = meeusM+meeusN*sin(raRadians)*tan(declRadians);
             deltaDecl = meeusN*cos(raRadians);
             this->ra=epRA+deltaRA*((double)(ui->sbEpoch->value()-ui->lcdCatEpoch->value()));
+            if (this->ra > 360) {
+                this->ra-=360;
+            }
             this->decl=epDecl+deltaDecl*((double)(ui->sbEpoch->value()-ui->lcdCatEpoch->value()));
             qDebug() << "catalog ra vs. corr. RA:" << epRA << this->ra;
             qDebug() << "catalog decl vs. corr. decl:" << epDecl << this->decl;
@@ -2505,26 +2508,32 @@ void MainWindow::handleBTHandbox(void) {
         localBTCommand->chop(1); // remove the last character
         if (speedSwitchState == 1) {
             this->setMoveSpeed();
+            ui->rbMoveSpeed->setChecked(true);
         } else {
             this->setCorrectionSpeed();
+            ui->rbCorrSpeed->setChecked(true);
         } // set speeds according to the last digit
         if ((this->mountMotion.RADriveIsMoving==false) && (this->mountMotion.DeclDriveIsMoving==false)) {
             // just to make sure that the handbox does not mess up a motion initiated from the GUI
             if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveNorth = 1;
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
                 this->declinationMoveHandboxUp();
             } else if (localBTCommand->compare("0100") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveEast = 1;
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
                 this->RAMoveHandboxBwd();
             } else if (localBTCommand->compare("0010") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveSouth = 1;
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
                 this->declinationMoveHandboxDown();
             } else if (localBTCommand->compare("0001") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveWest = 1;
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
                 this->RAMoveHandboxFwd();
             }
         }
