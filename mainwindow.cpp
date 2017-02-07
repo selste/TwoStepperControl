@@ -291,7 +291,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
 //------------------------------------------------------------------
-// dewstructor - hopefully kills all local and global instances
+// destructor - hopefully kills all local and global instances
 MainWindow::~MainWindow() {
     delete StepperDriveRA;
     delete StepperDriveDecl;
@@ -312,7 +312,6 @@ MainWindow::~MainWindow() {
 void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
-    qint64 bytesRead;
 
     if (this->lx200IsOn) { // check the serial port for LX 200 commands
         if (lx200port->getPortState() == 1) {
@@ -320,7 +319,7 @@ void MainWindow::updateReadings() {
         }
     }
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
-        bytesRead=this->bt_Handbox->getDataFromSerialPort();
+        this->bt_Handbox->getDataFromSerialPort();
     }
     if (this->mountMotion.RATrackingIsOn == true) { // standard mode - mount compensates for earth motion
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
@@ -2497,11 +2496,11 @@ void MainWindow::handleBTHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
     short speedSwitchState; // set to 1 or 0 concerning the motion speed
 
+    this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
+    localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
     if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false) &&
             (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA==false)) {
         // ignore this if system is in guiding or autoguider calibration
-        this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
-        localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
         speedSwitchState=(localBTCommand->right(1)).toInt(); // the last digit is the motion state
         localBTCommand->chop(1); // remove the last character
         if (speedSwitchState == 1) {
@@ -2509,19 +2508,27 @@ void MainWindow::handleBTHandbox(void) {
         } else {
             this->setCorrectionSpeed();
         } // set speeds according to the last digit
-        if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
-            this->mountMotion.btMoveNorth = 1;
-            this->declinationMoveHandboxUp();
-        } else if (localBTCommand->compare("0100") == 0) {
-            this->mountMotion.btMoveEast = 1;
-            this->RAMoveHandboxBwd();
-        } else if (localBTCommand->compare("0010") == 0) {
-            this->mountMotion.btMoveSouth = 1;
-            this->declinationMoveHandboxDown();
-        } else if (localBTCommand->compare("0001") == 0) {
-            this->mountMotion.btMoveWest = 1;
-            this->RAMoveHandboxFwd();
-        } else {
+        if ((this->mountMotion.RADriveIsMoving==false) && (this->mountMotion.DeclDriveIsMoving==false)) {
+            // just to make sure that the handbox does not mess up a motion initiated from the GUI
+            if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
+                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
+                this->mountMotion.btMoveNorth = 1;
+                this->declinationMoveHandboxUp();
+            } else if (localBTCommand->compare("0100") == 0) {
+                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
+                this->mountMotion.btMoveEast = 1;
+                this->RAMoveHandboxBwd();
+            } else if (localBTCommand->compare("0010") == 0) {
+                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
+                this->mountMotion.btMoveSouth = 1;
+                this->declinationMoveHandboxDown();
+            } else if (localBTCommand->compare("0001") == 0) {
+                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
+                this->mountMotion.btMoveWest = 1;
+                this->RAMoveHandboxFwd();
+            }
+        }
+        if (localBTCommand->compare("0000") == 0) {
             if (this->mountMotion.btMoveNorth == 1) {
                 this->mountMotion.btMoveNorth = 0;
                 this->declinationMoveHandboxUp();
@@ -2538,9 +2545,10 @@ void MainWindow::handleBTHandbox(void) {
                 this->mountMotion.btMoveWest = 0;
                 this->RAMoveHandboxFwd();
             }
+            ui->ctrlTab->setEnabled(true);
         } // stop the respective motions
-        delete localBTCommand; // delete the local deep copy of the command string
     }
+    delete localBTCommand; // delete the local deep copy of the command string
 }
 
 
