@@ -2,6 +2,8 @@
 #include <QDebug>
 
 TSC_GlobalData::TSC_GlobalData() {
+    short darkFrameCount;
+
     this->INDIServerIsConnected=false;
     initialStarPos.screenx=0;
     initialStarPos.screeny=0;
@@ -45,6 +47,11 @@ TSC_GlobalData::TSC_GlobalData() {
         this->driveData.driveCurrDecl=1.0;
         guideScopeFocalLength=1000;
     }
+    for (darkFrameCount=0; darkFrameCount < 10; darkFrameCount++) {
+        this->guideCamDarks.darkFrames[darkFrameCount] = NULL;
+    }
+    this->guideCamDarks.noOfDarks=0;
+    this->guideCamDarks.darksAvailable=false;
 }
 
 //-----------------------------------------------
@@ -52,6 +59,42 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete BTMACAddress;
+}
+
+//-----------------------------------------------
+short TSC_GlobalData::getNoOfGuideCamDarks(void) {
+    return this->guideCamDarks.noOfDarks;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::resetNoOfGuideCamDarks(void) {
+    this->guideCamDarks.noOfDarks = 0;
+}
+
+//-----------------------------------------------
+bool TSC_GlobalData::darksAvailable(void) {
+    return this->guideCamDarks.darksAvailable;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setDarksToAvailable(void) {
+    this->guideCamDarks.darksAvailable = true;
+}
+
+//-----------------------------------------------
+QImage* TSC_GlobalData::getDark(short which) {
+    if ((which >= 0) && (which < this->guideCamDarks.darksAvailable)) {
+        return this->guideCamDarks.darkFrames[which];
+    }
+    return NULL;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::storeDark(void) {
+    if (this->guideCamDarks.noOfDarks < 9) {
+        this->guideCamDarks.noOfDarks++;
+        this->guideCamDarks.darkFrames[this->guideCamDarks.noOfDarks] = new QImage(*currentCameraImage);
+    }
 }
 
 //-----------------------------------------------

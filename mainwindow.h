@@ -101,6 +101,7 @@ private slots:
     void stopBTComm(void);
     void restartBTComm(void);
     void handleBTHandbox(void);
+    void acquireDarkFrames(void);
 
 private:
     struct mountMotionStruct {

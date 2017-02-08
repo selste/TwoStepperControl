@@ -1719,28 +1719,60 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <property name="geometry">
          <rect>
-          <x>0</x>
-          <y>260</y>
+          <x>1</x>
+          <y>261</y>
           <width>201</width>
-          <height>33</height>
+          <height>64</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_17">
          <item>
-          <widget class="QPushButton" name="pbCCDTakeDarks">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Acquire Darks</string>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QPushButton" name="pbCCDTakeDarks">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Acquire Darks</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="labeDarkAcq">
+             <property name="text">
+              <string>Taking dark #:</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QSpinBox" name="sbNoOfDarks"/>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QSpinBox" name="sbNoOfDarks">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>10</number>
+             </property>
+             <property name="value">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLCDNumber" name="lcdDarkAcquisition">
+             <property name="digitCount">
+              <number>2</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>

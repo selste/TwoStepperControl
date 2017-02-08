@@ -7,6 +7,10 @@
 #include <QDir>
 #include <math.h>
 #include <unistd.h>
+#include <opencv2/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <QMessageBox>
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"
 #include "bt_serialcomm.h"
@@ -15,8 +19,7 @@ TSC_GlobalData *g_AllData; // a global class that holds system specific paramete
 
 //------------------------------------------------------------------
 // constructor of the GUI - takes care of everything....
-MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWindow)
-{
+MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWindow) {
     int serNo; // serial number of the phidgets boards
     double val,draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
     QStepperPhidgetsRA *dummyDrive; // a helper to determine the right order of drives
@@ -260,6 +263,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
+    connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
+    connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
+    connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
+    connect(ui->pbCCDTakeDarks,SIGNAL(clicked()), this, SLOT(acquireDarkFrames())); // take darks for the guider ...
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -284,9 +291,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection);
-    connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider()));
-    connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm()));
-    connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm()));
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 }
@@ -898,7 +902,6 @@ void MainWindow::setINDISAddrAndPort(void) {
         ui->pbExpose->setEnabled(true);
         ui->cbIndiIsUp->setChecked(true);
         ui->pbGetCCDParams->setEnabled(true);
-        ui->pbCCDTakeDarks->setEnabled(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
         sleep(1);
         gainVal=ui->sbCCDGain->value();
@@ -954,6 +957,7 @@ void MainWindow::startCCDAcquisition(void) {
     ui->pbStopExposure->setEnabled(true);
     takeSingleCamShot();
     ui->pbSelectGuideStar->setEnabled(true);
+    ui->pbCCDTakeDarks->setEnabled(true);
 }
 
 //------------------------------------------------------------------
@@ -962,6 +966,7 @@ void MainWindow::stopCCDAcquisition(void) {
     this->ccdCameraIsAcquiring=false;
     ui->pbStopExposure->setEnabled(false);
     this->camImageWasReceived=false;
+    ui->pbCCDTakeDarks->setEnabled(false);
 }
 
 //------------------------------------------------------------------
@@ -1010,6 +1015,52 @@ void MainWindow::changeCCDGain(void) {
 
     gainSet = ui->sbCCDGain->value();
     camera_client->sendGain(gainSet);
+}
+
+//------------------------------------------------------------------
+// slot for acquiring darks --- UNDER CONSTRUCTION
+void MainWindow::acquireDarkFrames(void) {
+    QMessageBox msgBox;
+    short noDarks,darkCounter;
+    cv::Mat masterDarkOCVMat;
+
+    g_AllData->resetNoOfGuideCamDarks(); // # of darks is set to 0
+    msgBox.setText("Make sure your guidescope is covered...");
+    msgBox.exec();
+    ui->pbCCDTakeDarks->setEnabled(false);
+    this->setControlsForGuiding(false); // almost the same as all is disabled
+    ui->tabGuideParams->setEnabled(false);
+    this->camImageWasReceived=false;
+    while (this->camImageWasReceived==false) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    } // wait for the next image
+    this->camImageWasReceived=false;
+    noDarks=ui->sbNoOfDarks->value();
+    if (noDarks > 10) {
+        noDarks = 10; // just a defensive measure as no more space is allocated
+    }
+
+    for (darkCounter = 0; darkCounter < noDarks; darkCounter++) {
+        while (this->camImageWasReceived==false) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        } // wait for the next image
+        if (darkCounter == 0) {
+            masterDarkOCVMat=Mat(g_AllData->getCameraChipPixels(1),g_AllData->getCameraChipPixels(0),
+                CV_8UC1,const_cast<uchar*>(g_AllData->getCameraImage()->bits()),
+                static_cast<size_t>(g_AllData->getCameraImage()->bytesPerLine())).clone();
+        }
+        g_AllData->storeDark();
+        this->camImageWasReceived=false;
+        ui->lcdDarkAcquisition->display((darkCounter+1));
+    } 
+    ui->pbCCDTakeDarks->setEnabled(true);
+    this->setControlsForGuiding(true);
+    if (this->guidingState.systemIsCalibrated==true) {
+        ui->tabGuideParams->setEnabled(false); // keep guiding-tab disabled if system is not calibrated
+    }
+
+    ui->lcdDarkAcquisition->display(0);
+    g_AllData->setDarksToAvailable();
 }
 
 //------------------------------------------------------------------
@@ -1079,8 +1130,7 @@ void MainWindow::updateCameraImage(void) {
 
  //------------------------------------------------------------------
  // store data on the ccd from the GUI to the global data and to the .tsp file ...
- void MainWindow::storeCCDData(void)
- {
+ void MainWindow::storeCCDData(void)  {
      float psx,psy;
      int ccdw, ccdh;
      QString *leEntry;
@@ -1198,8 +1248,6 @@ void MainWindow::calibrateAutoGuider(void) {
         (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
     travelTimeInMSForOnePix=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
     this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
-
-
 
     // now determine the direction of RA+ Travel as a unit vector; travel for "imgProcWindowSize" pix and
     // determine the relative angle between ccd x/y and ra/decl. first, a run is carried out with the
