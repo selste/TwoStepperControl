@@ -197,7 +197,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
             assembledString->append(QString::number(0));
             lx200cmd->remove(' ');
-            qDebug() << "cmd:" << lx200cmd->toLatin1();
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
             } else {

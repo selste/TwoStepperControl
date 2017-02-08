@@ -65,13 +65,9 @@ QPixmap* ocv_guiding::getGuideStarPreview(void) {
 
 //---------------------------------------------------
 void ocv_guiding::setFocalLengthOfGuidescope(int fl) {
-
     this->gScopeFL=(double)fl;
-    qDebug() << g_AllData->getCameraPixelSize(0) << this->gScopeFL;
-
     this->arcsecPerPixX=206.3*g_AllData->getCameraPixelSize(0)/(this->gScopeFL);
     this->arcsecPerPixY=206.3*g_AllData->getCameraPixelSize(1)/(this->gScopeFL);
-    qDebug() << "resolution" << this->arcsecPerPixX << this->arcsecPerPixY;
 }
 //---------------------------------------------------
 double ocv_guiding::getArcSecsPerPix(short what) {

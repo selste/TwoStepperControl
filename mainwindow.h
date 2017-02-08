@@ -142,7 +142,6 @@ private:
         double backlashCompensationInMS;
     };
 
-
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
@@ -181,6 +180,9 @@ private:
     void takeSingleCamShot(void);
     double correctGuideStarPosition(float, float);
     void waitForCalibrationImage(void);
+    bool abortCCDAcquisition(void);
+    void displayCalibrationStatus(QString, float, QString);
+    void displayCalibrationStatus(QString);
     QDisplay2D *camView;
     float ra; // right ascension of a current object
     float decl;// declination of a current object
@@ -191,7 +193,7 @@ private:
     QString *bt_HandboxCommand;
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
-    ocv_guiding *guiding;
+    ocv_guiding *guiding; // the class that does image processing for guiding
     float guidingFOVFactor;
     double rotMatrixGuiding[2][2];
     void declPGPlusGd(void);

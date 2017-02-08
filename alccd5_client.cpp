@@ -80,7 +80,6 @@ void alccd5_client::takeExposure(int expTime) {
     if (alccd5->isConnected()) {
         ccd_exposure = alccd5->getNumber("CCD_EXPOSURE");
         if (ccd_exposure == NULL)     {
-            qDebug() << "Error: unable to find CCD_EXPOSURE property...";
             return;
         }
         localTimer = new QElapsedTimer(); // INDIserver needs a few ms to digest the command ...
@@ -130,7 +129,6 @@ void alccd5_client::sendGain(int gain) {
 //------------------------------------------
 void alccd5_client::newDevice(INDI::BaseDevice *dp) {
     if (!strcmp(dp->getDeviceName(), MYCCD)) {
-        qDebug() << "Receiving Device:" << dp->getDeviceName();
         this->serverMessage->clear();
         this->serverMessage->append(dp->getDeviceName());
         emit messageFromINDIAvailable();
@@ -157,7 +155,6 @@ void alccd5_client::newMessage(INDI::BaseDevice *dp, int messageID) {
      if (strcmp(dp->getDeviceName(), MYCCD)) {
          return;
      }
-     qDebug() << "Receiving message from Server: " << dp->messageQueue(messageID).c_str();
      this->serverMessage->clear();
      this->serverMessage->append(dp->messageQueue(messageID).c_str());
      emit messageFromINDIAvailable();
@@ -168,11 +165,9 @@ void alccd5_client::newMessage(INDI::BaseDevice *dp, int messageID) {
 bool alccd5_client::getCCDParameters(void) {
     INumberVectorProperty *ccd_params;
 
-    qDebug() << "Retrieving camera data";
     if (alccd5->isConnected()) {
         ccd_params = alccd5->getNumber("CCD_INFO");
         if (ccd_params == NULL)     {
-            qDebug() << "Error: unable to find CCD_INFO property...";
             return 0;
         }
             this->pixSizeX = IUFindNumber(ccd_params,"CCD_PIXEL_SIZE_X")->value;
@@ -181,7 +176,6 @@ bool alccd5_client::getCCDParameters(void) {
             this->frameSizeY = IUFindNumber(ccd_params,"CCD_MAX_Y")->value;
             this->bitsPerPixel = IUFindNumber(ccd_params, "CCD_BITSPERPIXEL")->value;
     } else {
-        qDebug() << "Cam not connected...";
         return 0;
     }
     g_AllData->setCameraParameters(this->pixSizeX,this->pixSizeY,this->frameSizeX,this->frameSizeY);
@@ -239,7 +233,7 @@ void alccd5_client::newBLOB(IBLOB *bp) {
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      // guide debugging code --- load a camera image for debugging here ...
-/*     efilename=new QString("GuideSimulatorImages/TestCameraImage");
+ /*    efilename=new QString("GuideSimulatorImages/TestCameraImage");
      efilename->append(QString::number((double)simulatorCounter,1,0));
      efilename->append(".jpg");
      this->simulatorCounter++;
@@ -252,9 +246,6 @@ void alccd5_client::newBLOB(IBLOB *bp) {
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
-
-
-
 
     g_AllData->storeCameraImage(*mimage);
     smallQImage = new QImage(mimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));

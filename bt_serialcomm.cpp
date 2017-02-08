@@ -29,7 +29,6 @@ void bt_serialcomm::bt_serialcommTryRestart(QString bt_MACaddr) {
     startupRFPort.append(bt_MACaddr);
     startupRFPort.append(" &");
     system(startupRFPort.toLatin1());
-    qDebug() << "Issued a restart of BT ...";
     rfcommport.setPortName("/dev/rfcomm0");
     rfcommport.setBaudRate(QSerialPort::Baud9600);
     rfcommport.setDataBits(QSerialPort::Data8);
@@ -60,7 +59,6 @@ void bt_serialcomm::shutDownPort(void) {
 //---------------------------------------------------
 void bt_serialcomm::openPort(void) {
     portIsUp = 1;
-    qDebug() << "Opening Port";
     if (!rfcommport.open(QIODevice::ReadWrite)) {
         portIsUp = 0;
     } else {
@@ -68,7 +66,6 @@ void bt_serialcomm::openPort(void) {
         portIsUp = 1;
         rfcommport.clear(QSerialPort::AllDirections);
     }
-    qDebug() << "Port is up:" << portIsUp;
 }
 
 //---------------------------------------------------

@@ -1269,7 +1269,7 @@
      <widget class="Line" name="line">
       <property name="geometry">
        <rect>
-        <x>350</x>
+        <x>360</x>
         <y>0</y>
         <width>20</width>
         <height>411</height>
@@ -1297,7 +1297,7 @@
        <rect>
         <x>10</x>
         <y>250</y>
-        <width>341</width>
+        <width>351</width>
         <height>171</height>
        </rect>
       </property>
@@ -1335,7 +1335,7 @@
         <rect>
          <x>0</x>
          <y>30</y>
-         <width>331</width>
+         <width>350</width>
          <height>33</height>
         </rect>
        </property>
