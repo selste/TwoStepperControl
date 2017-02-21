@@ -101,7 +101,6 @@ private slots:
     void stopBTComm(void);
     void restartBTComm(void);
     void handleBTHandbox(void);
-    void acquireDarkFrames(void);
 
 private:
     struct mountMotionStruct {
@@ -141,6 +140,7 @@ private:
         double rotationAngle;
         double maxDevInArcSec;
         double backlashCompensationInMS;
+        long noOfGuidingSteps;
     };
 
     Ui::MainWindow *ui;
@@ -196,11 +196,12 @@ private:
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     ocv_guiding *guiding; // the class that does image processing for guiding
     float guidingFOVFactor;
-    double rotMatrixGuiding[2][2];
-    void declPGPlusGd(void);
-    void declPGMinusGd(void);
-    void raPGFwdGd(void);
-    void raPGBwdGd(void);
+    double rotMatrixGuidingXToRA[2][2];
+    void declPGPlusGd(long);
+    void declPGMinusGd(long);
+    void raPGFwdGd(long);
+    void raPGBwdGd(long);
+    void compensateDeclBacklashPG(short);
 };
 
 #endif // MAINWINDOW_H

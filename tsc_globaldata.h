@@ -45,12 +45,7 @@ public:
     void setGuidingState(bool);
     QImage* getCameraImage(void);
     QString* getBTMACAddress(void);
-    short getNoOfGuideCamDarks(void);
-    void resetNoOfGuideCamDarks(void);
-    bool darksAvailable(void);
-    void setDarksToAvailable(void);
-    QImage* getDark(short);
-    void storeDark(void);
+
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -111,12 +106,6 @@ private:
         double actualRA;
     };
 
-    struct guideCamDarksStruct {
-        QImage* darkFrames[10];
-        short noOfDarks;
-        bool darksAvailable;
-    };
-
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
     struct cameraParametersStruct cameraParameters;
@@ -124,7 +113,6 @@ private:
     struct gearDataStruct gearData;
     struct driveDataStruct driveData;
     struct actualScopePositionStruct actualScopePosition;
-    struct guideCamDarksStruct guideCamDarks;
 };
 
 #endif // TSC_GLOBALDATA_H

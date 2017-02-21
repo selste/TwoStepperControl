@@ -137,7 +137,7 @@
           <number>200</number>
          </property>
          <property name="value">
-          <number>20</number>
+          <number>30</number>
          </property>
         </widget>
        </item>
@@ -1719,63 +1719,6 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
-        <property name="geometry">
-         <rect>
-          <x>1</x>
-          <y>261</y>
-          <width>201</width>
-          <height>64</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_17">
-         <item>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
-           <item>
-            <widget class="QPushButton" name="pbCCDTakeDarks">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Acquire Darks</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="labeDarkAcq">
-             <property name="text">
-              <string>Taking dark #:</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
-           <item>
-            <widget class="QSpinBox" name="sbNoOfDarks">
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>10</number>
-             </property>
-             <property name="value">
-              <number>1</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLCDNumber" name="lcdDarkAcquisition">
-             <property name="digitCount">
-              <number>2</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
       </widget>
       <widget class="QWidget" name="tabImageProc">
        <attribute name="title">
@@ -2038,7 +1981,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>80</y>
+          <y>70</y>
           <width>181</width>
           <height>101</height>
          </rect>
@@ -2148,9 +2091,9 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>180</y>
+          <y>170</y>
           <width>191</width>
-          <height>151</height>
+          <height>161</height>
          </rect>
         </property>
         <property name="title">
@@ -2160,7 +2103,7 @@
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>20</y>
+           <y>30</y>
            <width>181</width>
            <height>131</height>
           </rect>
@@ -2214,21 +2157,21 @@
         </property>
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>330</y>
-          <width>180</width>
+          <x>0</x>
+          <y>310</y>
+          <width>210</width>
           <height>30</height>
          </rect>
         </property>
         <property name="minimumSize">
          <size>
-          <width>180</width>
+          <width>210</width>
           <height>30</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>18</width>
+          <width>210</width>
           <height>30</height>
          </size>
         </property>
@@ -2236,155 +2179,11 @@
          <string>Guide</string>
         </property>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>80</y>
-          <width>208</width>
-          <height>104</height>
-         </rect>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_8">
-         <item row="0" column="0">
-          <widget class="QLabel" name="lDevX">
-           <property name="minimumSize">
-            <size>
-             <width>90</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>80</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Dev. X [&quot;]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="leXDev">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="lDevY">
-           <property name="minimumSize">
-            <size>
-             <width>80</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>80</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Dev Y [&quot;]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="leYDev">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="lMaxGuideErr">
-           <property name="minimumSize">
-            <size>
-             <width>80</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>80</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Max. [&quot;]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="leMaxGuideErr">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
        <widget class="Line" name="line_5">
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>70</y>
+          <y>80</y>
           <width>191</width>
           <height>16</height>
          </rect>
@@ -2409,8 +2208,8 @@
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>1</x>
-          <y>190</y>
+          <x>0</x>
+          <y>100</y>
           <width>208</width>
           <height>74</height>
          </rect>
@@ -2498,7 +2297,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>0</y>
+          <y>10</y>
           <width>211</width>
           <height>70</height>
          </rect>
@@ -2523,7 +2322,7 @@
             <double>0.100000000000000</double>
            </property>
            <property name="value">
-            <double>0.300000000000000</double>
+            <double>0.500000000000000</double>
            </property>
           </widget>
          </item>
@@ -2546,7 +2345,7 @@
             <double>0.100000000000000</double>
            </property>
            <property name="value">
-            <double>0.300000000000000</double>
+            <double>0.500000000000000</double>
            </property>
           </widget>
          </item>
@@ -2556,7 +2355,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>270</y>
+          <y>200</y>
           <width>210</width>
           <height>58</height>
          </rect>
@@ -2609,6 +2408,75 @@
           </widget>
          </item>
         </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>270</y>
+          <width>211</width>
+          <height>32</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_17">
+         <item>
+          <widget class="QLabel" name="lMaxGuideErr">
+           <property name="minimumSize">
+            <size>
+             <width>80</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>80</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Max. [&quot;]:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leMaxGuideErr">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>110</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>110</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QPushButton" name="pbResetGuiding">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>340</y>
+          <width>211</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Reset</string>
+        </property>
        </widget>
       </widget>
      </widget>

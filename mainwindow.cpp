@@ -107,6 +107,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.rotationAngle=0.0;
     this->guidingState.maxDevInArcSec=0.0;
     this->guidingState.backlashCompensationInMS = 0.0;
+    this->guidingState.noOfGuidingSteps = 0;
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -266,7 +267,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
-    connect(ui->pbCCDTakeDarks,SIGNAL(clicked()), this, SLOT(acquireDarkFrames())); // take darks for the guider ...
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -957,7 +957,6 @@ void MainWindow::startCCDAcquisition(void) {
     ui->pbStopExposure->setEnabled(true);
     takeSingleCamShot();
     ui->pbSelectGuideStar->setEnabled(true);
-    ui->pbCCDTakeDarks->setEnabled(true);
 }
 
 //------------------------------------------------------------------
@@ -966,7 +965,6 @@ void MainWindow::stopCCDAcquisition(void) {
     this->ccdCameraIsAcquiring=false;
     ui->pbStopExposure->setEnabled(false);
     this->camImageWasReceived=false;
-    ui->pbCCDTakeDarks->setEnabled(false);
 }
 
 //------------------------------------------------------------------
@@ -1018,52 +1016,6 @@ void MainWindow::changeCCDGain(void) {
 }
 
 //------------------------------------------------------------------
-// slot for acquiring darks --- UNDER CONSTRUCTION
-void MainWindow::acquireDarkFrames(void) {
-    QMessageBox msgBox;
-    short noDarks,darkCounter;
-    cv::Mat masterDarkOCVMat;
-
-    g_AllData->resetNoOfGuideCamDarks(); // # of darks is set to 0
-    msgBox.setText("Make sure your guidescope is covered...");
-    msgBox.exec();
-    ui->pbCCDTakeDarks->setEnabled(false);
-    this->setControlsForGuiding(false); // almost the same as all is disabled
-    ui->tabGuideParams->setEnabled(false);
-    this->camImageWasReceived=false;
-    while (this->camImageWasReceived==false) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-    } // wait for the next image
-    this->camImageWasReceived=false;
-    noDarks=ui->sbNoOfDarks->value();
-    if (noDarks > 10) {
-        noDarks = 10; // just a defensive measure as no more space is allocated
-    }
-
-    for (darkCounter = 0; darkCounter < noDarks; darkCounter++) {
-        while (this->camImageWasReceived==false) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-        } // wait for the next image
-        if (darkCounter == 0) {
-            masterDarkOCVMat=Mat(g_AllData->getCameraChipPixels(1),g_AllData->getCameraChipPixels(0),
-                CV_8UC1,const_cast<uchar*>(g_AllData->getCameraImage()->bits()),
-                static_cast<size_t>(g_AllData->getCameraImage()->bytesPerLine())).clone();
-        }
-        g_AllData->storeDark();
-        this->camImageWasReceived=false;
-        ui->lcdDarkAcquisition->display((darkCounter+1));
-    } 
-    ui->pbCCDTakeDarks->setEnabled(true);
-    this->setControlsForGuiding(true);
-    if (this->guidingState.systemIsCalibrated==true) {
-        ui->tabGuideParams->setEnabled(false); // keep guiding-tab disabled if system is not calibrated
-    }
-
-    ui->lcdDarkAcquisition->display(0);
-    g_AllData->setDarksToAvailable();
-}
-
-//------------------------------------------------------------------
 // does a lot - stores the camera image in the mainwindow class,
 // displays the bigger image, but if a guidestar is selected, it also
 // takes care of processing the preview image. also polls new images
@@ -1078,21 +1030,25 @@ void MainWindow::displayGuideCamImage(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
+       // now cope with different states and images needed ...
+
     if (g_AllData->getINDIState() == true) { // ... if the camera class is connected to the INDI server ...
         this->updateCameraImage(); // get a pixmap from the camera class   
         if (this->guidingState.calibrationIsRunning == true) { // autoguider is calibrating
             this->guidingState.calibrationImageReceived=true; // in calibration, this camera image is to be used
         } // we only take a single shot here
-        if (this->ccdCameraIsAcquiring==true) { // if the flag for taking another one is true ...
+        if ((this->ccdCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
             this->takeSingleCamShot(); // ... request another one from INDI
-            if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
-                this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
-                newX = g_AllData->getInitialStarPosition(2);
-                newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-                correctGuideStarPosition(newX,newY); // ... and is used to correct the position
-            }
+            qDebug() << "Streaming images...";
         } else {
-           ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
+            ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
+        }
+        if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
+            this->guidingState.noOfGuidingSteps++; // every odd one, corrections are applied ...
+            this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+            newX = g_AllData->getInitialStarPosition(2);
+            newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
+            correctGuideStarPosition(newX,newY); // ... and is used to correct the position
         }
     }
 }
@@ -1160,57 +1116,72 @@ void MainWindow::updateCameraImage(void) {
 //------------------------------------------------------------------
 // correct guide star position here. called from "displayGuideCamImage".
 double MainWindow::correctGuideStarPosition(float cx, float cy) {
-    float residualX, residualY, devVector[2], devVectorRotated[2],currDev;
+    float residualX, residualY, devVector[2], devVectorRotated[2],sVect[2],currDev;
     long pgduration;
 
-    residualX=(this->guideStarPosition.centrX - cx)*this->guiding->getArcSecsPerPix(0);
-    residualY=(this->guideStarPosition.centrY - cy)*this->guiding->getArcSecsPerPix(1);
-    ui->leXDev->setText(textEntry->number(residualX));
-    ui->leYDev->setText(textEntry->number(residualY)); // display the deviation in arc seconds
-    currDev=sqrt(residualX*residualX+residualY*residualY);
-    if (currDev > this->guidingState.maxDevInArcSec) {
-        this->guidingState.maxDevInArcSec = currDev;
-    }
-    ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
+    if (this->guidingState.noOfGuidingSteps == 1) {
+        this->guideStarPosition.centrX = cx;
+        this->guideStarPosition.centrY = cy;
+        qDebug() << "Guidestarposition is " << cx << cy;
+        this->takeSingleCamShot(); // poll a new image
+        return 0.0;
+    } // when called for the first time, make the current centroid the reference ...
+
+    qDebug() << "Centroid:" << cx << cy;
     devVector[0]=(this->guideStarPosition.centrX - cx);
-    devVector[1]=(this->guideStarPosition.centrY - cy); // this is the travel for correction
-    devVectorRotated[0]=-(this->rotMatrixGuiding[0][0]*devVector[0] + this->rotMatrixGuiding[0][1]*devVector[1]);
-    devVectorRotated[1]=-(this->rotMatrixGuiding[1][0]*devVector[0] + this->rotMatrixGuiding[1][1]*devVector[1]);
-        // the deviation vector is rotated to the ra/decl coordinate system and inverted as we want to move in the other direction
-    ui->leDevRA->setText(textEntry->number(-devVectorRotated[0]));
-    ui->leDevDecl->setText(textEntry->number(-devVectorRotated[1])); // display deviation in pixels
-    if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
-        pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
-        ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
-        ui->lePulseRAMS->setText(textEntry->number(pgduration));
-        if (devVectorRotated[0]>0) {
-            this->raPGFwdGd();
-        } else {
-            this->raPGBwdGd();
-        }
-        guideStarPosition.centrX=guideStarPosition.centrX-devVector[0];
-    }
-    if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
-        pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
-        if (devVectorRotated[1]>0) {
-            if (this->guidingState.declinationDriveDirection < 0) {
-                this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
-                pgduration+=this->guidingState.backlashCompensationInMS;
-                ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+    devVector[1]=(this->guideStarPosition.centrY - cy); // this is the deviation in pixel from the last position
+    if (this->guidingState.noOfGuidingSteps%2 == 1) { // in odd runs, just determine the error
+        residualX=devVector[0]*this->guiding->getArcSecsPerPix(0);
+        residualY=devVector[1]*this->guiding->getArcSecsPerPix(1);
+        currDev=sqrt(residualX*residualX+residualY*residualY);
+        if (currDev > this->guidingState.maxDevInArcSec) {
+            this->guidingState.maxDevInArcSec = currDev;
+        } // compute maximum error
+        qDebug() << "determined error in run # " << guidingState.noOfGuidingSteps;
+        ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
+    } else {
+        qDebug() << "corrected error in run # " << guidingState.noOfGuidingSteps;
+        sVect[0]=cx-this->guideStarPosition.centrX;
+        sVect[1]=cy-this->guideStarPosition.centrY;
+        devVectorRotated[0]=-(this->rotMatrixGuidingXToRA[0][0]*sVect[0]+this->rotMatrixGuidingXToRA[0][1]*sVect[1]);
+        devVectorRotated[1]=-(this->rotMatrixGuidingXToRA[1][0]*sVect[0]+this->rotMatrixGuidingXToRA[1][1]*sVect[1]);
+          // the deviation vector is rotated to the ra/decl coordinate system and inverted as we want to move in the other direction
+        ui->leDevRA->setText(textEntry->number(devVectorRotated[0]));
+        ui->leDevDecl->setText(textEntry->number(devVectorRotated[1])); // display deviation in pixels
+        if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
+            pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
+            ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
+            ui->lePulseRAMS->setText(textEntry->number(pgduration));
+            if (devVectorRotated[0]>0) {
+                this->raPGFwdGd(pgduration);
+            } else {
+                this->raPGBwdGd(pgduration);
             }
-            ui->lePulseDeclMS->setText(textEntry->number(pgduration));
-            this->declPGPlusGd();
-        } else {
-            if (this->guidingState.declinationDriveDirection > 0) {
-                this->guidingState.declinationDriveDirection = -1; // switch state to positive travel
-                pgduration+=this->guidingState.backlashCompensationInMS;
-                ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
-            }
-            ui->lePulseDeclMS->setText(textEntry->number(pgduration));
-            this->declPGMinusGd();
         }
-        guideStarPosition.centrY=guideStarPosition.centrY-devVector[0];
+        if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
+            pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
+            if (devVectorRotated[1]>0) {
+                if (this->guidingState.declinationDriveDirection < 0) {
+                    this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
+                    compensateDeclBacklashPG(this->guidingState.declinationDriveDirection);
+                    // pgduration+=this->guidingState.backlashCompensationInMS;
+                    ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                }
+                ui->lePulseDeclMS->setText(textEntry->number(pgduration));
+                this->declPGPlusGd(pgduration);
+            } else {
+                if (this->guidingState.declinationDriveDirection > 0) {
+                    this->guidingState.declinationDriveDirection = -1; // switch state to negativ travel
+                    compensateDeclBacklashPG(this->guidingState.declinationDriveDirection);
+                    // pgduration+=this->guidingState.backlashCompensationInMS;
+                    ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                }
+                ui->lePulseDeclMS->setText(textEntry->number(pgduration));
+                this->declPGMinusGd(pgduration);
+            }
+        }
     }
+    this->takeSingleCamShot(); // poll a new image
     return 0.0;
 }
 
@@ -1224,10 +1195,10 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
     double currentCentroid[2],initialCentroid[2],slewVector[2],arcsecPPix[2],
-        travelPerMSInRACorr,travelTimeInMSForOnePix,lengthOfTravel,lengthOfTravelWithDeclBacklash,
-        relativeAngle[4],avrgAngle, declBacklashInPixel;
-    int thrshld,beta,imgProcWindowSize;
+        travelPerMSInRACorr,travelTimeInMSForOnePix,tTimeOnePix[4],lengthOfTravel,
+        lengthOfTravelWithDeclBacklash,relativeAngle[4],avrgAngle, declBacklashInPixel;
     float alpha;
+    int thrshld,beta,imgProcWindowSize;
     bool medianOn;
     short slewCounter;
 
@@ -1257,7 +1228,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("0/4 ...");
     imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
-    this->displayCalibrationStatus("Waiting for image...");
+
     this->waitForCalibrationImage(); // small subroutine - waits for 2 images
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1267,7 +1238,6 @@ void MainWindow::calibrateAutoGuider(void) {
     this->raPGFwd(); // carry out travel
     ui->pbPGRAMinus->setEnabled(false);
     ui->pbPGRAPlus->setEnabled(false);
-    this->displayCalibrationStatus("Waiting for image...");
     this->waitForCalibrationImage();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1276,6 +1246,8 @@ void MainWindow::calibrateAutoGuider(void) {
     slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
     lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
     travelTimeInMSForOnePix=pulseDuration/lengthOfTravel; // replace estimated "travelTimeInMSForOnePix" by a measured value
+    pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
+    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
     this->displayCalibrationStatus("Slewing back...");
     this->raPGBwd(); // going back to initial position
     ui->pbPGRAMinus->setEnabled(false);
@@ -1285,18 +1257,14 @@ void MainWindow::calibrateAutoGuider(void) {
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Calibration run: ", (float)(slewCounter+1), "/4 ...");
         imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
-        pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
-        this->displayCalibrationStatus("Waiting for image...");
-        this->waitForCalibrationImage(); // small subroutine - waits for 2 images
+        this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-        ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
         this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
         this->raPGFwd(); // carry out travel
         ui->pbPGRAMinus->setEnabled(false);
         ui->pbPGRAPlus->setEnabled(false);
-        this->displayCalibrationStatus("Waiting for image...");
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1305,44 +1273,49 @@ void MainWindow::calibrateAutoGuider(void) {
         slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
         lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
         relativeAngle[slewCounter]=acos((slewVector[0])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
-        travelTimeInMSForOnePix+=pulseDuration/lengthOfTravel;
-        travelTimeInMSForOnePix/=2.0; // compute a running average of the travel
+        this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
+        tTimeOnePix[slewCounter]=pulseDuration/lengthOfTravel;
         this->displayCalibrationStatus("Slewing back...");
         this->raPGBwd(); // going back to initial position
         ui->pbPGRAMinus->setEnabled(false);
         ui->pbPGRAPlus->setEnabled(false);
     }
+    travelTimeInMSForOnePix+=tTimeOnePix[0]+tTimeOnePix[1]+tTimeOnePix[2]+tTimeOnePix[3];
+    travelTimeInMSForOnePix/=5.0; // compute the average travel time
+    pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
+    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    this->displayCalibrationStatus("Travel time for 1 pix: ", travelTimeInMSForOnePix,"ms.");
     avrgAngle=(relativeAngle[0]+relativeAngle[1]+relativeAngle[2]+relativeAngle[3])/4.0;
-    this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°");
+    this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
         // rotation angle determined
 
     //-----------------------------------------
     // debugging code
-    // avrgAngle=0.0;
+     avrgAngle=122.0;
+     travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
     // now determine the rotation matrix from ccd x/y to ra/decl
-    this->rotMatrixGuiding[0][0]=cos(avrgAngle);
-    this->rotMatrixGuiding[0][1]=-sin(avrgAngle);
-    this->rotMatrixGuiding[1][0]=sin(avrgAngle);
-    this->rotMatrixGuiding[1][1]=cos(avrgAngle);
+    this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
+    this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
+    this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
+    this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
+
+    // mirror check in decl is missing here ...
 
     // now do declination travel to compensate for backlash when reversing declination travel direction
     this->displayCalibrationStatus("Determine declination backlash ...");
     this->declPGMinus();
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
-    this->displayCalibrationStatus("Waiting for image...");
     this->waitForCalibrationImage(); // small subroutine - waits for image
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
     this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
     this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
     this->declPGPlus(); // carry out travel
     ui->pbPGDecMinus->setEnabled(false);
     ui->pbPGDecPlus->setEnabled(false);
-    this->displayCalibrationStatus("Waiting for image...");
     this->waitForCalibrationImage();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1350,10 +1323,11 @@ void MainWindow::calibrateAutoGuider(void) {
     slewVector[0] = currentCentroid[0]-initialCentroid[0];
     slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
     lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
+    initialCentroid[0]=currentCentroid[0];
+    initialCentroid[1]=currentCentroid[1]; // now go back, therefore the endpoint is the new beginning ...
     this->displayCalibrationStatus("Travel back ...");
     this->guidingState.declinationDriveDirection=-1;
     this->declPGMinus(); // carry out travel
-    this->displayCalibrationStatus("Waiting for image...");
     this->waitForCalibrationImage();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1361,10 +1335,12 @@ void MainWindow::calibrateAutoGuider(void) {
     slewVector[0] = currentCentroid[0]-initialCentroid[0];
     slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
     lengthOfTravelWithDeclBacklash=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // travel incl. decl backlash
-    declBacklashInPixel=lengthOfTravel-lengthOfTravelWithDeclBacklash; // determine backlash in pixel
+    declBacklashInPixel=-lengthOfTravelWithDeclBacklash+lengthOfTravel; // determine backlash in pixel
     this->displayCalibrationStatus("Decl backlash (pix): ",(float)declBacklashInPixel,"");
     this->guidingState.backlashCompensationInMS=declBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation (ms): ", (float)this->guidingState.backlashCompensationInMS,"");
+//  debug code follows
+    this->guidingState.backlashCompensationInMS=800;
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
@@ -1379,6 +1355,7 @@ void MainWindow::calibrateAutoGuider(void) {
 // a subroutine that acquires a single image during calibration. needed in
 // "calibrateAutoGuider"
 void MainWindow::waitForCalibrationImage(void) {
+    this->displayCalibrationStatus("Waiting for image...");
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.calibrationImageReceived=false;
     this->takeSingleCamShot();
@@ -2062,19 +2039,17 @@ void MainWindow::declPGPlus(void) {
 }
 
 //--------------------------------------------------------------
-void MainWindow::declPGMinusGd(void) {
-    long duration;
+void MainWindow::declPGMinusGd(long duration) {
 
-    duration = ui->sbPulseGuideDuration->value();
     declinationPulseGuide(duration, -1,false);
+    qDebug() << "Duration" << duration;
 }
 
 //--------------------------------------------------------------
-void MainWindow::declPGPlusGd(void) {
-    long duration;
+void MainWindow::declPGPlusGd(long duration) {
 
-    duration = ui->sbPulseGuideDuration->value();
     declinationPulseGuide(duration, 1,false);
+    qDebug() << "Duration" << duration;
 }
 
 //--------------------------------------------------------------
@@ -2160,19 +2135,17 @@ void MainWindow::raPGBwd(void) {
 }
 
 //---------------------------------------------------------------------
-void MainWindow::raPGFwdGd(void) {
-    long duration;
+void MainWindow::raPGFwdGd(long duration) {
 
-    duration = ui->sbPulseGuideDuration->value();
     raPulseGuide(duration,1,false);
+    qDebug() << "Duration" << duration;
 }
 
 //---------------------------------------------------------------------
-void MainWindow::raPGBwdGd(void) {
-    long duration;
+void MainWindow::raPGBwdGd(long duration) {
 
-    duration = ui->sbPulseGuideDuration->value();
     raPulseGuide(duration,-1,false);
+    qDebug() << "Duration" << duration;
 }
 //---------------------------------------------------------------------
 void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isThreaded) {
@@ -2249,6 +2222,29 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isTh
     ui->pbDeclUp->setEnabled(1);
     this->setControlsForRATravel(true);
     this->startRATracking();
+}
+
+//-----------------------------------------------------------------------
+// this one is called during guiding. it compensates for declination backlash if
+// the direction changes. it tries to do this as fast as possible within a
+// timespan of < 100 ms ...
+void MainWindow::compensateDeclBacklashPG(short ddir) {
+    short speedfactor;
+    long compSteps;
+
+    if (this->guidingState.systemIsCalibrated == true) { // compensate backlash only if system was calibrated ...
+        if (this->guidingState.backlashCompensationInMS < 100) {
+            speedfactor = 1;
+        } else {
+            speedfactor=this->guidingState.backlashCompensationInMS/100;
+        } // take care that backlashcompensation takes less than 100 ms, no matter how big the backlash is ...
+        compSteps=round((0.0041780746*(g_AllData->getGearData(4))*
+                (g_AllData->getGearData(5))*(g_AllData->getGearData(6))*
+                (g_AllData->getGearData(8))/(g_AllData->getGearData(7)))*
+                (this->guidingState.backlashCompensationInMS/1000.0)); // sidereal speed in declination*compensation time in s == # of steps for compensation
+        this->StepperDriveDecl->travelForNSteps(compSteps, ddir, speedfactor,false);
+        qDebug() << "Doing compensation in declination with steps: " << compSteps;
+    }
 }
 
 //-----------------------------------------------------------------------
@@ -2588,9 +2584,9 @@ void MainWindow::handleBTHandbox(void) {
                 this->declinationMoveHandboxUp();
             } else if (localBTCommand->compare("0100") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
-                this->mountMotion.btMoveEast = 1;
+                this->mountMotion.btMoveWest = 1;
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-                this->RAMoveHandboxBwd();
+                this->RAMoveHandboxFwd();
             } else if (localBTCommand->compare("0010") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveSouth = 1;
@@ -2598,9 +2594,9 @@ void MainWindow::handleBTHandbox(void) {
                 this->declinationMoveHandboxDown();
             } else if (localBTCommand->compare("0001") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
-                this->mountMotion.btMoveWest = 1;
+                this->mountMotion.btMoveEast = 1;
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-                this->RAMoveHandboxFwd();
+                this->RAMoveHandboxBwd();
             }
         }
         if (localBTCommand->compare("0000") == 0) {
