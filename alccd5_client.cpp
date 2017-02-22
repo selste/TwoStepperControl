@@ -224,7 +224,7 @@ void alccd5_client::newBLOB(IBLOB *bp) {
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      // guide debugging code --- load a camera image for debugging here ...
-     efilename=new QString("GuideSimulatorImages/GuideCameraImage");
+ /*    efilename=new QString("GuideSimulatorImages/GuideCameraImage");
      efilename->append(QString::number((double)simulatorCounter,1,0));
      efilename->append(".jpg");
      this->simulatorCounter++;
@@ -233,7 +233,7 @@ void alccd5_client::newBLOB(IBLOB *bp) {
      }
      delete mimage;
      mimage = new QImage(efilename->toLatin1());
-     delete efilename;
+     delete efilename;*/
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------

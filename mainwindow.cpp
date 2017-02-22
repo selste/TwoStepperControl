@@ -1128,6 +1128,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     } // when called for the first time, make the current centroid the reference ...
 
     qDebug() << "Centroid:" << cx << cy;
+    //------------
     devVector[0]=(this->guideStarPosition.centrX - cx);
     devVector[1]=(this->guideStarPosition.centrY - cy); // this is the deviation in pixel from the last position
     if (this->guidingState.noOfGuidingSteps%2 == 1) { // in odd runs, just determine the error
@@ -1291,8 +1292,8 @@ void MainWindow::calibrateAutoGuider(void) {
 
     //-----------------------------------------
     // debugging code
-     avrgAngle=122.0;
-     travelTimeInMSForOnePix=71.5;
+     // avrgAngle=2.13;
+     // travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
     // now determine the rotation matrix from ccd x/y to ra/decl
@@ -1340,7 +1341,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.backlashCompensationInMS=declBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation (ms): ", (float)this->guidingState.backlashCompensationInMS,"");
 //  debug code follows
-    this->guidingState.backlashCompensationInMS=800;
+//    this->guidingState.backlashCompensationInMS=800;
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
