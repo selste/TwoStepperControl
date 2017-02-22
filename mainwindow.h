@@ -101,6 +101,8 @@ private slots:
     void stopBTComm(void);
     void restartBTComm(void);
     void handleBTHandbox(void);
+    void startST4Guiding(void);
+    void stopST4Guiding(void);
 
 private:
     struct mountMotionStruct {
@@ -141,6 +143,7 @@ private:
         double maxDevInArcSec;
         double backlashCompensationInMS;
         long noOfGuidingSteps;
+        bool st4IsActive;
     };
 
     Ui::MainWindow *ui;
@@ -202,6 +205,7 @@ private:
     void raPGFwdGd(long);
     void raPGBwdGd(long);
     void compensateDeclBacklashPG(short);
+    void handleST4State(void);
 };
 
 #endif // MAINWINDOW_H

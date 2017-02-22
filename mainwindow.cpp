@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
     QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    timer->start(100); // check all 100 ms for events
+    timer->start(50); // check all 50 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
 
     draccRA= g_AllData->getDriveParams(0,1);
@@ -108,6 +108,20 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.maxDevInArcSec=0.0;
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
+    this->guidingState.st4IsActive = false;
+
+        // now instantiate the GPIO - ports on the raspberry for ST 4 guiding
+    setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
+    wiringPiSetup();
+    pinMode (2, INPUT);
+    pinMode (3, INPUT);
+    pinMode (4, INPUT);
+    pinMode (5, INPUT); // setting up BCM-pins 22, 23, 24 and 27 as inputs
+    pullUpDnControl(2,PUD_UP);
+    pullUpDnControl(3,PUD_UP);
+    pullUpDnControl(4,PUD_UP);
+    pullUpDnControl(5,PUD_UP); // setting internal pull-ip resistors of the BCM
+    ui->pbStopST4->setEnabled(false);
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -267,6 +281,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
+    connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
+    connect(ui->pbStopST4, SIGNAL(clicked()),this, SLOT(stopST4Guiding())); // stop ST4 pulse guiding
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -317,6 +333,9 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
+    if (this->guidingState.st4IsActive== true) {
+        this->handleST4State();
+    }
     if (this->lx200IsOn) { // check the serial port for LX 200 commands
         if (lx200port->getPortState() == 1) {
             lx200port->getDataFromSerialPort();
@@ -2028,9 +2047,72 @@ void MainWindow::RAMoveHandboxBwd(void) {
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 //--------------------------------------------------------------
-// pulse guide routines
+// pulse guide routines and ST 4
 //--------------------------------------------------------------
 //--------------------------------------------------------------
+//--------------------------------------------------------------
+void MainWindow::startST4Guiding(void) {
+    this->guidingState.st4IsActive=true;
+    this->guidingState.guidingIsOn=true;
+    ui->ctrlTab->setEnabled(false);
+    ui->catTab->setEnabled(false);
+    ui->camTab->setEnabled(false);
+    ui->gearTab->setEnabled(false);
+    ui->gbLX200->setEnabled(false);
+    ui->gbBluetooth->setEnabled(false);
+    ui->gbINDI->setEnabled(false);
+    ui->pbStartST4->setEnabled(false);
+    ui->pbStopST4->setEnabled(true);
+}
+
+//--------------------------------------------------------------
+void MainWindow::stopST4Guiding(void) {
+    this->guidingState.st4IsActive=false;
+    this->guidingState.guidingIsOn=false;
+    ui->ctrlTab->setEnabled(true);
+    ui->catTab->setEnabled(true);
+    ui->camTab->setEnabled(true);
+    ui->gearTab->setEnabled(true);
+    ui->gbLX200->setEnabled(true);
+    ui->gbBluetooth->setEnabled(true);
+    ui->gbINDI->setEnabled(true);
+    ui->pbStartST4->setEnabled(true);
+    ui->pbStopST4->setEnabled(false);
+}
+
+//--------------------------------------------------------------
+// reads the GPIO pins with the ST4 signals
+void MainWindow::handleST4State(void) {
+    short dp, rm, dm, rp;
+
+    dp=abs(1-digitalRead(2));
+    rp=abs(1-digitalRead(3));
+    dm=abs(1-digitalRead(4));
+    rm=abs(1-digitalRead(5));
+    if (dp > 0) {
+        ui->cbST4North->setChecked(true);
+    } else {
+        ui->cbST4North->setChecked(false);
+    }
+    if (rp > 0) {
+        ui->cbST4West->setChecked(true);
+    } else {
+        ui->cbST4West->setChecked(false);
+    }
+    if (dm > 0) {
+        ui->cbST4South->setChecked(true);
+    } else {
+        ui->cbST4South->setChecked(false);
+    }
+    if (rm > 0) {
+        ui->cbST4East->setChecked(true);
+    } else {
+        ui->cbST4East->setChecked(false);
+    }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+    qDebug() << "dp, rp, dm, rm:" << dp << rm << dm << rp;
+}
+
 //--------------------------------------------------------------
 void MainWindow::declPGPlus(void) {
     long duration;

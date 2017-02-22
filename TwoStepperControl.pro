@@ -111,3 +111,10 @@ unix:!macx: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_imgproc
 
 INCLUDEPATH += $$PWD/../../../usr/local/include
 DEPENDPATH += $$PWD/../../../usr/local/include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/lib/release/ -lwiringPi
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/lib/debug/ -lwiringPi
+else:unix: LIBS += -L$$PWD/../../../usr/lib/ -lwiringPi
+
+INCLUDEPATH += $$PWD/../../../usr/include
+DEPENDPATH += $$PWD/../../../usr/include
