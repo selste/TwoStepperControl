@@ -457,7 +457,6 @@ void MainWindow::updateReadings() {
 //-------------------------------------------------------------------------------------------------------------------
 // the most important routine - is compensates for earth motion, sets all flags and disables all GUI elements that can interefere
 void MainWindow::startRATracking(void) {
-    this->setControlsForRATracking(false);
     ui->rbCorrSpeed->setEnabled(true);
     ui->rbMoveSpeed->setEnabled(true);
     if (ui->rbMoveSpeed->isChecked()==false) {
@@ -469,6 +468,7 @@ void MainWindow::startRATracking(void) {
     ui->pbStopTracking->setEnabled(1);
     this->mountMotion.RAtrackingElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
     this->futureStepperBehaviourRATracking=QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgetsRA::startTracking);
+    this->setControlsForRATracking(false);
 }
 
 //------------------------------------------------------------------
@@ -718,6 +718,7 @@ void MainWindow::startGoToObject(void) {
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(true); // set GUI back in base state
+    this->setControlsForRATracking(false);
     return;
 }
 
@@ -2384,6 +2385,7 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->pbPGDecPlus->setEnabled(isEnabled);
     ui->pbPGRAMinus->setEnabled(isEnabled);
     ui->pbPGRAPlus->setEnabled(isEnabled);
+    ui->LX200Tab->setEnabled(isEnabled);
 }
 //---------------------------------------------------------------------
 void MainWindow::setControlsForRATracking(bool isEnabled) {
