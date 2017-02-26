@@ -97,6 +97,7 @@ private slots:
     void setDoubleFOV(void);
     void setRegularFOV(void);
     void calibrateAutoGuider(void);
+    void resetGuidingCalibration(void);
     void startBTComm(void);
     void stopBTComm(void);
     void restartBTComm(void);

@@ -279,6 +279,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
+    connect(ui->pbResetGuiding, SIGNAL(clicked()), this, SLOT(resetGuidingCalibration())); // reset autoguider calibration
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
@@ -918,7 +919,7 @@ void MainWindow::setINDISAddrAndPort(void) {
     isServerUp = camera_client->setINDIServer(saddr,sport);
     g_AllData->setINDIState(isServerUp);
     // set a global flag on the server state
-    if (isServerUp== true) {
+    if (isServerUp==true) {
         ui->pbExpose->setEnabled(true);
         ui->cbIndiIsUp->setChecked(true);
         ui->pbGetCCDParams->setEnabled(true);
@@ -1312,8 +1313,8 @@ void MainWindow::calibrateAutoGuider(void) {
 
     //-----------------------------------------
     // debugging code
-     // avrgAngle=2.13;
-     // travelTimeInMSForOnePix=71.5;
+    //  avrgAngle=2.13;
+    //  travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
     // now determine the rotation matrix from ccd x/y to ra/decl
@@ -1403,6 +1404,26 @@ void MainWindow::displayCalibrationStatus(QString str1, float number, QString st
 // an override just giving a single string message
 void MainWindow::displayCalibrationStatus(QString str1) {
     ui->teCalibrationStatus->appendPlainText(str1);
+}
+
+//------------------------------------------------------------------
+// resets all calibration parameters
+void MainWindow::resetGuidingCalibration(void) {
+    if ((this->guidingState.systemIsCalibrated==true) &&
+        (this->guidingState.guidingIsOn==false)) {
+        this->guidingState.guideStarSelected=false;
+        this->guidingState.guidingIsOn=false;
+        this->guidingState.calibrationIsRunning=false;
+        this->guidingState.systemIsCalibrated=false;
+        this->guidingState.calibrationImageReceived=false;
+        this->guidingState.declinationDriveDirection=1;
+        this->guidingState.travelTime_ms=0.0;
+        this->guidingState.rotationAngle=0.0;
+        this->guidingState.maxDevInArcSec=0.0;
+        this->guidingState.backlashCompensationInMS=0.0;
+        this->guidingState.noOfGuidingSteps = 0;
+        this->guidingState.st4IsActive=false;
+    }
 }
 
 //------------------------------------------------------------------

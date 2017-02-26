@@ -37,7 +37,7 @@ alccd5_client::alccd5_client() {
     }
     // setting colortable for grayscale QImages
     this->expcounter=1;
-    this->simulatorCounter=200; // a helper for debugging
+    this->simulatorCounter=10; // a helper for debugging
 }
 
 //------------------------------------------
@@ -224,16 +224,16 @@ void alccd5_client::newBLOB(IBLOB *bp) {
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      // guide debugging code --- load a camera image for debugging here ...
- /*    efilename=new QString("GuideSimulatorImages/GuideCameraImage");
+/*     efilename=new QString("GuideSimulatorImages/TestCameraImage");
      efilename->append(QString::number((double)simulatorCounter,1,0));
      efilename->append(".jpg");
      this->simulatorCounter++;
-     if (this->simulatorCounter > 290) {
-         this->simulatorCounter=200;
+     if (this->simulatorCounter > 40) {
+         this->simulatorCounter=10;
      }
      delete mimage;
      mimage = new QImage(efilename->toLatin1());
-     delete efilename;*/
+     delete efilename; */
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
