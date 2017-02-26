@@ -1,4 +1,4 @@
 # Description
 TSC (TwoStepperControl) is an open software project by Wolfgang Birkfellner and Steffen Elste to realize an open integrated control system for astronomical telescopes. The basic idea is to use a Raspberry Pi to control a telescope and to provide basic autoguiding functionality for astrophotography without additional external computers. As Raspian Jessie is not an RTOS, it cannot control stepper drivers directly like a microcontroller; therefore, extra hardware is necessary which receives basic parameters (number of steps, velocity, acceleration) from the software. Currently, I am using a Phidgets 1067 bipolar driver board although other alternatives are under consideration. The steppers are monitored by the Pi in separate Qt-Concurrent threads so that software functionality is maintained during stepper operation. So far, only fork mounts are supported. Support for LX200 and ST4 is also provided. 
 
-Check out this repositorie's Wiki for more information.
+Check out the Wiki on this page for more information.
