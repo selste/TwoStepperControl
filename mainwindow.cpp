@@ -280,6 +280,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbResetGuiding, SIGNAL(clicked()), this, SLOT(resetGuidingCalibration())); // reset autoguider calibration
+    connect(ui->pbResetGdErr, SIGNAL(clicked()), this, SLOT(resetGuidingError())); // reset autoguider guiding error
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
@@ -1208,6 +1209,15 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 }
 
 //------------------------------------------------------------------
+// a rotuine that resets the maximum guiding error
+void MainWindow::resetGuidingError(void) {
+
+    if (this->guidingState.guidingIsOn==true) {
+        this->guidingState.maxDevInArcSec=0.0;
+    }
+}
+
+//------------------------------------------------------------------
 // calibrate the system. the selected star is located and three
 // pulse guide commands in each direction and back are carried out.
 // the pixel/ms is then evaluated for each direction. 8 slews from the
@@ -1218,7 +1228,8 @@ void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
     double currentCentroid[2],initialCentroid[2],slewVector[2],arcsecPPix[2],
         travelPerMSInRACorr,travelTimeInMSForOnePix,tTimeOnePix[4],lengthOfTravel,
-        lengthOfTravelWithDeclBacklash,relativeAngle[4],avrgAngle, declBacklashInPixel;
+        lengthOfTravelWithDeclBacklash,relativeAngle[4],avrgAngle, sdevAngle, avrgDeclBacklashInPixel,
+        sdevBacklashPix, declBacklashInPixel[4];
     float alpha;
     int thrshld,beta,imgProcWindowSize;
     bool medianOn;
@@ -1308,7 +1319,12 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
     this->displayCalibrationStatus("Travel time for 1 pix: ", travelTimeInMSForOnePix,"ms.");
     avrgAngle=(relativeAngle[0]+relativeAngle[1]+relativeAngle[2]+relativeAngle[3])/4.0;
+    sdevAngle=sqrt(1/3.0*((relativeAngle[0]-avrgAngle)*(relativeAngle[0]-avrgAngle)+
+                          (relativeAngle[1]-avrgAngle)*(relativeAngle[1]-avrgAngle)+
+                          (relativeAngle[2]-avrgAngle)*(relativeAngle[2]-avrgAngle)+
+                          (relativeAngle[3]-avrgAngle)*(relativeAngle[3]-avrgAngle))); // compute the standard deviation
     this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
+    this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
         // rotation angle determined
 
     //-----------------------------------------
@@ -1329,38 +1345,58 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Determine declination backlash ...");
     this->declPGMinus();
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
-    this->waitForCalibrationImage(); // small subroutine - waits for image
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
-    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-    this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
-    this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
-    this->declPGPlus(); // carry out travel
-    ui->pbPGDecMinus->setEnabled(false);
-    ui->pbPGDecPlus->setEnabled(false);
-    this->waitForCalibrationImage();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
-    currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-    currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-    slewVector[0] = currentCentroid[0]-initialCentroid[0];
-    slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-    lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
-    initialCentroid[0]=currentCentroid[0];
-    initialCentroid[1]=currentCentroid[1]; // now go back, therefore the endpoint is the new beginning ...
-    this->displayCalibrationStatus("Travel back ...");
-    this->guidingState.declinationDriveDirection=-1;
-    this->declPGMinus(); // carry out travel
-    this->waitForCalibrationImage();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
-    currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-    currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-    slewVector[0] = currentCentroid[0]-initialCentroid[0];
-    slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-    lengthOfTravelWithDeclBacklash=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // travel incl. decl backlash
-    declBacklashInPixel=-lengthOfTravelWithDeclBacklash+lengthOfTravel; // determine backlash in pixel
-    this->displayCalibrationStatus("Decl backlash (pix): ",(float)declBacklashInPixel,"");
-    this->guidingState.backlashCompensationInMS=declBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
-    this->displayCalibrationStatus("Backlash compensation (ms): ", (float)this->guidingState.backlashCompensationInMS,"");
+
+    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
+        this->waitForCalibrationImage(); // small subroutine - waits for image
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
+        if (slewCounter%2==0) {
+            this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
+            this->declPGPlus(); // carry out travel
+        } else {
+            this->guidingState.declinationDriveDirection=-1; // remember that we travel forward in decl
+            this->declPGMinus(); // carry out travel
+        } // alternate declination drive direction in order to maintain tension on the worm wheel
+        ui->pbPGDecMinus->setEnabled(false);
+        ui->pbPGDecPlus->setEnabled(false);
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+        slewVector[0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
+        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
+        initialCentroid[0]=currentCentroid[0];
+        initialCentroid[1]=currentCentroid[1]; // now go back, therefore the endpoint is the new beginning ...
+        this->displayCalibrationStatus("Travel back ...");
+        if (slewCounter%2==0) {
+            this->guidingState.declinationDriveDirection=-1;
+            this->declPGMinus(); // carry out travel
+        } else {
+            this->guidingState.declinationDriveDirection=1;
+            this->declPGPlus(); // carry out travel
+        } // again - alternate declination tracvel to maintain tension on the worm wheel
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
+        slewVector[0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
+        lengthOfTravelWithDeclBacklash=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // travel incl. decl backlash
+        declBacklashInPixel[slewCounter]=-lengthOfTravelWithDeclBacklash+lengthOfTravel; // determine backlash in pixel
+        this->displayCalibrationStatus("Decl backlash (pix): ",(float)declBacklashInPixel[slewCounter],"");
+    }
+    avrgDeclBacklashInPixel=(declBacklashInPixel[0]+declBacklashInPixel[1]+declBacklashInPixel[2]+declBacklashInPixel[3])/4.0;
+    sdevBacklashPix=sqrt(1/3.0*((declBacklashInPixel[0]-avrgDeclBacklashInPixel)*(declBacklashInPixel[0]-avrgDeclBacklashInPixel)+
+                                (declBacklashInPixel[1]-avrgDeclBacklashInPixel)*(declBacklashInPixel[1]-avrgDeclBacklashInPixel)+
+                                (declBacklashInPixel[2]-avrgDeclBacklashInPixel)*(declBacklashInPixel[2]-avrgDeclBacklashInPixel)+
+                                (declBacklashInPixel[3]-avrgDeclBacklashInPixel)*(declBacklashInPixel[3]-avrgDeclBacklashInPixel)));
+    this->guidingState.backlashCompensationInMS=avrgDeclBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
+    this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
+    this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
+
 //  debug code follows
 //    this->guidingState.backlashCompensationInMS=800;
 
@@ -1411,6 +1447,7 @@ void MainWindow::displayCalibrationStatus(QString str1) {
 void MainWindow::resetGuidingCalibration(void) {
     if ((this->guidingState.systemIsCalibrated==true) &&
         (this->guidingState.guidingIsOn==false)) {
+        this->abortCCDAcquisition();
         this->guidingState.guideStarSelected=false;
         this->guidingState.guidingIsOn=false;
         this->guidingState.calibrationIsRunning=false;
@@ -2108,9 +2145,9 @@ void MainWindow::handleST4State(void) {
     short dp, rm, dm, rp;
 
     dp=abs(1-digitalRead(2));
-    rp=abs(1-digitalRead(3));
+    rm=abs(1-digitalRead(3));
     dm=abs(1-digitalRead(4));
-    rm=abs(1-digitalRead(5));
+    rp=abs(1-digitalRead(5));
     if (dp > 0) {
         ui->cbST4North->setChecked(true);
     } else {
