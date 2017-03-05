@@ -1447,6 +1447,7 @@ void MainWindow::displayCalibrationStatus(QString str1) {
 void MainWindow::resetGuidingCalibration(void) {
     if ((this->guidingState.systemIsCalibrated==true) &&
         (this->guidingState.guidingIsOn==false)) {
+        ui->teCalibrationStatus->clear();
         this->abortCCDAcquisition();
         this->guidingState.guideStarSelected=false;
         this->guidingState.guidingIsOn=false;

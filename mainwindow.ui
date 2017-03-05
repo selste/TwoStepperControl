@@ -137,7 +137,7 @@
           <number>200</number>
          </property>
          <property name="value">
-          <number>30</number>
+          <number>70</number>
          </property>
         </widget>
        </item>
@@ -2539,7 +2539,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -2614,7 +2614,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
