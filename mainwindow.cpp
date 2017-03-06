@@ -2145,32 +2145,49 @@ void MainWindow::stopST4Guiding(void) {
 void MainWindow::handleST4State(void) {
     short dp, rm, dm, rp;
 
-    dp=abs(1-digitalRead(2));
-    rm=abs(1-digitalRead(3));
-    dm=abs(1-digitalRead(4));
-    rp=abs(1-digitalRead(5));
-    if (dp > 0) {
-        ui->cbST4North->setChecked(true);
-    } else {
-        ui->cbST4North->setChecked(false);
+    if (this->guidingState.st4IsActive==true) {
+        dp=abs(1-digitalRead(2));
+        rm=abs(1-digitalRead(3));
+        dm=abs(1-digitalRead(4));
+        rp=abs(1-digitalRead(5));
+        if (dp > 0) {
+            ui->cbST4North->setChecked(true);
+            this->mountMotion.DeclDriveIsMoving=true;
+            this->declinationMoveHandboxUp();
+        } else {
+            ui->cbST4North->setChecked(false);
+            this->mountMotion.DeclDriveIsMoving=false;
+            this->declinationMoveHandboxUp();
+        }
+        if (rp > 0) {
+            ui->cbST4West->setChecked(true);
+            this->mountMotion.RADriveIsMoving=true;
+            this->RAMoveHandboxFwd();
+        } else {
+            ui->cbST4West->setChecked(false);
+            this->mountMotion.RADriveIsMoving=false;
+            this->RAMoveHandboxFwd();
+        }
+        if (dm > 0) {
+            ui->cbST4South->setChecked(true);
+            this->mountMotion.DeclDriveIsMoving=true;
+            this->declinationMoveHandboxDown();
+        } else {
+            ui->cbST4South->setChecked(false);
+            this->mountMotion.DeclDriveIsMoving=false;
+            this->declinationMoveHandboxDown();
+        }
+        if (rm > 0) {
+            ui->cbST4East->setChecked(true);
+            this->mountMotion.RADriveIsMoving=true;
+            this->RAMoveHandboxBwd();
+        } else {
+            ui->cbST4East->setChecked(false);
+            this->mountMotion.RADriveIsMoving=false;
+            this->RAMoveHandboxBwd();
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
     }
-    if (rp > 0) {
-        ui->cbST4West->setChecked(true);
-    } else {
-        ui->cbST4West->setChecked(false);
-    }
-    if (dm > 0) {
-        ui->cbST4South->setChecked(true);
-    } else {
-        ui->cbST4South->setChecked(false);
-    }
-    if (rm > 0) {
-        ui->cbST4East->setChecked(true);
-    } else {
-        ui->cbST4East->setChecked(false);
-    }
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
-    qDebug() << "dp, rp, dm, rm:" << dp << rm << dm << rp;
 }
 
 //--------------------------------------------------------------
