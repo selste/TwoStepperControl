@@ -175,7 +175,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
 
         // camera and guiding class are instantiated
-    camera_client = new alccd5_client(); // install a camera client for guiding via INDI
+    camera_client = new ccd_client(); // install a camera client for guiding via INDI
     guiding = new ocv_guiding();
     guideStarPrev = new QPixmap(); // a pixmap for showing the preview window
     guideStarPosition.centrX =0.0;
@@ -951,7 +951,12 @@ void MainWindow::deployINDICommand(void) {
     if (ui->rbQHYINDI->isChecked()== true) {
         system("indiserver -v -m 100 indi_qhy_ccd &");
     }
+    if (ui->rbV4LINDI->isChecked()== true) {
+        system("indiserver -v -m 100 indi_v4l2_ccd &");
+    }
     ui->pbStartINDIServer->setEnabled(false);
+    ui->rbQHYINDI->setEnabled(false);
+    ui->rbV4LINDI->setEnabled(false);
 }
 
 //------------------------------------------------------------------

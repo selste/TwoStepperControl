@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include "qstepperphidgetsRA.h"
 #include "qstepperphidgetsDecl.h"
-#include "alccd5_client.h"
+#include "ccd_client.h"
 #include "currentObjectCatalog.h"
 #include "QDisplay2D.h"
 #include "lx200_communication.h"
@@ -168,7 +168,7 @@ private:
     QFuture<void> futureStepperBehaviourDecl_GOTO;
     QFuture<void> futureStepperBehaviourRA_Corr;
     QFuture<void> futureStepperBehaviourDecl_Corr;
-    alccd5_client *camera_client;
+    ccd_client *camera_client;
     QPixmap *camImg;
     QPixmap *guideStarPrev;
     currentObjectCatalog *objCatalog;

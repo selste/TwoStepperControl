@@ -17,7 +17,6 @@ CONFIG += c++11
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    alccd5_client.cpp \
     currentObjectCatalog.cpp \
     QDisplay2D.cpp \
     tsc_globaldata.cpp \
@@ -25,11 +24,11 @@ SOURCES += \
     qstepperphidgetsRA.cpp \
     lx200_communication.cpp \
     ocv_guiding.cpp \
-    bt_serialcomm.cpp
+    bt_serialcomm.cpp \
+    ccd_client.cpp
 
 HEADERS  += \
     mainwindow.h \
-    alccd5_client.h \
     currentObjectCatalog.h \
     QDisplay2D.h \
     tsc_globaldata.h \
@@ -37,7 +36,8 @@ HEADERS  += \
     qstepperphidgetsRA.h \
     lx200_communication.h \
     ocv_guiding.h \
-    bt_serialcomm.h
+    bt_serialcomm.h \
+    ccd_client.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/
