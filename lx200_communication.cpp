@@ -138,7 +138,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 }
                 this->serialData->clear();
             }
-          //  qDebug() << "Raw Command:" << incomingCommand->toLatin1();
+            qDebug() << "Raw Command:" << incomingCommand->toLatin1();
             if (((incomingCommand->startsWith("#:")) || (incomingCommand->startsWith(":"))) &&
                     (incomingCommand->endsWith("#"))) {
                 this->handleBasicLX200Protocol(*incomingCommand);
@@ -173,6 +173,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         lx200cmd->append(commandList[cmdCounter]);
 
         if (lx200cmd->startsWith(this->LX200Commands.slewRA,Qt::CaseSensitive)==1) {
+            qDebug() << "Got a RA - slew coordinate";
             assembledString->append(QString::number(1));
             lx200cmd->remove(' ');
             if (sendSimpleCoordinates==false) {
@@ -180,6 +181,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             } else {
                 numSubStr = new QString(lx200cmd->right(7));
             }
+
             numericalList=numSubStr->split(':',QString::SkipEmptyParts,Qt::CaseSensitive);
             rah=numericalList[0].toDouble();
             ram=numericalList[1].toDouble();
@@ -188,15 +190,19 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             } else {
                 ras = 0.0;
             }
+            qDebug() << "Received RA:" << rah << ":" << ram << ":" << ras;
             this->receivedRAFromLX =(rah+ram/60.0+ras/3600.0)*15.0;
             delete numSubStr;        
             gotRACoordinates = true;
             this->sendCommand(2);
+            qDebug() << "Received RA" << this->receivedRAFromLX;
             // got RA coordinates from LX200 ...
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
+            qDebug() << "Got a Decl - slew coordinate";
             assembledString->append(QString::number(0));
             lx200cmd->remove(' ');
+            qDebug() << "Declination String:" << lx200cmd->toLatin1();
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
             } else {
@@ -207,6 +213,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             } else {
                 declSign = 1;
             }
+            qDebug() << "numSubStr" << numSubStr->toLatin1();
             decldeg=(numSubStr->left(3)).toDouble();
             numSubStr->clear();
             numSubStr->append(lx200cmd->right(5));
@@ -216,7 +223,9 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             } else {
                 declsec = 0.0;
             }
+            qDebug() << "Received Decl:" << decldeg << "*" << declmin << "m" << declsec;
             this->receivedDeclFromLX =declSign*(fabs(decldeg)+declmin/60.0+declsec/3600.0);
+            qDebug() << "Received Decl" << this->receivedDeclFromLX;
             delete numSubStr;
             gotDeclCoordinates = true;
             this->sendCommand(2);

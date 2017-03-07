@@ -32,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
     QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    timer->start(50); // check all 50 ms for events
+    timer->start(25); // check all 25 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
 
     draccRA= g_AllData->getDriveParams(0,1);
@@ -2117,6 +2117,9 @@ void MainWindow::RAMoveHandboxBwd(void) {
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 void MainWindow::startST4Guiding(void) {
+    if (this->mountMotion.RATrackingIsOn==false) {
+        this->startRATracking();
+    } // if tracking is not active - start it ...
     this->guidingState.st4IsActive=true;
     this->guidingState.guidingIsOn=true;
     ui->ctrlTab->setEnabled(false);
@@ -2128,6 +2131,12 @@ void MainWindow::startST4Guiding(void) {
     ui->gbINDI->setEnabled(false);
     ui->pbStartST4->setEnabled(false);
     ui->pbStopST4->setEnabled(true);
+    this->ST4stateDurations.declTimeMeasurementActive=false;
+    this->ST4stateDurations.RATimeMeasurementActive=false;
+    this->ST4stateDurations.dpDuration=0;
+    this->ST4stateDurations.dmDuration=0;
+    this->ST4stateDurations.rpDuration=0;
+    this->ST4stateDurations.rmDuration=0;
 }
 
 //--------------------------------------------------------------
@@ -2146,7 +2155,12 @@ void MainWindow::stopST4Guiding(void) {
 }
 
 //--------------------------------------------------------------
-// reads the GPIO pins with the ST4 signals
+// reads the GPIO pins with the ST4 signals; it measures the
+// duration of the signal uptime, the triggers a drive pulse for the
+// given amount of time ... kind of a workaround, but honestly speaking,
+// monitoring the gpio pins while running the drives is quite a hassle
+// while running into the same sampling problem ...
+
 void MainWindow::handleST4State(void) {
     short dp, rm, dm, rp;
 
@@ -2154,42 +2168,86 @@ void MainWindow::handleST4State(void) {
         dp=abs(1-digitalRead(2));
         rm=abs(1-digitalRead(3));
         dm=abs(1-digitalRead(4));
-        rp=abs(1-digitalRead(5));
+        rp=abs(1-digitalRead(5)); // reading the GPIO pins
         if (dp > 0) {
-            ui->cbST4North->setChecked(true);
-            this->mountMotion.DeclDriveIsMoving=true;
-            this->declinationMoveHandboxUp();
+            if (ui->cbST4North->isChecked()==false) { // if pin goes UP ...
+                ui->cbST4North->setChecked(true); // ... check the checkbox ...
+                this->ST4stateDurations.declTimeMeasurementActive = true; // ... set a flag that time is measured to TRUE ...
+                this->ST4stateDurations.dElapsed.start(); // ... and start a timer for declination
+            }
         } else {
-            ui->cbST4North->setChecked(false);
-            this->mountMotion.DeclDriveIsMoving=false;
-            this->declinationMoveHandboxUp();
+            if (ui->cbST4North->isChecked()==true) { // if pin goes DOWN ...
+                ui->cbST4North->setChecked(false);
+                this->ST4stateDurations.declTimeMeasurementActive = false; // ... set the time measurement flag to FALSE ...
+                this->ST4stateDurations.dpDuration=this->ST4stateDurations.dElapsed.elapsed(); // ... and determine the time it was up.
+            }
         }
         if (rp > 0) {
-            ui->cbST4West->setChecked(true);
-            this->mountMotion.RADriveIsMoving=true;
-            this->RAMoveHandboxFwd();
+            if (ui->cbST4West->isChecked()==false) {
+                ui->cbST4West->setChecked(true);
+                this->ST4stateDurations.RATimeMeasurementActive = true;
+                this->ST4stateDurations.rElapsed.start();
+            }
         } else {
-            ui->cbST4West->setChecked(false);
-            this->mountMotion.RADriveIsMoving=false;
-            this->RAMoveHandboxFwd();
+            if (ui->cbST4West->isChecked()==true) {
+                ui->cbST4West->setChecked(false);
+                this->ST4stateDurations.RATimeMeasurementActive = false;
+                this->ST4stateDurations.rpDuration=this->ST4stateDurations.rElapsed.elapsed();
+            }
         }
         if (dm > 0) {
-            ui->cbST4South->setChecked(true);
-            this->mountMotion.DeclDriveIsMoving=true;
-            this->declinationMoveHandboxDown();
+            if (ui->cbST4South->isChecked()==false) {
+                ui->cbST4South->setChecked(true);
+                this->ST4stateDurations.declTimeMeasurementActive = true;
+                this->ST4stateDurations.dElapsed.start();
+            }
         } else {
-            ui->cbST4South->setChecked(false);
-            this->mountMotion.DeclDriveIsMoving=false;
-            this->declinationMoveHandboxDown();
+            if (ui->cbST4South->isChecked()==true) {
+                ui->cbST4South->setChecked(false);
+                this->ST4stateDurations.declTimeMeasurementActive = false;
+                this->ST4stateDurations.dmDuration=this->ST4stateDurations.dElapsed.elapsed();
+            }
         }
         if (rm > 0) {
-            ui->cbST4East->setChecked(true);
-            this->mountMotion.RADriveIsMoving=true;
-            this->RAMoveHandboxBwd();
+            if (ui->cbST4East->isChecked()==false) {
+                ui->cbST4East->setChecked(true);
+                this->ST4stateDurations.RATimeMeasurementActive = true;
+                this->ST4stateDurations.rElapsed.start();
+            }
         } else {
-            ui->cbST4East->setChecked(false);
-            this->mountMotion.RADriveIsMoving=false;
-            this->RAMoveHandboxBwd();
+            if (ui->cbST4East->isChecked()==true) {
+                ui->cbST4East->setChecked(false);
+                this->ST4stateDurations.RATimeMeasurementActive = false;
+                this->ST4stateDurations.rmDuration=this->ST4stateDurations.rElapsed.elapsed();
+            }
+        }
+        if (this->ST4stateDurations.declTimeMeasurementActive == false) {
+            if (this->ST4stateDurations.dpDuration > 1) {
+                ui->cbST4North->setChecked(true);
+                this->declPGPlusGd(this->ST4stateDurations.dpDuration);
+                ui->cbST4North->setChecked(false);
+                this->ST4stateDurations.dpDuration = 0;
+            }
+            if (this->ST4stateDurations.dmDuration > 1) {
+                ui->cbST4South->setChecked(true);
+                this->declPGMinusGd(this->ST4stateDurations.dmDuration);
+                ui->cbST4South->setChecked(false);
+                this->ST4stateDurations.dmDuration = 0;
+            }
+        }
+        if (this->ST4stateDurations.RATimeMeasurementActive == false) {
+            if (this->ST4stateDurations.rpDuration > 1) {
+                ui->cbST4West->setChecked(true);
+                this->raPGFwdGd(this->ST4stateDurations.rpDuration);
+                ui->cbST4West->setChecked(false);
+                this->ST4stateDurations.rpDuration = 0;
+            }
+            if (this->ST4stateDurations.rmDuration > 1) {
+                ui->cbST4East->setChecked(true);
+                this->raPGBwdGd(this->ST4stateDurations.rmDuration);
+                ui->cbST4East->setChecked(false);
+                this->ST4stateDurations.rmDuration = 0;
+            }
         }
         QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
     }

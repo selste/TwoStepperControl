@@ -148,10 +148,22 @@ private:
         bool st4IsActive;
     };
 
+    struct ST4stateDurationsStruct{
+        bool declTimeMeasurementActive;
+        bool RATimeMeasurementActive;
+        long dpDuration;
+        long dmDuration;
+        long rpDuration;
+        long rmDuration;
+        QElapsedTimer dElapsed;
+        QElapsedTimer rElapsed;
+    };
+
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;
+    struct ST4stateDurationsStruct ST4stateDurations;
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
@@ -208,6 +220,7 @@ private:
     void raPGBwdGd(long);
     void compensateDeclBacklashPG(short);
     void handleST4State(void);
+    void doDeclinationMoveForST4(short);
 };
 
 #endif // MAINWINDOW_H
