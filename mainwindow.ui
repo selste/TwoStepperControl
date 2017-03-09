@@ -794,7 +794,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>Use the simple coordinate format</string>
+        <string>Use the simple LX 200  coordinate format</string>
        </property>
        <property name="checked">
         <bool>false</bool>
@@ -845,7 +845,7 @@
      <widget class="Line" name="line">
       <property name="geometry">
        <rect>
-        <x>360</x>
+        <x>440</x>
         <y>0</y>
         <width>20</width>
         <height>411</height>
@@ -858,10 +858,10 @@
      <widget class="QGroupBox" name="gbBluetooth">
       <property name="geometry">
        <rect>
-        <x>380</x>
+        <x>460</x>
         <y>10</y>
-        <width>381</width>
-        <height>161</height>
+        <width>301</width>
+        <height>191</height>
        </rect>
       </property>
       <property name="title">
@@ -871,7 +871,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>70</y>
+         <y>110</y>
          <width>281</width>
          <height>35</height>
         </rect>
@@ -897,40 +897,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>30</y>
-         <width>350</width>
-         <height>33</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_22">
-        <item>
-         <widget class="QPushButton" name="pbConnectBT">
-          <property name="text">
-           <string>Connect BT</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pbDisonnectBT">
-          <property name="text">
-           <string>Disconnect BT</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pbTryBTRestart">
-          <property name="text">
-           <string>Try BT restart</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>110</y>
+         <y>150</y>
          <width>286</width>
          <height>33</height>
         </rect>
@@ -966,13 +933,50 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>31</y>
+         <width>281</width>
+         <height>72</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_22">
+          <item>
+           <widget class="QPushButton" name="pbConnectBT">
+            <property name="text">
+             <string>Connect BT</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pbDisonnectBT">
+            <property name="text">
+             <string>Disconnect BT</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbTryBTRestart">
+          <property name="text">
+           <string>Try BT restart</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
      <widget class="QGroupBox" name="groupBox_4">
       <property name="geometry">
        <rect>
-        <x>380</x>
-        <y>190</y>
-        <width>381</width>
+        <x>470</x>
+        <y>230</y>
+        <width>251</width>
         <height>111</height>
        </rect>
       </property>
@@ -982,33 +986,7 @@
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>30</y>
-         <width>231</width>
-         <height>70</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QPushButton" name="pbStartST4">
-          <property name="text">
-           <string>Start ST 4</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pbStopST4">
-          <property name="text">
-           <string>Stop ST 4</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>250</x>
+         <x>100</x>
          <y>30</y>
          <width>125</width>
          <height>77</height>
@@ -1085,14 +1063,40 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>31</y>
+         <width>92</width>
+         <height>70</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QPushButton" name="pbStartST4">
+          <property name="text">
+           <string>Start ST 4</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbStopST4">
+          <property name="text">
+           <string>Stop ST 4</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
      <widget class="Line" name="line_9">
       <property name="geometry">
        <rect>
-        <x>380</x>
-        <y>160</y>
-        <width>381</width>
-        <height>16</height>
+        <x>460</x>
+        <y>200</y>
+        <width>301</width>
+        <height>20</height>
        </rect>
       </property>
       <property name="orientation">
@@ -1102,7 +1106,7 @@
      <widget class="QPushButton" name="pbStop3">
       <property name="geometry">
        <rect>
-        <x>380</x>
+        <x>470</x>
         <y>360</y>
         <width>300</width>
         <height>50</height>
@@ -1129,7 +1133,7 @@
        <rect>
         <x>10</x>
         <y>130</y>
-        <width>341</width>
+        <width>411</width>
         <height>281</height>
        </rect>
       </property>
@@ -1147,7 +1151,7 @@
         <rect>
          <x>0</x>
          <y>30</y>
-         <width>161</width>
+         <width>221</width>
          <height>241</height>
         </rect>
        </property>
@@ -1166,7 +1170,7 @@
       <widget class="QCheckBox" name="cbLX200Logs">
        <property name="geometry">
         <rect>
-         <x>170</x>
+         <x>230</x>
          <y>40</y>
          <width>151</width>
          <height>26</height>
@@ -1179,7 +1183,7 @@
       <widget class="QPushButton" name="pbClearLXLog">
        <property name="geometry">
         <rect>
-         <x>170</x>
+         <x>230</x>
          <y>70</y>
          <width>171</width>
          <height>31</height>
@@ -1192,7 +1196,7 @@
       <widget class="QWidget" name="layoutWidget_4">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>240</x>
          <y>230</y>
          <width>148</width>
          <height>35</height>
@@ -1239,7 +1243,7 @@
       <widget class="QWidget" name="layoutWidget_14">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>240</x>
          <y>190</y>
          <width>148</width>
          <height>35</height>
@@ -1286,7 +1290,7 @@
       <widget class="QLabel" name="label_2">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>240</x>
          <y>160</y>
          <width>161</width>
          <height>21</height>

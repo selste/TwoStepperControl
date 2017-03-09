@@ -103,7 +103,6 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     QChar lastChar;
     QElapsedTimer *localTimer;
 
-
     charsToBeRead=rs232port.bytesAvailable();
     incomingCommand->clear();
     if (charsToBeRead == 1) { // a single <ACK> is sent at establishing connection
@@ -119,6 +118,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
 
     if (charsToBeRead > 3) { // a LX200 command is #:_# where _ is a command,
         this->serialData->append(rs232port.readAll());
+        qDebug() << "Raw serial data:" << serialData->data();
         charsRead=serialData->length();
         if (charsRead != -1) {
             incomingCommand->append(serialData->data());
@@ -139,7 +139,6 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 }
                 this->serialData->clear();
             }
-       //     qDebug() << "Raw Command:" << incomingCommand->toLatin1();
             if (((incomingCommand->startsWith("#:")) || (incomingCommand->startsWith(":"))) &&
                     (incomingCommand->endsWith("#"))) {
                 this->handleBasicLX200Protocol(*incomingCommand);
@@ -197,7 +196,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
             assembledString->append(QString::number(1));
-            qDebug() << "Declination String:" << lx200cmd->toLatin1();
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
             } else {

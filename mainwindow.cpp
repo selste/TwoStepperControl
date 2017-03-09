@@ -300,11 +300,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
     connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
     connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
-    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
-    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA),Qt::QueuedConnection); // receive RA from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
-    connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple()),Qt::QueuedConnection); // switch between simple and complex LX 200 format
+    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds())); // write incoming command from LX 200 to log
+    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA())); // receive RA from LX 200 and log it
+    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl())); // receive decl from LX 200 and log it
+    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds())); // write outgoing command from LX 200 to log
+    connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
@@ -335,6 +335,7 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     if (this->guidingState.st4IsActive== true) {
         this->handleST4State();
     }
@@ -636,6 +637,7 @@ void MainWindow::startGoToObject(void) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
             if (this->mountMotion.emergencyStopTriggered==true) { // if the emergency button is pressed, terminate routine immediately
                 this->mountMotion.emergencyStopTriggered=false;
+                this->mountMotion.GoToIsActiveInRA=false; // flag on RA-GOTO set to false - important for event queue
                 return;
             }
         } // RA travel is done here
