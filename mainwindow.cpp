@@ -1151,13 +1151,15 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     if (this->guidingState.noOfGuidingSteps == 1) {
         this->guideStarPosition.centrX = cx;
         this->guideStarPosition.centrY = cy;
-        qDebug() << "Guidestarposition is " << cx << cy;
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            qDebug() << "Guidestarposition is " << cx << cy;
+        }
         this->takeSingleCamShot(); // poll a new image
         return 0.0;
     } // when called for the first time, make the current centroid the reference ...
-
-    qDebug() << "Centroid:" << cx << cy;
-    //------------
+    if (ui->cbLogGuidingData->isChecked()==true) {
+        qDebug() << "Centroid:" << cx << cy;
+    }
     devVector[0]=(this->guideStarPosition.centrX - cx);
     devVector[1]=(this->guideStarPosition.centrY - cy); // this is the deviation in pixel from the last position
     if (this->guidingState.noOfGuidingSteps%2 == 1) { // in odd runs, just determine the error
@@ -1167,10 +1169,14 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         if (currDev > this->guidingState.maxDevInArcSec) {
             this->guidingState.maxDevInArcSec = currDev;
         } // compute maximum error
-        qDebug() << "determined error in run # " << guidingState.noOfGuidingSteps;
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            qDebug() << "determined error in run # " << guidingState.noOfGuidingSteps;
+        }
         ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
     } else {
-        qDebug() << "corrected error in run # " << guidingState.noOfGuidingSteps;
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            qDebug() << "corrected error in run # " << guidingState.noOfGuidingSteps;
+        }
         sVect[0]=cx-this->guideStarPosition.centrX;
         sVect[1]=cy-this->guideStarPosition.centrY;
         devVectorRotated[0]=-(this->rotMatrixGuidingXToRA[0][0]*sVect[0]+this->rotMatrixGuidingXToRA[0][1]*sVect[1]);
@@ -1183,31 +1189,37 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
             ui->lePulseRAMS->setText(textEntry->number(pgduration));
             if (devVectorRotated[0]>0) {
-                this->raPGFwdGd(pgduration);
-            } else {
                 this->raPGBwdGd(pgduration);
+            } else {
+                this->raPGFwdGd(pgduration);
             }
         }
         if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
             pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
             if (devVectorRotated[1]>0) {
+                ui->cbDeclinationInverted->setChecked(false); // indicate that decl-direction indicator to false
                 if (this->guidingState.declinationDriveDirection < 0) {
                     this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
-                    compensateDeclBacklashPG(this->guidingState.declinationDriveDirection);
-                    // pgduration+=this->guidingState.backlashCompensationInMS;
-                    ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
-                }
-                ui->lePulseDeclMS->setText(textEntry->number(pgduration));
-                this->declPGPlusGd(pgduration);
-            } else {
-                if (this->guidingState.declinationDriveDirection > 0) {
-                    this->guidingState.declinationDriveDirection = -1; // switch state to negativ travel
-                    compensateDeclBacklashPG(this->guidingState.declinationDriveDirection);
-                    // pgduration+=this->guidingState.backlashCompensationInMS;
+                    ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
+                    if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
+                        compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                    }
                     ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 }
                 ui->lePulseDeclMS->setText(textEntry->number(pgduration));
                 this->declPGMinusGd(pgduration);
+            } else {
+                ui->cbDeclinationInverted->setChecked(false);
+                if (this->guidingState.declinationDriveDirection > 0) {
+                    this->guidingState.declinationDriveDirection = -1; // switch state to negative travel
+                    ui->cbDeclinationInverted->setChecked(true);
+                    if (ui->cbDeclBacklashComp->isChecked()==true) {
+                        compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                    }
+                    ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                }
+                ui->lePulseDeclMS->setText(textEntry->number(pgduration));
+                this->declPGPlusGd(pgduration);
             }
         }
     }
@@ -1221,6 +1233,7 @@ void MainWindow::resetGuidingError(void) {
 
     if (this->guidingState.guidingIsOn==true) {
         this->guidingState.maxDevInArcSec=0.0;
+        ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
     }
 }
 
@@ -1454,8 +1467,8 @@ void MainWindow::displayCalibrationStatus(QString str1) {
 void MainWindow::resetGuidingCalibration(void) {
     if ((this->guidingState.systemIsCalibrated==true) &&
         (this->guidingState.guidingIsOn==false)) {
-        ui->teCalibrationStatus->clear();
         this->abortCCDAcquisition();
+        ui->teCalibrationStatus->clear();
         this->guidingState.guideStarSelected=false;
         this->guidingState.guidingIsOn=false;
         this->guidingState.calibrationIsRunning=false;
@@ -1479,12 +1492,18 @@ void MainWindow::doAutoGuiding(void) {
     if (this->guidingState.guidingIsOn ==false) {
         this->guidingState.maxDevInArcSec=0.0;
         this->guidingState.guidingIsOn = true;
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            // then open a log-file
+        }
         g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
         this->setControlsForGuiding(false);
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
     } else {
         this->guidingState.guidingIsOn = false;
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            // then close a log-file
+        }
         g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
