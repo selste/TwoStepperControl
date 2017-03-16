@@ -5,6 +5,7 @@
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QListWidgetItem>
 #include <QElapsedTimer>
+#include <QFile>
 #include <stdlib.h>
 #include "qstepperphidgetsRA.h"
 #include "qstepperphidgetsDecl.h"
@@ -169,10 +170,12 @@ private:
     QTimer *timer;
     lx200_communication *lx200port;
     bt_serialcomm *bt_Handbox;
-    bool camImageWasReceived; // a flag set to true if a cam image came in
-    bool lx200IsOn;
-    bool MountWasSynced;     // a flag indicating whether a sync occurred
-    bool ccdCameraIsAcquiring;
+    QPixmap *camImg;
+    QPixmap *guideStarPrev;
+    currentObjectCatalog *objCatalog;
+    QDisplay2D *camView;
+    QElapsedTimer *elapsedGoToTime;
+    ocv_guiding *guiding; // the class that does image processing for guiding
     QFuture<void> futureStepperBehaviourRATracking;
     QFuture<void> futureStepperBehaviourRA;
     QFuture<void> futureStepperBehaviourDecl;
@@ -181,9 +184,21 @@ private:
     QFuture<void> futureStepperBehaviourRA_Corr;
     QFuture<void> futureStepperBehaviourDecl_Corr;
     ccd_client *camera_client;
-    QPixmap *camImg;
-    QPixmap *guideStarPrev;
-    currentObjectCatalog *objCatalog;
+    bool camImageWasReceived; // a flag set to true if a cam image came in
+    bool lx200IsOn;
+    bool MountWasSynced;     // a flag indicating whether a sync occurred
+    bool ccdCameraIsAcquiring;
+    float ra; // right ascension of a current object
+    float decl;// declination of a current object
+    double gotoETA; // estimated time of arrival for goto
+    short RAdriveDirectionForNorthernHemisphere;
+    QString *textEntry;
+    QString *bt_HandboxCommand;
+    QFile *guidingLog;
+    double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
+    double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
+    float guidingFOVFactor;
+    double rotMatrixGuidingXToRA[2][2];
     void updateCameraImage(void);
     void declinationPulseGuide(long, short,bool);
     void raPulseGuide(long, short,bool);
@@ -201,19 +216,6 @@ private:
     bool abortCCDAcquisition(void);
     void displayCalibrationStatus(QString, float, QString);
     void displayCalibrationStatus(QString);
-    QDisplay2D *camView;
-    float ra; // right ascension of a current object
-    float decl;// declination of a current object
-    double gotoETA; // estimated time of arrival for goto
-    QElapsedTimer *elapsedGoToTime;
-    short RAdriveDirectionForNorthernHemisphere;
-    QString *textEntry;
-    QString *bt_HandboxCommand;
-    double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
-    double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
-    ocv_guiding *guiding; // the class that does image processing for guiding
-    float guidingFOVFactor;
-    double rotMatrixGuidingXToRA[2][2];
     void declPGPlusGd(long);
     void declPGMinusGd(long);
     void raPGFwdGd(long);

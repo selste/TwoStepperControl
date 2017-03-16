@@ -2117,7 +2117,7 @@
               <number>0</number>
              </property>
              <property name="maximum">
-              <number>20000</number>
+              <number>10000</number>
              </property>
              <property name="singleStep">
               <number>50</number>
@@ -2305,7 +2305,7 @@
        <attribute name="title">
         <string>Gde</string>
        </attribute>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>2</x>
@@ -2358,12 +2358,12 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>211</width>
+          <width>212</width>
           <height>333</height>
          </rect>
         </property>

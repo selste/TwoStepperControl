@@ -183,6 +183,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingFOVFactor=1.0; // location of the crosshair and size of the preview window are set
     ui->sbFLGuideScope->setValue(g_AllData->getGuideScopeFocalLength()); // get stored focal length for the guidescope
     this->guiding->setFocalLengthOfGuidescope(g_AllData->getGuideScopeFocalLength());
+    this->guidingLog=NULL;
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir("Catalogs/");
@@ -225,15 +226,31 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
         // connecting signals and slots
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
+    connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
+    connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
+    connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
+    connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
+    connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
+    connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc())); // apply a 3x3 median filter to the guidestar - image
+    connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
+    connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
+    connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
+    connect(ui->leAMaxRA, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
+    connect(ui->leCurrMaxRA, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
+    connect(ui->leAMaxDecl, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
+    connect(ui->leCurrMaxDecl, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
+    connect(ui->rbCorrSpeed,SIGNAL(released()), this, SLOT(setCorrectionSpeed())); // set speed for slow manual motion
+    connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed())); // set speed for faster manual motion
+    connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
+    connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
+    connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
+    connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
+    connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
+    connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills the program, including killing the drives
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition())); // start acquiring images from the guidecam. a signal is emitted if an image arrived.
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
-    connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain()));
-    connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
-    connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
-    connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
-    connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(ui->pbSync, SIGNAL(clicked()), this, SLOT(syncMount())); // reset the current position and global timer, and set the global mount position to the actual coordinates
     connect(ui->pbStoreGears, SIGNAL(clicked()), this, SLOT(storeGearData())); // well - take the data from the dialog and store them in the .tsp file and in g_AllData
     connect(ui->pbStartTracking, SIGNAL(clicked()),this,SLOT(startRATracking())); // start earth motion compensation in RA
@@ -242,17 +259,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbDeclDown, SIGNAL(clicked()),this,SLOT(declinationMoveHandboxDown())); // manual motion of the handbox - decl down
     connect(ui->pbRAPlus, SIGNAL(clicked()),this,SLOT(RAMoveHandboxFwd())); // manual motion of the handbox - ra towards sunset
     connect(ui->pbRAMinus, SIGNAL(clicked()),this,SLOT(RAMoveHandboxBwd())); // manual motion of the handbox - ra towards dawn
-    connect(ui->leAMaxRA, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
-    connect(ui->leCurrMaxRA, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
-    connect(ui->leAMaxDecl, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
-    connect(ui->leCurrMaxDecl, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
     connect(ui->pbStoreDrive, SIGNAL(clicked()), this, SLOT(storeDriveData())); // store data to preferences
-    connect(ui->rbCorrSpeed,SIGNAL(released()), this, SLOT(setCorrectionSpeed())); // set speed for slow manual motion
-    connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed())); // set speed for faster manual motion
     connect(ui->pbGoTo, SIGNAL(clicked()),this, SLOT(startGoToObject())); // start the slew routine
-    connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
-    connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
-    connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
     connect(ui->pbLX200Active, SIGNAL(clicked()), this, SLOT(switchToLX200())); // open the serial port for LX 200
     connect(ui->pbGetCCDParams, SIGNAL(clicked()), this, SLOT(getCCDParameters())); // read pixel and frame size for the ccd
     connect(ui->pbStoreCCDParams, SIGNAL(clicked()), this, SLOT(storeCCDData())); // store pixel and frame size for the ccd
@@ -268,15 +276,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog())); // delete the log of LX200 commands
     connect(ui->pbSelectGuideStar, SIGNAL(clicked()), this, SLOT(selectGuideStar())); // select a guide star defined by crosshair in the QDisplay - widget
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding())); // instantiate all variables for autoguiding and set a flag that takes care of correction in "displayGuideCamImage" and "correctGuideStarPosition"
-    connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
-    connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
-    connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
-    connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc())); // apply a 3x3 median filter to the guidestar - image
-    connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
     connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL())); // store focal length of guidescope to preferences
-    connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
-    connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
-    connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbResetGuiding, SIGNAL(clicked()), this, SLOT(resetGuidingCalibration())); // reset autoguider calibration
@@ -304,7 +304,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA())); // receive RA from LX 200 and log it
     connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl())); // receive decl from LX 200 and log it
     connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds())); // write outgoing command from LX 200 to log
-    connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
+    connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
+    connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
@@ -1147,18 +1148,63 @@ void MainWindow::updateCameraImage(void) {
 double MainWindow::correctGuideStarPosition(float cx, float cy) {
     float residualX, residualY, devVector[2], devVectorRotated[2],sVect[2],currDev;
     long pgduration;
+    QString logString;
 
     if (this->guidingState.noOfGuidingSteps == 1) {
         this->guideStarPosition.centrX = cx;
         this->guideStarPosition.centrY = cy;
         if (ui->cbLogGuidingData->isChecked()==true) {
-            qDebug() << "Guidestarposition is " << cx << cy;
+            qDebug() << "Initial guidestar-position is " << cx << cy;
+            logString.append("Travel time per Pixel in ms:\t");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append(QString::number((double)this->guidingState.travelTime_ms,'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append("Rotation matrix:\t");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append(QString::number((double)this->rotMatrixGuidingXToRA[0][0],'g',3));
+            logString.append("\t");
+            logString.append(QString::number((double)this->rotMatrixGuidingXToRA[0][1],'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append("\t");
+            logString.append(QString::number((double)this->rotMatrixGuidingXToRA[1][0],'g',3));
+            logString.append("\t");
+            logString.append(QString::number((double)this->rotMatrixGuidingXToRA[1][1],'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append("Decl backlash in ms:\t");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append(QString::number((double)this->guidingState.backlashCompensationInMS,'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+            logString.append("Guidestar-position:\t");
+            logString.append(QString::number((double)cx,'g',3));
+            logString.append("\t");
+            logString.append(QString::number((double)cy,'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
         }
         this->takeSingleCamShot(); // poll a new image
         return 0.0;
     } // when called for the first time, make the current centroid the reference ...
     if (ui->cbLogGuidingData->isChecked()==true) {
         qDebug() << "Centroid:" << cx << cy;
+        logString.append("Measured centroid:\t");
+        logString.append(QString::number((double)cx,'g',3));
+        logString.append("\t");
+        logString.append(QString::number((double)cy,'g',3));
+        logString.append("\n");
+        this->guidingLog->write(logString.toLatin1(),logString.length());
+        logString.clear();
     }
     devVector[0]=(this->guideStarPosition.centrX - cx);
     devVector[1]=(this->guideStarPosition.centrY - cy); // this is the deviation in pixel from the last position
@@ -1169,23 +1215,44 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         if (currDev > this->guidingState.maxDevInArcSec) {
             this->guidingState.maxDevInArcSec = currDev;
         } // compute maximum error
-        if (ui->cbLogGuidingData->isChecked()==true) {
-            qDebug() << "determined error in run # " << guidingState.noOfGuidingSteps;
-        }
+        qDebug() << "determined error in run # " << guidingState.noOfGuidingSteps;
         ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
     } else {
-        if (ui->cbLogGuidingData->isChecked()==true) {
-            qDebug() << "corrected error in run # " << guidingState.noOfGuidingSteps;
-        }
+        qDebug() << "corrected error in run # " << guidingState.noOfGuidingSteps;
         sVect[0]=cx-this->guideStarPosition.centrX;
         sVect[1]=cy-this->guideStarPosition.centrY;
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            logString.append("Current deviation:\t");
+            logString.append(QString::number((double)sVect[0],'g',3));
+            logString.append("\t");
+            logString.append(QString::number((double)sVect[1],'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+        }
         devVectorRotated[0]=-(this->rotMatrixGuidingXToRA[0][0]*sVect[0]+this->rotMatrixGuidingXToRA[0][1]*sVect[1]);
         devVectorRotated[1]=-(this->rotMatrixGuidingXToRA[1][0]*sVect[0]+this->rotMatrixGuidingXToRA[1][1]*sVect[1]);
           // the deviation vector is rotated to the ra/decl coordinate system and inverted as we want to move in the other direction
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            logString.append("Transformed position:\t");
+            logString.append(QString::number((double)devVectorRotated[0],'g',3));
+            logString.append("\t");
+            logString.append(QString::number((double)devVectorRotated[1],'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
+        }
         ui->leDevRA->setText(textEntry->number(devVectorRotated[0]));
         ui->leDevDecl->setText(textEntry->number(devVectorRotated[1])); // display deviation in pixels
         if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
             pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
+            if (ui->cbLogGuidingData->isChecked()==true) {
+                logString.append("RA correction duration:\t");
+                logString.append(QString::number((double)pgduration,'g',3));
+                logString.append("\n");
+                this->guidingLog->write(logString.toLatin1(),logString.length());
+                logString.clear();
+            }
             ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
             ui->lePulseRAMS->setText(textEntry->number(pgduration));
             if (devVectorRotated[0]>0) {
@@ -1196,6 +1263,13 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         }
         if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
             pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
+            if (ui->cbLogGuidingData->isChecked()==true) {
+                logString.append("Decl correction duration:\t");
+                logString.append(QString::number((double)pgduration,'g',3));
+                logString.append("\n");
+                this->guidingLog->write(logString.toLatin1(),logString.length());
+                logString.clear();
+            }
             if (devVectorRotated[1]>0) {
                 ui->cbDeclinationInverted->setChecked(false); // indicate that decl-direction indicator to false
                 if (this->guidingState.declinationDriveDirection < 0) {
@@ -1203,6 +1277,11 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                     ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
                     if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
                         compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                        if (ui->cbLogGuidingData->isChecked()==true) {
+                            logString.append("Decl backlash activated.\n");
+                            this->guidingLog->write(logString.toLatin1(),logString.length());
+                            logString.clear();
+                        }
                     }
                     ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 }
@@ -1215,6 +1294,11 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                     ui->cbDeclinationInverted->setChecked(true);
                     if (ui->cbDeclBacklashComp->isChecked()==true) {
                         compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                        if (ui->cbLogGuidingData->isChecked()==true) {
+                            logString.append("Decl backlash activated.\n");
+                            this->guidingLog->write(logString.toLatin1(),logString.length());
+                            logString.clear();
+                        }
                     }
                     ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 }
@@ -1397,7 +1481,7 @@ void MainWindow::calibrateAutoGuider(void) {
         } else {
             this->guidingState.declinationDriveDirection=1;
             this->declPGPlus(); // carry out travel
-        } // again - alternate declination tracvel to maintain tension on the worm wheel
+        } // again - alternate declination travel to maintain tension on the worm wheel
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1493,7 +1577,8 @@ void MainWindow::doAutoGuiding(void) {
         this->guidingState.maxDevInArcSec=0.0;
         this->guidingState.guidingIsOn = true;
         if (ui->cbLogGuidingData->isChecked()==true) {
-            // then open a log-file
+            this->guidingLog = new QFile("GuidingLog.tsl");
+            this->guidingLog->open((QIODevice::ReadWrite | QIODevice::Text));
         }
         g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
         this->setControlsForGuiding(false);
@@ -1502,7 +1587,9 @@ void MainWindow::doAutoGuiding(void) {
     } else {
         this->guidingState.guidingIsOn = false;
         if (ui->cbLogGuidingData->isChecked()==true) {
-            // then close a log-file
+            if (this->guidingLog != NULL) {
+                this->guidingLog->close();
+            }
         }
         g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
         ui->pbGuiding->setText("Guide");
