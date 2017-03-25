@@ -1161,7 +1161,7 @@
         </font>
        </property>
        <property name="textInteractionFlags">
-        <set>Qt::NoTextInteraction</set>
+        <set>Qt::TextSelectableByMouse</set>
        </property>
        <property name="centerOnScroll">
         <bool>true</bool>
@@ -2268,6 +2268,9 @@
           </font>
          </property>
          <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="centerOnScroll">
           <bool>true</bool>
          </property>
         </widget>

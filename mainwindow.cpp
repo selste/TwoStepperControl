@@ -525,6 +525,7 @@ void MainWindow::startGoToObject(void) {
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
     this->setControlsForGoto(false); // set some controls on disabled
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     shortSlew=false; // we do not know how long the slew takes, so this flag is false
     timeDifference=0; // difference between estimated travcel and real travel in RA - needed for correction after slew
 
