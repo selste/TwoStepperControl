@@ -106,8 +106,14 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     qint64 charsRead=0;
     QStringList *subCmdList;
     int cmdCounter;
+    QElapsedTimer *waitTimer;
 
-    usleep(25);
+    waitTimer = new QElapsedTimer();
+    waitTimer->start();
+    do {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    } while (waitTimer->elapsed() < 25);
+    delete waitTimer; // just wait for 25 ms if data come in ...
     charsToBeRead=rs232port.bytesAvailable();
     if (charsToBeRead > 1) {
         this->serialData->append(rs232port.readAll());
@@ -123,6 +129,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                     this->subCmd->remove("#");
                     this->handleBasicLX200Protocol(*subCmd);                
                     emit this->RS232CommandReceived();
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                     this->subCmd->clear();
                 }      
                 this->subCmd->append(subCmdList->at(subCmdList->length()-1));
@@ -136,6 +143,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                     this->subCmd->remove("#");
                     this->handleBasicLX200Protocol(*subCmd);
                     emit this->RS232CommandReceived();
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                     this->subCmd->clear();
                 }
             }
@@ -152,6 +160,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     int numberOfCommands, cmdCounter;
     double rah,ram,ras,decldeg,declmin,declsec;
     short declSign;
+    QElapsedTimer *waitTimer;
 
     lx200cmd = new QString();
     if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
@@ -220,21 +229,35 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.slewPossible, Qt::CaseSensitive)==0) {         
             if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {
+                waitTimer = new QElapsedTimer();
+                waitTimer->start();
+                do {
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                } while (waitTimer->elapsed() < 25);
+                delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
                 assembledString->append(QString::number(1));
                 emit RS232slew();
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->sendCommand(2);
                 this->blockStopCommand=false;
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.syncCommand, Qt::CaseSensitive)==0) {
-            if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {
+            if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {           
+                waitTimer = new QElapsedTimer();
+                waitTimer->start();
+                do {
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                } while (waitTimer->elapsed() < 25);
+                delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
                 assembledString->append("M31 EX GAL MAG 35 SZ178.0'#");
                 // now set the global coordinates in g_AllData to receivedRA and received Decl
                 emit RS232sync();
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->sendCommand(2);
                 this->blockStopCommand=false;
             }
@@ -258,44 +281,57 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMotion, Qt::CaseSensitive)==0) {
             if (this->blockStopCommand==false) {
                 emit this->RS232stopMotion();
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             }
                 // tell TSC to stop all Motion here
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveEast, Qt::CaseSensitive)==0) {
             emit this->RS232moveEast();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveWest, Qt::CaseSensitive)==0) {
             emit this->RS232moveWest();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveNorth, Qt::CaseSensitive)==0) {
             emit this->RS232moveNorth();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveSouth, Qt::CaseSensitive)==0) {
             emit this->RS232moveSouth();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveEast, Qt::CaseSensitive)==0) {
             emit this->RS232stopMoveEast();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveWest, Qt::CaseSensitive)==0) {
             emit this->RS232stopMoveWest();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveNorth, Qt::CaseSensitive)==0) {
             emit this->RS232stopMoveNorth();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMoveSouth, Qt::CaseSensitive)==0) {
             emit this->RS232stopMoveSouth();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setCenterSpeed, Qt::CaseSensitive)==0) {
             emit this->RS232centerSpeed();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setGuideSpeed, Qt::CaseSensitive)==0) {
             emit this->RS232guideSpeed();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setFindSpeed, Qt::CaseSensitive)==0) {
             emit this->RS232findSpeed();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setGOTOSpeed, Qt::CaseSensitive)==0) {
             emit this->RS232gotoSpeed();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getHiDef, Qt::CaseSensitive)==0) {
             // ignore this as we are always sending in high resolution

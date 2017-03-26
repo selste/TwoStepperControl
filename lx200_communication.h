@@ -46,14 +46,13 @@ private:
     void assembleRAString(void);
     void sendCommand(short what);
     struct LX200CommandStruct {
-        QString getDecl;
-        QString getRA;
-        QString getHiDef;
-        QString stopMotion;
         QString slewRA;
         QString slewDecl;
         QString slewPossible;
         QString syncCommand;
+        QString getDecl;
+        QString getRA;
+        QString getHiDef;
         QString moveEast;
         QString moveWest;
         QString moveNorth;
@@ -66,6 +65,7 @@ private:
         QString setGuideSpeed;
         QString setFindSpeed;
         QString setGOTOSpeed;
+        QString stopMotion;
     };
     struct LX200CommandStruct LX200Commands;
 signals:

@@ -192,13 +192,14 @@ private:
     float decl;// declination of a current object
     double gotoETA; // estimated time of arrival for goto
     short RAdriveDirectionForNorthernHemisphere;
-    QString *textEntry;
-    QString *bt_HandboxCommand;
-    QFile *guidingLog;
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     float guidingFOVFactor;
     double rotMatrixGuidingXToRA[2][2];
+    quint64 isNthRunInEventLoop; // eventloop is checked every 25 ms, this one takes care that the serial port is only checked every 100 ms
+    QString *textEntry;
+    QString *bt_HandboxCommand;
+    QFile *guidingLog;
     void updateCameraImage(void);
     void declinationPulseGuide(long, short,bool);
     void raPulseGuide(long, short,bool);
