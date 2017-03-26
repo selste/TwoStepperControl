@@ -512,7 +512,7 @@ void MainWindow::syncMount(void) {
     this->MountWasSynced = true; // set a global flag
 }
 //---------------------------------------------------------------------
-// that one handles GOTO-commands. it blocks signals and leaves when the destination is reached ...
+// that one handles GOTO-commands. it leaves when the destination is reached ...
 void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,

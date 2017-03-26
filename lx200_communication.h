@@ -69,13 +69,17 @@ private:
     };
     struct LX200CommandStruct LX200Commands;
 signals:
+    void RS232CommandReceived(void);
+    void RS232RASent(void);
+    void RS232DeclSent(void);
+    void RS232CommandSent(void);
+    void RS232slew(void);
+    void RS232sync(void);
     void RS232stopMotion(void);
     void RS232stopMoveEast(void);
     void RS232stopMoveWest(void);
     void RS232stopMoveNorth(void);
     void RS232stopMoveSouth(void);
-    void RS232slew(void);
-    void RS232sync(void);
     void RS232moveEast(void);
     void RS232moveWest(void);
     void RS232moveNorth(void);
@@ -84,10 +88,6 @@ signals:
     void RS232guideSpeed(void);
     void RS232findSpeed(void);
     void RS232gotoSpeed(void);
-    void RS232CommandSent(void);
-    void RS232DeclSent(void);
-    void RS232RASent(void);
-    void RS232CommandReceived(void);
 };
 
 #endif // LX200_COMMUNICATION_H
