@@ -34,7 +34,6 @@ private:
     QString *incomingCommand;
     QString *subCmd;
     bool portIsUp;
-    bool blockStopCommand;
     QByteArray *serialData;
     double receivedRAFromLX;
     double receivedDeclFromLX;

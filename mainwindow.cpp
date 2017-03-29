@@ -477,6 +477,7 @@ void MainWindow::startRATracking(void) {
     this->mountMotion.RAtrackingElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
     this->futureStepperBehaviourRATracking=QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgetsRA::startTracking);
     this->setControlsForRATracking(false);
+    g_AllData->setTrackingMode(true);
 }
 
 //------------------------------------------------------------------
@@ -489,6 +490,7 @@ void MainWindow::stopRATracking(void) {
     while (!this->futureStepperBehaviourRATracking.isFinished()) {
     } // wait till the RA-tracking thread has died ...
     this->mountMotion.RATrackingIsOn = false;
+    g_AllData->setTrackingMode(false);
 }
 
 //------------------------------------------------------------------
@@ -1818,9 +1820,17 @@ void MainWindow::LXsyncMount(void) {
 }
 
 //---------------------------------------------------------------------
-// trigger an emergency stop via LX 200
+// trigger a stop via LX 200; this is not an emergency halt, it just
+// terminates motion and goes into tracking state. some ASCOM drivers
+// spit out :Q# like hell. I am insecure of the meaning of this command;
+// in my opinion, it should stop all motion like an emergency stop, but
+// the documentation says only "stop slewing motion" ...
 void MainWindow::LXstopMotion(void) {
-    this->emergencyStop();
+
+    if ((this->guidingState.guidingIsOn == false) && (this->guidingState.calibrationIsRunning == false)) {
+        this->terminateAllMotion();
+        this->startRATracking();
+    }
 }
 
 //---------------------------------------------------------------------

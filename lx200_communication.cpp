@@ -18,7 +18,6 @@ lx200_communication::lx200_communication(void) {
     rs232port.setFlowControl(QSerialPort::NoFlowControl);
     replyStrLX = new QString();
     assembledString = new QString();
-    this->blockStopCommand=true; // some ASCOM drivers love to throw "stop motion" commands when it is not appropriate. this one takes care ...
     this->serialData = new QByteArray();
     this->incomingCommand = new QString();
     this->msgRAString = new QString();
@@ -175,7 +174,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         lx200cmd->append(commandList[cmdCounter]);
 
         if (lx200cmd->startsWith(this->LX200Commands.slewRA,Qt::CaseSensitive)==1) {
-            this->blockStopCommand=true;
             assembledString->append(QString::number(1));
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(8));
@@ -198,7 +196,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             // got RA coordinates from LX200 ...
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
-            this->blockStopCommand=true;
             assembledString->append(QString::number(1));
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
@@ -238,7 +235,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 assembledString->append(QString::number(1));
                 emit RS232slew();
                 this->sendCommand(2);
-                this->blockStopCommand=false;
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.syncCommand, Qt::CaseSensitive)==0) {
@@ -255,7 +251,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 // now set the global coordinates in g_AllData to receivedRA and received Decl
                 emit RS232sync();
                 this->sendCommand(2);
-                this->blockStopCommand=false;
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getDecl, Qt::CaseSensitive)==0) {
@@ -275,10 +270,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             this->sendCommand(0);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.stopMotion, Qt::CaseSensitive)==0) {
-            if (this->blockStopCommand==false) {
-                emit this->RS232stopMotion();
-            }
-                // tell TSC to stop all Motion here
+            emit this->RS232stopMotion();
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.moveEast, Qt::CaseSensitive)==0) {
             emit this->RS232moveEast();
