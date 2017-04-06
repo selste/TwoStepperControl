@@ -31,8 +31,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
-    QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    timer->start(25); // check all 25 ms for events
+    this->timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
+    this->timer->start(100); // check all 100 ms for events
+    this->st4Timer = new QTimer(this);
+    this->st4Timer->start(10); // check all 10 ms for ST4 readings from the GPIO line
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
 
     draccRA= g_AllData->getDriveParams(0,1);
@@ -227,6 +229,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
         // connecting signals and slots
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
+    connect(st4Timer, SIGNAL(timeout()), this, SLOT(handleST4State())); // this is the callback for ST4 readings
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
@@ -303,10 +306,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
     connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
     connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
-    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
-    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
+    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds())); // write incoming command from LX 200 to log
+    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA())); // receive RA from LX 200 and log it
+    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl())); // receive decl from LX 200 and log it
+    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds())); // write outgoing command from LX 200 to log
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
@@ -322,6 +325,7 @@ MainWindow::~MainWindow() {
     delete StepperDriveRA;
     delete StepperDriveDecl;
     delete timer;
+    delete st4Timer;
     delete textEntry;
     delete bt_HandboxCommand;
     delete lx200port;
@@ -339,16 +343,12 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-    if (this->guidingState.st4IsActive== true) {
-        this->handleST4State();
-    }
-
     this->isNthRunInEventLoop++;
-    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 9)){ // check the serial port for LX 200 commands, but only in each 10th run ...
-        this->isNthRunInEventLoop=0;
+    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 3)) {
+        this->isNthRunInEventLoop = 0;
         if (lx200port->getPortState() == 1) {
             lx200port->getDataFromSerialPort();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
         }
     }
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox

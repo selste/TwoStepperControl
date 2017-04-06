@@ -114,7 +114,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     } while (waitTimer->elapsed() < 25);
     delete waitTimer; // just wait for 25 ms if data come in ...
     charsToBeRead=rs232port.bytesAvailable();
-    if (charsToBeRead > 1) {
+    if (charsToBeRead >= 1) {
         this->serialData->append(rs232port.readAll());
         charsRead=serialData->length();
         if (charsRead != -1) {
@@ -160,11 +160,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     QElapsedTimer *waitTimer;
 
     lx200cmd = new QString();
-    if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
-    // if LX200 sends <ACK> -> reply with P for forks, G for german equatorials or A for Alt/Az
-        rs232port.write("P");
-        return true; // exit here
-    }
     commandList = cmd.split('#',QString::SkipEmptyParts,Qt::CaseSensitive);
     numberOfCommands=commandList.count();
 
@@ -319,6 +314,9 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
 //-----------------------------------------------
 
 void lx200_communication::sendCommand(short what) {
+    QElapsedTimer *waitTimer;
+
+
     if (what == 0) {
         rs232port.write((msgRAString->toLatin1()));
         rs232port.flush();
@@ -332,6 +330,12 @@ void lx200_communication::sendCommand(short what) {
         rs232port.flush();
         emit this->RS232CommandSent();
     }
+    waitTimer = new QElapsedTimer();
+    waitTimer->start();
+    do {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
+    } while (waitTimer->elapsed() < 25);
+    delete waitTimer; // just wait for 25 ms ...
 }
 
 //-----------------------------------------------
