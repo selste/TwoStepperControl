@@ -43,6 +43,8 @@ public:
     int getGuideScopeFocalLength(void);
     bool getGuidingState(void);
     void setGuidingState(bool);
+    bool getTrackingMode(void);
+    void setTrackingMode(bool);
     QImage* getCameraImage(void);
     QString* getBTMACAddress(void);
 
@@ -51,6 +53,7 @@ private:
     QElapsedTimer *monotonicGlobalTimer;
     bool INDIServerIsConnected;
     bool guidingState;
+    bool isInTrackingMode;
     QImage *currentCameraImage;
     int guideScopeFocalLength;
     QString *BTMACAddress;

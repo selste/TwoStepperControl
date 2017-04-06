@@ -21,6 +21,7 @@ class ccd_client:public QObject, public INDI::BaseClient {
     void sayGoodbyeToINDIServer(void);
     bool getCCDParameters(void);
     void setStoreImageFlag(bool);
+    void setCameraName(QString);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);
@@ -37,6 +38,7 @@ protected:
     virtual void serverDisconnected(int exit_code) {}
 
 private:
+   QString *ccdINDIName; // name of the camera in INDI lingo
    INDI::BaseDevice *ccd;
    double pixSizeX;
    double pixSizeY;

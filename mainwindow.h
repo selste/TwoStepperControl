@@ -43,6 +43,8 @@ private slots:
     void startCCDAcquisition(void);
     void stopCCDAcquisition(void);
     void changeCCDGain(void);
+    void setCCDNameForQHY5(void);
+    void setCCDNameForASI120mm(void);
     void syncMount(void);
     void storeGearData(void);
     void storeDriveData(void);

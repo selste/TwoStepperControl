@@ -17,8 +17,8 @@
 
 using namespace std;
 
-#define MYQHYCCD5 "QHY CCD QHY5-0-M-"
-#define MYV4LCCD "V4L2 CCD"
+// qhy5 is "QHY CCD QHY5-0-M-"
+// asi 120mm is "ZWO CCD ASI 120 MM-S"
 
 extern TSC_GlobalData *g_AllData;
 
@@ -31,6 +31,7 @@ ccd_client::ccd_client() {
     this->fitsqimage = NULL;
     this->displayPMap = new QPixmap();
     this->serverMessage= new QString();
+    this->ccdINDIName = new QString("QHY CCD QHY5-0-M-");
     this->myVec =new QVector<QRgb>(256);
     for(int i=0;i<256;i++) {
         cval = qRgb(i,i,i);
@@ -47,6 +48,13 @@ ccd_client::~ccd_client() {
     delete displayPMap;
     delete myVec;
     delete serverMessage;
+    delete ccdINDIName;
+}
+
+//------------------------------------------
+void ccd_client::setCameraName(QString camName) {
+    this->ccdINDIName->clear();
+    this->ccdINDIName->append(camName.toLatin1());
 }
 
 //------------------------------------------
@@ -56,10 +64,10 @@ bool ccd_client::setINDIServer(QString addr, int port) {
     QByteArray ba = addr.toLatin1();
     const char *c_str2 = ba.data();
     this->setServer(c_str2, port);
-    this->watchDevice(MYQHYCCD5);
+    this->watchDevice(this->ccdINDIName->toLatin1());
     serverconnected= this->connectServer();
     if (serverconnected==true) {
-        this->setBLOBMode(B_ALSO, MYQHYCCD5, NULL);
+        this->setBLOBMode(B_ALSO, this->ccdINDIName->toLatin1(), NULL);
     }
     return serverconnected;
 }
@@ -120,7 +128,7 @@ void ccd_client::sendGain(int gain) {
 }
 //------------------------------------------
 void ccd_client::newDevice(INDI::BaseDevice *dp) {
-    if (!strcmp(dp->getDeviceName(), MYQHYCCD5)) {
+    if (!strcmp(dp->getDeviceName(), this->ccdINDIName->toLatin1())) {
         this->serverMessage->clear();
         this->serverMessage->append(dp->getDeviceName());
         emit messageFromINDIAvailable();
@@ -136,15 +144,15 @@ QString* ccd_client::getINDIServerMessage(void) {
 
 //------------------------------------------
 void ccd_client::newProperty(INDI::Property *property) {
-    if (!strcmp(property->getDeviceName(), MYQHYCCD5) && !strcmp(property->getName(), "CONNECTION")) {
-        connectDevice(MYQHYCCD5);
+    if (!strcmp(property->getDeviceName(), this->ccdINDIName->toLatin1()) && !strcmp(property->getName(), "CONNECTION")) {
+        connectDevice(this->ccdINDIName->toLatin1());
         return;
     }
 }
 
 //------------------------------------------
 void ccd_client::newMessage(INDI::BaseDevice *dp, int messageID) {
-     if (strcmp(dp->getDeviceName(), MYQHYCCD5)) {
+     if (strcmp(dp->getDeviceName(), this->ccdINDIName->toLatin1())) {
          return;
      }
      this->serverMessage->clear();

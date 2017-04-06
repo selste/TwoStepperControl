@@ -4,6 +4,7 @@
 TSC_GlobalData::TSC_GlobalData() {
 
     this->INDIServerIsConnected=false;
+    this->isInTrackingMode=false;
     initialStarPos.screenx=0;
     initialStarPos.screeny=0;
     initialStarPos.ccdx=0;
@@ -53,6 +54,16 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete BTMACAddress;
+}
+
+//-----------------------------------------------
+bool TSC_GlobalData::getTrackingMode(void) {
+    return this->isInTrackingMode;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setTrackingMode(bool isTracking) {
+    this->isInTrackingMode = isTracking;
 }
 
 //-----------------------------------------------

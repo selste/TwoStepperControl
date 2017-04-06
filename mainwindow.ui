@@ -1498,7 +1498,7 @@
         <rect>
          <x>10</x>
          <y>30</y>
-         <width>77</width>
+         <width>94</width>
          <height>60</height>
         </rect>
        </property>
@@ -1514,12 +1514,12 @@
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="rbV4LINDI">
+         <widget class="QRadioButton" name="rbZWOINDI">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
-           <string>V4L</string>
+           <string>ZWO ASI</string>
           </property>
          </widget>
         </item>

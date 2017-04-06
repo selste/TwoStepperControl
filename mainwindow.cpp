@@ -245,6 +245,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
     connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
+    connect(ui->rbQHYINDI, SIGNAL(released()), this, SLOT(setCCDNameForQHY5())); // connect a radiobutton for selecting the qhy5
+    connect(ui->rbZWOINDI, SIGNAL(released()), this, SLOT(setCCDNameForASI120mm())); // connect a radiobutton for selecting the zwo asi 120 mm
     connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
     connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
@@ -343,7 +345,7 @@ void MainWindow::updateReadings() {
     }
 
     this->isNthRunInEventLoop++;
-    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 3)){ // check the serial port for LX 200 commands, but only in each 10th run ...
+    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 9)){ // check the serial port for LX 200 commands, but only in each 10th run ...
         this->isNthRunInEventLoop=0;
         if (lx200port->getPortState() == 1) {
             lx200port->getDataFromSerialPort();
@@ -477,6 +479,7 @@ void MainWindow::startRATracking(void) {
     this->mountMotion.RAtrackingElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
     this->futureStepperBehaviourRATracking=QtConcurrent::run(this->StepperDriveRA, &QStepperPhidgetsRA::startTracking);
     this->setControlsForRATracking(false);
+    g_AllData->setTrackingMode(true);
 }
 
 //------------------------------------------------------------------
@@ -489,6 +492,7 @@ void MainWindow::stopRATracking(void) {
     while (!this->futureStepperBehaviourRATracking.isFinished()) {
     } // wait till the RA-tracking thread has died ...
     this->mountMotion.RATrackingIsOn = false;
+    g_AllData->setTrackingMode(false);
 }
 
 //------------------------------------------------------------------
@@ -959,12 +963,26 @@ void MainWindow::deployINDICommand(void) {
     if (ui->rbQHYINDI->isChecked()== true) {
         system("indiserver -v -m 100 indi_qhy_ccd &");
     }
-    if (ui->rbV4LINDI->isChecked()== true) {
-        system("indiserver -v -m 100 indi_v4l2_ccd &");
+    if (ui->rbZWOINDI->isChecked()== true) {
+        system("indiserver -v -m 100 indi_asi_ccd &");
     }
     ui->pbStartINDIServer->setEnabled(false);
     ui->rbQHYINDI->setEnabled(false);
-    ui->rbV4LINDI->setEnabled(false);
+    ui->rbZWOINDI->setEnabled(false);
+}
+
+
+//------------------------------------------------------------------
+// slots that tell the INDIserver which camera is connected - here it is
+// the qhy5 or alccd5 ...
+void MainWindow::setCCDNameForQHY5(void) {
+    this->camera_client->setCameraName("QHY CCD QHY5-0-M-");
+}
+
+//------------------------------------------------------------------
+// this one is for the ZW Optical ASI 120 MM
+void MainWindow::setCCDNameForASI120mm(void) {
+    this->camera_client->setCameraName("ZWO CCD ASI 120 MM-S");
 }
 
 //------------------------------------------------------------------
@@ -1818,9 +1836,17 @@ void MainWindow::LXsyncMount(void) {
 }
 
 //---------------------------------------------------------------------
-// trigger an emergency stop via LX 200
+// trigger a stop via LX 200; this is not an emergency halt, it just
+// terminates motion and goes into tracking state. some ASCOM drivers
+// spit out :Q# like hell. I am insecure of the meaning of this command;
+// in my opinion, it should stop all motion like an emergency stop, but
+// the documentation says only "stop slewing motion" ...
 void MainWindow::LXstopMotion(void) {
-    this->emergencyStop();
+
+    if ((this->guidingState.guidingIsOn == false) && (this->guidingState.calibrationIsRunning == false)) {
+        this->terminateAllMotion();
+        this->startRATracking();
+    }
 }
 
 //---------------------------------------------------------------------
