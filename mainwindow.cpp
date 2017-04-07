@@ -348,7 +348,6 @@ void MainWindow::updateReadings() {
         this->isNthRunInEventLoop = 0;
         if (lx200port->getPortState() == 1) {
             lx200port->getDataFromSerialPort();
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
         }
     }
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
@@ -1844,8 +1843,8 @@ void MainWindow::LXsyncMount(void) {
 void MainWindow::LXstopMotion(void) {
 
     if ((this->guidingState.guidingIsOn == false) && (this->guidingState.calibrationIsRunning == false)) {
-        this->terminateAllMotion();
-        this->startRATracking();
+  //      this->terminateAllMotion();
+  //      this->startRATracking();
     }
 }
 
