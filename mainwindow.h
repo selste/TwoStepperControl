@@ -106,7 +106,6 @@ private slots:
     void stopBTComm(void);
     void restartBTComm(void);
     void handleBTHandbox(void);
-    void handleST4State(void);
     void startST4Guiding(void);
     void stopST4Guiding(void);
 
@@ -171,7 +170,6 @@ private:
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
-    QTimer *st4Timer;
     lx200_communication *lx200port;
     bt_serialcomm *bt_Handbox;
     QPixmap *camImg;
@@ -226,6 +224,7 @@ private:
     void raPGFwdGd(long);
     void raPGBwdGd(long);
     void compensateDeclBacklashPG(short);
+    void handleST4State(void);
     void doDeclinationMoveForST4(short);
 };
 

@@ -31,10 +31,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
-    this->timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    this->timer->start(100); // check all 100 ms for events
-    this->st4Timer = new QTimer(this);
-    this->st4Timer->start(10); // check all 10 ms for ST4 readings from the GPIO line
+    QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
+    timer->start(25); // check all 25 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
 
     draccRA= g_AllData->getDriveParams(0,1);
@@ -229,7 +227,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
         // connecting signals and slots
     connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
-    connect(st4Timer, SIGNAL(timeout()), this, SLOT(handleST4State())); // this is the callback for ST4 readings
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
@@ -306,10 +303,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
     connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
     connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
-    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds())); // write incoming command from LX 200 to log
-    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA())); // receive RA from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl())); // receive decl from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds())); // write outgoing command from LX 200 to log
+    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
+    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
+    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
+    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage()),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
@@ -325,7 +322,6 @@ MainWindow::~MainWindow() {
     delete StepperDriveRA;
     delete StepperDriveDecl;
     delete timer;
-    delete st4Timer;
     delete textEntry;
     delete bt_HandboxCommand;
     delete lx200port;
@@ -343,9 +339,14 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    if (this->guidingState.st4IsActive== true) {
+        this->handleST4State();
+    }
+
     this->isNthRunInEventLoop++;
-    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 3)) {
-        this->isNthRunInEventLoop = 0;
+    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 9)){ // check the serial port for LX 200 commands, but only in each 10th run ...
+        this->isNthRunInEventLoop=0;
         if (lx200port->getPortState() == 1) {
             lx200port->getDataFromSerialPort();
         }
@@ -1168,7 +1169,7 @@ void MainWindow::updateCameraImage(void) {
 //------------------------------------------------------------------
 // correct guide star position here. called from "displayGuideCamImage".
 double MainWindow::correctGuideStarPosition(float cx, float cy) {
-    float residualX, residualY, devVector[2], devVectorRotated[2],sVect[2],currDev;
+    float devVector[2], devVectorRotated[2],errx,erry,err;
     long pgduration;
     QString logString;
 
@@ -1228,34 +1229,30 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         this->guidingLog->write(logString.toLatin1(),logString.length());
         logString.clear();
     }
+
+    // now compute the deviation
     devVector[0]=(this->guideStarPosition.centrX - cx);
     devVector[1]=(this->guideStarPosition.centrY - cy); // this is the deviation in pixel from the last position
-    if (this->guidingState.noOfGuidingSteps%2 == 1) { // in odd runs, just determine the error
-        residualX=devVector[0]*this->guiding->getArcSecsPerPix(0);
-        residualY=devVector[1]*this->guiding->getArcSecsPerPix(1);
-        currDev=sqrt(residualX*residualX+residualY*residualY);
-        if (currDev > this->guidingState.maxDevInArcSec) {
-            this->guidingState.maxDevInArcSec = currDev;
-        } // compute maximum error
-        qDebug() << "determined error in run # " << guidingState.noOfGuidingSteps;
-        ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
-    } else {
-        qDebug() << "corrected error in run # " << guidingState.noOfGuidingSteps;
-        sVect[0]=cx-this->guideStarPosition.centrX;
-        sVect[1]=cy-this->guideStarPosition.centrY;
-        if (ui->cbLogGuidingData->isChecked()==true) {
+    errx=devVector[0]*this->guiding->getArcSecsPerPix(0);
+    erry=devVector[1]*this->guiding->getArcSecsPerPix(1);
+    err=sqrt(errx*errx+erry*erry);
+    if (err > this->guidingState.maxDevInArcSec) {
+        this->guidingState.maxDevInArcSec = err;
+        ui->leMaxGuideErr->setText(textEntry->number(err));
+    }
+    if (ui->cbLogGuidingData->isChecked()==true) {
             logString.append("Current deviation:\t");
-            logString.append(QString::number((double)sVect[0],'g',3));
+            logString.append(QString::number((double)devVector[0],'g',3));
             logString.append("\t");
-            logString.append(QString::number((double)sVect[1],'g',3));
+            logString.append(QString::number((double)devVector[1],'g',3));
             logString.append("\n");
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
         }
-        devVectorRotated[0]=-(this->rotMatrixGuidingXToRA[0][0]*sVect[0]+this->rotMatrixGuidingXToRA[0][1]*sVect[1]);
-        devVectorRotated[1]=-(this->rotMatrixGuidingXToRA[1][0]*sVect[0]+this->rotMatrixGuidingXToRA[1][1]*sVect[1]);
-          // the deviation vector is rotated to the ra/decl coordinate system and inverted as we want to move in the other direction
-        if (ui->cbLogGuidingData->isChecked()==true) {
+    devVectorRotated[0]=(this->rotMatrixGuidingXToRA[0][0]*devVector[0]+this->rotMatrixGuidingXToRA[0][1]*devVector[1]);
+    devVectorRotated[1]=(this->rotMatrixGuidingXToRA[1][0]*devVector[0]+this->rotMatrixGuidingXToRA[1][1]*devVector[1]);
+    // the deviation vector is rotated to the ra/decl coordinate system and inverted as we want to move in the other direction
+    if (ui->cbLogGuidingData->isChecked()==true) {
             logString.append("Transformed position:\t");
             logString.append(QString::number((double)devVectorRotated[0],'g',3));
             logString.append("\t");
@@ -1263,70 +1260,71 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             logString.append("\n");
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
+    }
+
+    // carry out the correction in RA
+    if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
+        pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
+        if (ui->cbLogGuidingData->isChecked()==true) {
+            logString.append("RA correction duration:\t");
+            logString.append(QString::number((double)pgduration,'g',3));
+            logString.append("\n");
+            this->guidingLog->write(logString.toLatin1(),logString.length());
+            logString.clear();
         }
-        ui->leDevRA->setText(textEntry->number(devVectorRotated[0]));
-        ui->leDevDecl->setText(textEntry->number(devVectorRotated[1])); // display deviation in pixels
-        if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
-            pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
-            if (ui->cbLogGuidingData->isChecked()==true) {
-                logString.append("RA correction duration:\t");
-                logString.append(QString::number((double)pgduration,'g',3));
-                logString.append("\n");
-                this->guidingLog->write(logString.toLatin1(),logString.length());
-                logString.clear();
-            }
-            ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
-            ui->lePulseRAMS->setText(textEntry->number(pgduration));
-            if (devVectorRotated[0]>0) {
-                this->raPGBwdGd(pgduration);
-            } else {
-                this->raPGFwdGd(pgduration);
-            }
+        ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
+        ui->lePulseRAMS->setText(textEntry->number(pgduration));
+        if (devVectorRotated[0]>0) {
+            this->raPGBwdGd(pgduration);
+        } else {
+            this->raPGFwdGd(pgduration);
         }
-        if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
-            pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
-            if (ui->cbLogGuidingData->isChecked()==true) {
+    }
+
+    // carry out the correction in decl
+    if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
+        pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
+        if (ui->cbLogGuidingData->isChecked()==true) {
                 logString.append("Decl correction duration:\t");
                 logString.append(QString::number((double)pgduration,'g',3));
                 logString.append("\n");
                 this->guidingLog->write(logString.toLatin1(),logString.length());
                 logString.clear();
             }
-            if (devVectorRotated[1]>0) {
-                ui->cbDeclinationInverted->setChecked(false); // indicate that decl-direction indicator to false
-                if (this->guidingState.declinationDriveDirection < 0) {
-                    this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
-                    ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
-                    if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
-                        compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
-                        if (ui->cbLogGuidingData->isChecked()==true) {
+        if (devVectorRotated[1]>0) {
+            ui->cbDeclinationInverted->setChecked(false); // indicate that decl-direction indicator to false
+            if (this->guidingState.declinationDriveDirection < 0) {
+                this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
+                ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
+                if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
+                    compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                    if (ui->cbLogGuidingData->isChecked()==true) {
                             logString.append("Decl backlash activated.\n");
                             this->guidingLog->write(logString.toLatin1(),logString.length());
                             logString.clear();
                         }
-                    }
-                    ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 }
-                ui->lePulseDeclMS->setText(textEntry->number(pgduration));
-                this->declPGMinusGd(pgduration);
-            } else {
-                ui->cbDeclinationInverted->setChecked(false);
-                if (this->guidingState.declinationDriveDirection > 0) {
-                    this->guidingState.declinationDriveDirection = -1; // switch state to negative travel
-                    ui->cbDeclinationInverted->setChecked(true);
-                    if (ui->cbDeclBacklashComp->isChecked()==true) {
-                        compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
-                        if (ui->cbLogGuidingData->isChecked()==true) {
-                            logString.append("Decl backlash activated.\n");
-                            this->guidingLog->write(logString.toLatin1(),logString.length());
-                            logString.clear();
-                        }
-                    }
-                    ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
-                }
-                ui->lePulseDeclMS->setText(textEntry->number(pgduration));
-                this->declPGPlusGd(pgduration);
+                ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
             }
+            ui->lePulseDeclMS->setText(textEntry->number(pgduration));
+            this->declPGMinusGd(pgduration);
+        } else {
+            ui->cbDeclinationInverted->setChecked(false);
+            if (this->guidingState.declinationDriveDirection > 0) {
+                this->guidingState.declinationDriveDirection = -1; // switch state to negative travel
+                ui->cbDeclinationInverted->setChecked(true);
+                if (ui->cbDeclBacklashComp->isChecked()==true) {
+                    compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                if (ui->cbLogGuidingData->isChecked()==true) {
+                            logString.append("Decl backlash activated.\n");
+                            this->guidingLog->write(logString.toLatin1(),logString.length());
+                            logString.clear();
+                        }
+                }
+                ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+            }
+            ui->lePulseDeclMS->setText(textEntry->number(pgduration));
+            this->declPGPlusGd(pgduration);
         }
     }
     this->takeSingleCamShot(); // poll a new image
@@ -1475,8 +1473,6 @@ void MainWindow::calibrateAutoGuider(void) {
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->waitForCalibrationImage(); // small subroutine - waits for image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
-        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
         this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
         if (slewCounter%2==0) {
             this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
@@ -1682,7 +1678,7 @@ void MainWindow::changeGuideScopeFL(void) {
 }
 
 //------------------------------------------------------------------
-// store guide scope focal length to .twp preference file
+// store guide scope focal length to .tsp preference file
 void MainWindow::storeGuideScopeFL(void) {
     this->changeGuideScopeFL();
     g_AllData->storeGlobalData();
@@ -1843,8 +1839,8 @@ void MainWindow::LXsyncMount(void) {
 void MainWindow::LXstopMotion(void) {
 
     if ((this->guidingState.guidingIsOn == false) && (this->guidingState.calibrationIsRunning == false)) {
-  //      this->terminateAllMotion();
-  //      this->startRATracking();
+        this->terminateAllMotion();
+        this->startRATracking();
     }
 }
 
