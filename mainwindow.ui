@@ -2122,7 +2122,7 @@
               <number>0</number>
              </property>
              <property name="maximum">
-              <number>10000</number>
+              <number>15000</number>
              </property>
              <property name="singleStep">
               <number>50</number>
@@ -2340,12 +2340,20 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>208</width>
+          <height>70</height>
+         </rect>
+        </property>
         <layout class="QGridLayout" name="gridLayout_10">
          <item row="0" column="0">
           <widget class="QLabel" name="lMaxDevRA">
            <property name="text">
-            <string>Max. Dev RA [px]:</string>
+            <string>Max. Dev. RA [px]:</string>
            </property>
           </widget>
          </item>
@@ -2368,7 +2376,7 @@
          <item row="1" column="0">
           <widget class="QLabel" name="lMaxDevDecl">
            <property name="text">
-            <string>Max. Dev Decl [px]:</string>
+            <string>Max. Dev. Decl [px]:</string>
            </property>
           </widget>
          </item>
@@ -2390,7 +2398,15 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>160</y>
+          <width>210</width>
+          <height>58</height>
+         </rect>
+        </property>
         <layout class="QGridLayout" name="gridLayout_4">
          <item row="0" column="0">
           <widget class="QLabel" name="lRAPulse">
@@ -2440,65 +2456,11 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
-        <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <widget class="QCheckBox" name="cbDeclBacklashComp">
-           <property name="text">
-            <string>Compensate backlash</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_26">
-           <item>
-            <widget class="QCheckBox" name="cbDeclinationInverted">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lDeclInv">
-             <property name="minimumSize">
-              <size>
-               <width>180</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>180</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Declination inverted</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="cbLogGuidingData">
-           <property name="text">
-            <string>Log guidingdata</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>2</x>
-          <y>150</y>
+          <y>310</y>
           <width>204</width>
           <height>32</height>
          </rect>
@@ -2569,6 +2531,137 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>220</y>
+          <width>209</width>
+          <height>89</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <widget class="QCheckBox" name="cbDeclBacklashComp">
+           <property name="text">
+            <string>Compensate backlash</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_26">
+           <item>
+            <widget class="QCheckBox" name="cbDeclinationInverted">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lDeclInv">
+             <property name="minimumSize">
+              <size>
+               <width>180</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>180</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Declination inverted</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cbLogGuidingData">
+           <property name="text">
+            <string>Log guidingdata</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>80</y>
+          <width>211</width>
+          <height>58</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_8">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lDevRA">
+           <property name="text">
+            <string>Dev. RA [px}:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="leDevRaPix">
+           <property name="minimumSize">
+            <size>
+             <width>87</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lDevDecl">
+           <property name="text">
+            <string>Dev. Decl [px}:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="leDevDeclPix">
+           <property name="minimumSize">
+            <size>
+             <width>87</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <zorder>cbDeclBacklashComp</zorder>
+       <zorder>layoutWidget</zorder>
+       <zorder>layoutWidget</zorder>
+       <zorder>layoutWidget</zorder>
+       <zorder>layoutWidget</zorder>
+       <zorder>layoutWidget</zorder>
+       <zorder>cbLogGuidingData</zorder>
+       <zorder>lDevRA</zorder>
+       <zorder>lDevDecl</zorder>
+       <zorder>leDevRaPix</zorder>
+       <zorder>leDevDeclPix</zorder>
       </widget>
      </widget>
     </widget>

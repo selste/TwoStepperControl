@@ -216,6 +216,7 @@ private:
     void takeSingleCamShot(void);
     double correctGuideStarPosition(float, float);
     void waitForCalibrationImage(void);
+    void waitForDriveStop(bool,bool);
     bool abortCCDAcquisition(void);
     void displayCalibrationStatus(QString, float, QString);
     void displayCalibrationStatus(QString);
