@@ -45,15 +45,17 @@ public:
     void setGuidingState(bool);
     bool getTrackingMode(void);
     void setTrackingMode(bool);
+    void setSlewOnSyncIsTrue(bool);
+    bool getSlewOnSyncIsTrue(void);
     QImage* getCameraImage(void);
     QString* getBTMACAddress(void);
-
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
     bool INDIServerIsConnected;
     bool guidingState;
     bool isInTrackingMode;
+    bool slewOnSyncIsTrue; // the stellarium button - if a coordinate in LX200 is received, carry out a slew
     QImage *currentCameraImage;
     int guideScopeFocalLength;
     QString *BTMACAddress;

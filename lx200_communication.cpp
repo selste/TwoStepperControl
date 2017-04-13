@@ -23,6 +23,7 @@ lx200_communication::lx200_communication(void) {
     this->msgRAString = new QString();
     this->msgDeclString = new QString();
     this->subCmd = new QString();
+    this->lastSubCmd = new QString(); // a buffer holding the last command, just for protocols
     receivedRAFromLX = 0.0;
     receivedDeclFromLX = 0.0;
     gotRACoordinates = false;
@@ -66,6 +67,7 @@ lx200_communication::~lx200_communication(void) {
     delete msgRAString;
     delete msgDeclString;
     delete subCmd;
+    delete lastSubCmd;
 }
 
 //--------------------------------------------------------
@@ -116,10 +118,10 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     charsToBeRead=rs232port.bytesAvailable();
     if (charsToBeRead > 1) {
         this->serialData->append(rs232port.readAll());
-        charsRead=serialData->length();
         if (charsRead != -1) {
             this->incomingCommand->append(serialData->data());
-            qDebug() << "Incoming data" << this->incomingCommand->toLatin1();
+            this->lastSubCmd->clear();
+            this->lastSubCmd->append(this->incomingCommand->toLatin1());
             this->serialData->clear();
             subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
             if (subCmdList->isEmpty()==false) {
@@ -160,11 +162,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     QElapsedTimer *waitTimer;
 
     lx200cmd = new QString();
-    if ((cmd.length() == 1) && ((int)(cmd.toLatin1()[0])==6)){
-    // if LX200 sends <ACK> -> reply with P for forks, G for german equatorials or A for Alt/Az
-        rs232port.write("P");
-        return true; // exit here
-    }
     commandList = cmd.split('#',QString::SkipEmptyParts,Qt::CaseSensitive);
     numberOfCommands=commandList.count();
 
@@ -174,7 +171,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         lx200cmd->append(commandList[cmdCounter]);
 
         if (lx200cmd->startsWith(this->LX200Commands.slewRA,Qt::CaseSensitive)==1) {
-            assembledString->append(QString::number(1));
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(8));
             } else {
@@ -192,11 +188,11 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             this->receivedRAFromLX =(rah+ram/60.0+ras/3600.0)*15.0;
             delete numSubStr;        
             gotRACoordinates = true;
+            assembledString->append(QString::number(1));
             this->sendCommand(2);
             // got RA coordinates from LX200 ...
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
-            assembledString->append(QString::number(1));
             if (sendSimpleCoordinates==false) {
                 numSubStr = new QString(lx200cmd->right(9));
             } else {
@@ -218,7 +214,8 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             }
             this->receivedDeclFromLX =declSign*(fabs(decldeg)+declmin/60.0+declsec/3600.0);
             delete numSubStr;
-            gotDeclCoordinates = true;
+            this->gotDeclCoordinates = true;
+            assembledString->append(QString::number(1));
             this->sendCommand(2);
             // got Decl coordinates from LX200 ...
         }
@@ -232,7 +229,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
-                assembledString->append(QString::number(1));
+                assembledString->append(QString::number(0));
                 emit RS232slew();
                 this->sendCommand(2);
             }
@@ -441,7 +438,7 @@ double lx200_communication::getReceivedCoordinates(short what) {
 //---------------------------------------------------
 
 QString* lx200_communication::getLX200Command(void) {
-    return this->subCmd;
+    return this->lastSubCmd;
 }
 
 //---------------------------------------------------

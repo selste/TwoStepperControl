@@ -31,9 +31,13 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
-    QTimer *timer = new QTimer(this); // start the event timer ... this is NOT the microtimer for the mount
-    timer->start(25); // check all 25 ms for events
+    this->timer = new QTimer(); // start the event timer ... this is NOT the microtimer for the mount
+    this->timer->start(100); // check all 100 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
+    this->st4Timer = new QTimer();
+    this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
+    this->LX200Timer = new QTimer();
+    this->LX200Timer->start(250);
 
     draccRA= g_AllData->getDriveParams(0,1);
     draccDecl= g_AllData->getDriveParams(1,1);
@@ -109,7 +113,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
     this->guidingState.st4IsActive = false;
-    this->isNthRunInEventLoop=0;
 
         // now instantiate the GPIO - ports on the raspberry for ST 4 guiding
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
@@ -226,7 +229,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.btMoveWest=0;
 
         // connecting signals and slots
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
+    connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
+    connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
+    connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen(void))); // catalog selection
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
@@ -340,20 +345,11 @@ void MainWindow::updateReadings() {
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-    if (this->guidingState.st4IsActive== true) {
-        this->handleST4State();
-    }
 
-    this->isNthRunInEventLoop++;
-    if ((this->lx200IsOn) && (this->isNthRunInEventLoop > 9)){ // check the serial port for LX 200 commands, but only in each 10th run ...
-        this->isNthRunInEventLoop=0;
-        if (lx200port->getPortState() == 1) {
-            lx200port->getDataFromSerialPort();
-        }
-    }
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
     }
+
     if (this->mountMotion.RATrackingIsOn == true) { // standard mode - mount compensates for earth motion
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
         this->mountMotion.RAtrackingElapsedTimeInMS+=topicalTime; // total time elapsed in tracking mode
@@ -710,6 +706,8 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.GoToIsActiveInDecl=false; // declination is now done
         }
     }
+    this->mountMotion.GoToIsActiveInRA=false;
+    this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
     usleep(100); // just a little bit of rest :D
     this->stopRATracking(); // stop tracking, either for correction of for sync
     if (abs(timeDifference)>100) { // if the error in goto time estimation is bigger than 0.1 s, correcct in RA
@@ -1811,6 +1809,13 @@ void MainWindow::setRegularFOV(void) {
 // LX 200 related stuff
 //------------------------------------------------------------------
 //------------------------------------------------------------------
+// handle the serial port - called after timeout of the LX200Timer
+void MainWindow::readLX200Port(void) {
+    if ((this->lx200IsOn) && (lx200port->getPortState() == 1)) {
+        lx200port->getDataFromSerialPort();
+    }
+}
+
 //------------------------------------------------------------------
 // log incoming requests from LX 200
 void MainWindow::logLX200IncomingCmds(void) {
@@ -2326,6 +2331,15 @@ void MainWindow::RAMoveHandboxBwd(void) {
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 //--------------------------------------------------------------
+// slot called by timeout of ST4Timer
+void MainWindow::readST4Port(void) {
+    if (this->guidingState.st4IsActive== true) {
+        this->handleST4State();
+    }
+}
+
+//--------------------------------------------------------------
+// instantiates all variables for ST4
 void MainWindow::startST4Guiding(void) {
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();

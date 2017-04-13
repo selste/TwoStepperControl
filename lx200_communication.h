@@ -33,6 +33,7 @@ private:
     QString *msgDeclString;
     QString *incomingCommand;
     QString *subCmd;
+    QString *lastSubCmd;
     bool portIsUp;
     QByteArray *serialData;
     double receivedRAFromLX;

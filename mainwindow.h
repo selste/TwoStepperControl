@@ -83,6 +83,7 @@ private slots:
     void declPGMinus(void);
     void raPGFwd(void);
     void raPGBwd(void);
+    void readLX200Port(void);
     void logLX200IncomingCmds(void);
     void logLX200OutgoingCmds(void);
     void logLX200OutgoingCmdsRA(void);
@@ -106,6 +107,7 @@ private slots:
     void stopBTComm(void);
     void restartBTComm(void);
     void handleBTHandbox(void);
+    void readST4Port(void);
     void startST4Guiding(void);
     void stopST4Guiding(void);
 
@@ -170,6 +172,8 @@ private:
     QStepperPhidgetsRA *StepperDriveRA;
     QStepperPhidgetsDecl *StepperDriveDecl;
     QTimer *timer;
+    QTimer *st4Timer;
+    QTimer *LX200Timer;
     lx200_communication *lx200port;
     bt_serialcomm *bt_Handbox;
     QPixmap *camImg;
@@ -198,7 +202,6 @@ private:
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     float guidingFOVFactor;
     double rotMatrixGuidingXToRA[2][2];
-    quint64 isNthRunInEventLoop; // eventloop is checked every 25 ms, this one takes care that the serial port is only checked every 100 ms
     QString *textEntry;
     QString *bt_HandboxCommand;
     QFile *guidingLog;
