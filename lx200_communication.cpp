@@ -106,8 +106,10 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     qint64 charsToBeRead=0;
     qint64 charsRead=0;
     QStringList *subCmdList;
+    QString chopSCMD;
     int cmdCounter;
     QElapsedTimer *waitTimer;
+    long scmdLen;
 
     waitTimer = new QElapsedTimer();
     waitTimer->start();
@@ -120,6 +122,12 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
         this->serialData->append(rs232port.readAll());
         if (charsRead != -1) {
             this->incomingCommand->append(serialData->data());
+            // now take care of the LX 200 classic protocol which establishes communication by
+            // sending an <ACK> and receiving a character on the mount type. nothing but forks are directly supported yet
+            if ((int)((this->incomingCommand->toLatin1())[0])==6) {
+                rs232port.write("P");
+                rs232port.flush();
+            }
             this->lastSubCmd->clear();
             this->lastSubCmd->append(this->incomingCommand->toLatin1());
             this->serialData->clear();
@@ -128,6 +136,12 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 for (cmdCounter = 0; cmdCounter < (subCmdList->length()-1); cmdCounter++) {
                     this->subCmd->append(subCmdList->at(cmdCounter));
                     this->subCmd->remove("#");
+                    if (this->subCmd->startsWith(":",Qt::CaseSensitive)==true) {
+                        scmdLen=this->subCmd->length();
+                        chopSCMD=this->subCmd->right((scmdLen-1));
+                        this->subCmd->clear();
+                        this->subCmd->append(chopSCMD);
+                    } // some people send commands starting with two ":" - don't ask me why ...
                     this->handleBasicLX200Protocol(*subCmd);                
                     emit this->RS232CommandReceived();
                     this->subCmd->clear();
@@ -141,6 +155,12 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
                 } else {
                     this->subCmd->remove("#:");
                     this->subCmd->remove("#");
+                    if (this->subCmd->startsWith(":",Qt::CaseSensitive)==true) {
+                        scmdLen=this->subCmd->length();
+                        chopSCMD=this->subCmd->right((scmdLen-1));
+                        this->subCmd->clear();
+                        this->subCmd->append(chopSCMD);
+                    }
                     this->handleBasicLX200Protocol(*subCmd);
                     emit this->RS232CommandReceived();
                     this->subCmd->clear();
