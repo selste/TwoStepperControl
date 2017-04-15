@@ -213,7 +213,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->objCatalog=NULL; // the topical catalogue
     this->ra = 0.0;
     this->decl = 0.0; // the sync position - no sync for the mount was carried out - these are displayed in the GOTO textentry
-    this->camView = new QDisplay2D(ui->camTab,425,340); // make the clicakble scene view of 425 x 340 pixels
+    this->camView = new QDisplay2D(ui->camTab,550,400); // make the clickable scene view of 425 x 340 pixels
     this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0),g_AllData->getCameraDisplaySize(1)); // store the size of the scene view in the global parameter class
     this->camImageWasReceived=false; // no camera image came in yet ...
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
@@ -260,6 +260,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
     connect(ui->rbQHYINDI, SIGNAL(released()), this, SLOT(setCCDNameForQHY5())); // connect a radiobutton for selecting the qhy5
     connect(ui->rbZWOINDI, SIGNAL(released()), this, SLOT(setCCDNameForASI120mm())); // connect a radiobutton for selecting the zwo asi 120 mm
+    connect(ui->rbV4L2INDI, SIGNAL(released()), this, SLOT(setCCDNameForV4L())); // connect a radiobutton for selecting standard video sources
     connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
     connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
@@ -279,12 +280,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStoreDrive, SIGNAL(clicked()), this, SLOT(storeDriveData())); // store data to preferences
     connect(ui->pbGoTo, SIGNAL(clicked()),this, SLOT(startGoToObject())); // start the slew routine
     connect(ui->pbLX200Active, SIGNAL(clicked()), this, SLOT(switchToLX200())); // open the serial port for LX 200
-    connect(ui->pbGetCCDParams, SIGNAL(clicked()), this, SLOT(getCCDParameters())); // read pixel and frame size for the ccd
     connect(ui->pbStoreCCDParams, SIGNAL(clicked()), this, SLOT(storeCCDData())); // store pixel and frame size for the ccd
     connect(ui->pbStartINDIServer, SIGNAL(clicked()), this, SLOT(deployINDICommand())); // call a system command to start an INDI server with given driver parameters
     connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
-    connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus())); // pulse guide for a given amount of time defined in a spinbox
@@ -354,11 +353,9 @@ void MainWindow::updateReadings() {
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
     }
-
     if (this->mountMotion.RATrackingIsOn == true) { // standard mode - mount compensates for earth motion
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
         this->mountMotion.RAtrackingElapsedTimeInMS+=topicalTime; // total time elapsed in tracking mode
@@ -942,9 +939,9 @@ void MainWindow::setINDISAddrAndPort(void) {
     if (isServerUp==true) {
         ui->pbExpose->setEnabled(true);
         ui->cbIndiIsUp->setChecked(true);
-        ui->pbGetCCDParams->setEnabled(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
         sleep(1);
+        this->getCCDParameters();
         gainVal=ui->sbCCDGain->value();
         camera_client->sendGain(gainVal);
     }
@@ -966,7 +963,7 @@ void MainWindow::handleServerMessage(void) {
 // deploy a system command to start an INDI server locally with standard parameters.
 // type of server is defined by radiobuttons, only QHY until now supported ...
 void MainWindow::deployINDICommand(void) {
-    int retval;
+    int retval = 0;
 
     if (ui->rbQHYINDI->isChecked()== true) {
         retval = system("indiserver -v -m 100 indi_qhy_ccd &");
@@ -974,10 +971,13 @@ void MainWindow::deployINDICommand(void) {
     if (ui->rbZWOINDI->isChecked()== true) {
         retval = system("indiserver -v -m 100 indi_asi_ccd &");
     }
-    qDebug() << "return value of system" << retval;
+    if (ui->rbV4L2INDI->isChecked()== true) {
+        retval = system("indiserver -v -m 100 indi_v4l2_ccd &");
+    }
     ui->pbStartINDIServer->setEnabled(false);
     ui->rbQHYINDI->setEnabled(false);
     ui->rbZWOINDI->setEnabled(false);
+    ui->rbV4L2INDI->setEnabled(false);
 }
 
 
@@ -992,6 +992,13 @@ void MainWindow::setCCDNameForQHY5(void) {
 // this one is for the ZW Optical ASI 120 MM
 void MainWindow::setCCDNameForASI120mm(void) {
     this->camera_client->setCameraName("ZWO CCD ASI120MM-S");
+}
+
+//------------------------------------------------------------------
+// this one is for the Video4Linux2 video sources
+void MainWindow::setCCDNameForV4L(void) {
+    this->camera_client->setCameraName("V4L2 CCD");
+    ui->sbCCDGain->setEnabled(false);
 }
 
 //------------------------------------------------------------------

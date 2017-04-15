@@ -82,6 +82,7 @@ void QDisplay2D::mousePressEvent(QMouseEvent *event) {
             changeLinePos(sceneEventpos.x(), sceneEventpos.y());
             if(this->bg != NULL) {
                 g_AllData->setInitialStarPosition((float)sceneEventpos.x(),(float)sceneEventpos.y());
+
                 // store the position of the mouseclick; the method also
                 // computes the position in CCD-chip coordinates
                 emit currentViewStatusSignal(QPointF(this->cursorV->line().x1(), this->cursorH->line().y1()));

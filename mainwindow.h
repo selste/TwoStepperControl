@@ -45,6 +45,7 @@ private slots:
     void changeCCDGain(void);
     void setCCDNameForQHY5(void);
     void setCCDNameForASI120mm(void);
+    void setCCDNameForV4L(void);
     void syncMount(void);
     void storeGearData(void);
     void storeDriveData(void);
@@ -75,7 +76,6 @@ private slots:
     void LXslewMount(void);
     void displayGuideCamImage(void);
     void emergencyStop(void);
-    bool getCCDParameters(void);
     void storeCCDData(void);
     void handleServerMessage(void);
     void deployINDICommand(void);
@@ -231,6 +231,7 @@ private:
     void compensateDeclBacklashPG(short);
     void handleST4State(void);
     void doDeclinationMoveForST4(short);
+    bool getCCDParameters(void);
 };
 
 #endif // MAINWINDOW_H

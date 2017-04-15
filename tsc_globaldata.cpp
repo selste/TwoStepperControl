@@ -9,8 +9,8 @@ TSC_GlobalData::TSC_GlobalData() {
     initialStarPos.screeny=0;
     initialStarPos.ccdx=0;
     initialStarPos.ccdy=0;
-    cameraDisplaySize.width=425;
-    cameraDisplaySize.height=340;
+    cameraDisplaySize.width=500;
+    cameraDisplaySize.height=500;
     cameraDisplaySize.scalingFactor=1;
     cameraParameters.pixelSizeMicronsX=5.2;
     cameraParameters.pixelSizeMicronsY=5.2;
@@ -158,8 +158,6 @@ void TSC_GlobalData::setInitialStarPosition(float screenx, float screeny) {
     this->initialStarPos.screeny = screeny;
     this->initialStarPos.ccdx=screenx/this->cameraDisplaySize.scalingFactor;
     this->initialStarPos.ccdy=screeny/this->cameraDisplaySize.scalingFactor;
-//    this->initialStarPos.ccdy=(int)(-this->initialStarPos.ccdy+this->cameraParameters.chipHeight);
-    // the FITS image is mirrored before display, so we re-mirror it ... this is probably bullshit!
 }
 
 //-----------------------------------------------

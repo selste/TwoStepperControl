@@ -19,6 +19,7 @@ using namespace std;
 
 // qhy5 is "QHY CCD QHY5-0-M-"
 // asi 120mm is "ZWO CCD ASI120MM-S"
+// video 4 linux is "V4L2 CCD"
 
 extern TSC_GlobalData *g_AllData;
 
@@ -183,46 +184,39 @@ bool ccd_client::getCCDParameters(void) {
 }
 
 //------------------------------------------
-
-void ccd_client::newBLOB(IBLOB *bp) {
-    // receive a FITS file from the server ...
+// receive a FITS file from the server.
     // header is 2880, image is 1280x1024
+void ccd_client::newBLOB(IBLOB *bp) {
     char *fitsdata;
-    QImage *smallQImage, *mimage;
-    ofstream fitsfile;
+    QImage *smallQImage;
     int imgwidth, imgheight,widgetWidth,widgetHeight;
     float sfw,sfh;
     QString *efilename;
 
     fitsdata = static_cast<char *>(bp->blob);
     // casting the INDI-BLOB containing the image data in FITS to an array of uints ...
-
     fitsdata=fitsdata+2880;
-    // skipping the header which is 2880 bytes for the fits from the QHY5
-
+    // skipping the header which is 2880 bytes for the fits from the server
     imgwidth = g_AllData->getCameraChipPixels(0);
     imgheight = g_AllData->getCameraChipPixels(1);
     //retrieving the number of pixels on the chip
-
     fitsqimage = new QImage((uchar*)fitsdata, imgwidth, imgheight, QImage::Format_Indexed8);
     fitsqimage->setColorTable(*myVec);
     g_AllData->storeCameraImage(*fitsqimage);
-    mimage = new QImage(fitsqimage->mirrored(0,1));
     // read the image data into a QImage, set a grayscale LUT, and mirror the image ...
     if (this->storeCamImages==true) {
         efilename=new QString("GuideCameraImage");
         efilename->append(QString::number((double)expcounter,1,0));
         efilename->append(".jpg");
-        mimage->save(efilename->toLatin1(),0,-1);
+        fitsqimage->save(efilename->toLatin1(),0,-1);
         this->expcounter++;
         delete efilename;
     }
-
     widgetWidth=g_AllData->getCameraDisplaySize(0);
     widgetHeight=g_AllData->getCameraDisplaySize(1);
     sfw = widgetWidth/(float)imgwidth;
     sfh = widgetHeight/(float)imgheight;
-    if (sfw > sfh) {
+    if (sfw < sfh) {
         g_AllData->setCameraImageScalingFactor(sfw);
     } else {
         g_AllData->setCameraImageScalingFactor(sfh);
@@ -247,19 +241,11 @@ void ccd_client::newBLOB(IBLOB *bp) {
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
 
-    g_AllData->storeCameraImage(*mimage);
-    smallQImage = new QImage(mimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));
-    //smallQImage->save("SmallTestCameraImage.jpg",0,-1);
-    // uncomment if you want to see the QImage ...
-
+    g_AllData->storeCameraImage(*fitsqimage);
+    smallQImage = new QImage(fitsqimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));
     displayPMap->convertFromImage(*smallQImage,0);
     delete smallQImage;
-    delete mimage;
     emit this->imageAvailable();
-//    fitsfile.open ("ccd.fits", ios::out | ios::binary);
-//    fitsfile.write(static_cast<char *> (bp->blob), bp->bloblen);
-//    fitsfile.close();
-    // uncomment to save the FITS-file from the INDI-server ...
 }
 
 //------------------------------------------
