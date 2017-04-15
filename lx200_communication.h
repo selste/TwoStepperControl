@@ -66,6 +66,16 @@ private:
         QString setFindSpeed;
         QString setGOTOSpeed;
         QString stopMotion;
+        QString getCalendarFormat;
+        QString getName;
+        QString getDate;
+        QString getTrackingRate;
+        QString getLatitude;
+        QString getLongitude;
+        QString getUTCOffset;
+        QString getLocalTime;
+        QString setLocalTime;
+        QString setLongitude;
     };
     struct LX200CommandStruct LX200Commands;
 signals:

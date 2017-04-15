@@ -982,7 +982,7 @@ void MainWindow::setCCDNameForQHY5(void) {
 //------------------------------------------------------------------
 // this one is for the ZW Optical ASI 120 MM
 void MainWindow::setCCDNameForASI120mm(void) {
-    this->camera_client->setCameraName("ZWO CCD ASI 120 MM-S");
+    this->camera_client->setCameraName("ZWO CCD ASI120MM-S");
 }
 
 //------------------------------------------------------------------
@@ -2350,7 +2350,7 @@ void MainWindow::startST4Guiding(void) {
     ui->catTab->setEnabled(false);
     ui->camTab->setEnabled(false);
     ui->gearTab->setEnabled(false);
-    ui->gbLX200->setEnabled(false);
+    ui->tabLX200->setEnabled(false);
     ui->gbBluetooth->setEnabled(false);
     ui->gbINDI->setEnabled(false);
     ui->pbStartST4->setEnabled(false);
@@ -2371,7 +2371,7 @@ void MainWindow::stopST4Guiding(void) {
     ui->catTab->setEnabled(true);
     ui->camTab->setEnabled(true);
     ui->gearTab->setEnabled(true);
-    ui->gbLX200->setEnabled(true);
+    ui->tabLX200->setEnabled(true);
     ui->gbBluetooth->setEnabled(true);
     ui->gbINDI->setEnabled(true);
     ui->pbStartST4->setEnabled(true);
@@ -2447,12 +2447,14 @@ void MainWindow::handleST4State(void) {
         }
         if (this->ST4stateDurations.declTimeMeasurementActive == false) {
             if (this->ST4stateDurations.dpDuration > 1) {
+                ui->lcdPulseDecl->display((int)this->ST4stateDurations.dpDuration);
                 ui->cbST4North->setChecked(true);
-                this->declPGPlusGd(this->ST4stateDurations.dpDuration);
+                this->declPGPlusGd(this->ST4stateDurations.dpDuration);          
                 ui->cbST4North->setChecked(false);
                 this->ST4stateDurations.dpDuration = 0;
             }
             if (this->ST4stateDurations.dmDuration > 1) {
+                ui->lcdPulseDecl->display((int)this->ST4stateDurations.dmDuration);
                 ui->cbST4South->setChecked(true);
                 this->declPGMinusGd(this->ST4stateDurations.dmDuration);
                 ui->cbST4South->setChecked(false);
@@ -2461,12 +2463,14 @@ void MainWindow::handleST4State(void) {
         }
         if (this->ST4stateDurations.RATimeMeasurementActive == false) {
             if (this->ST4stateDurations.rpDuration > 1) {
+                ui->lcdPulseDecl->display((int)this->ST4stateDurations.rpDuration);
                 ui->cbST4West->setChecked(true);
                 this->raPGFwdGd(this->ST4stateDurations.rpDuration);
                 ui->cbST4West->setChecked(false);
                 this->ST4stateDurations.rpDuration = 0;
             }
             if (this->ST4stateDurations.rmDuration > 1) {
+                ui->lcdPulseDecl->display((int)this->ST4stateDurations.rmDuration);
                 ui->cbST4East->setChecked(true);
                 this->raPGBwdGd(this->ST4stateDurations.rmDuration);
                 ui->cbST4East->setChecked(false);

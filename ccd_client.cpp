@@ -18,7 +18,7 @@
 using namespace std;
 
 // qhy5 is "QHY CCD QHY5-0-M-"
-// asi 120mm is "ZWO CCD ASI 120 MM-S"
+// asi 120mm is "ZWO CCD ASI120MM-S"
 
 extern TSC_GlobalData *g_AllData;
 

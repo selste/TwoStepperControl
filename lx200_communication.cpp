@@ -49,6 +49,16 @@ lx200_communication::lx200_communication(void) {
     LX200Commands.setGuideSpeed = QString("RG");
     LX200Commands.setFindSpeed = QString("RM");
     LX200Commands.setGOTOSpeed = QString("RS");
+    LX200Commands.getCalendarFormat  = QString("Gc");
+    LX200Commands.getDate = QString("GC");
+    LX200Commands.getName = QString("GM");
+    LX200Commands.getTrackingRate = QString("GT");
+    LX200Commands.getLatitude = QString("Gt");
+    LX200Commands.getLongitude = QString("Gg");
+    LX200Commands.getUTCOffset = QString("GG");
+    LX200Commands.getLocalTime = QString("GL");
+    LX200Commands.setLocalTime = QString("SL");
+    LX200Commands.setLongitude = QString("Sg");
 }
 
 //--------------------------------------------------------
@@ -209,6 +219,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             delete numSubStr;        
             gotRACoordinates = true;
             assembledString->append(QString::number(1));
+            assembledString->append("#");
             this->sendCommand(2);
             // got RA coordinates from LX200 ...
         }
@@ -236,6 +247,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             delete numSubStr;
             this->gotDeclCoordinates = true;
             assembledString->append(QString::number(1));
+            assembledString->append("#");
             this->sendCommand(2);
             // got Decl coordinates from LX200 ...
         }
@@ -250,6 +262,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
                 assembledString->append(QString::number(0));
+                assembledString->append("#");
                 emit RS232slew();
                 this->sendCommand(2);
             }
@@ -327,6 +340,45 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getHiDef, Qt::CaseSensitive)==0) {
             // ignore this as we are always sending in high resolution
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getCalendarFormat, Qt::CaseSensitive)==0) {
+            assembledString->append(QString::number(24));
+            assembledString->append("#");
+            this->sendCommand(2);
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getName, Qt::CaseSensitive)==0) {
+            assembledString->append("TSC#");
+            this->sendCommand(2);
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getTrackingRate, Qt::CaseSensitive)==0) {
+            assembledString->append("50.0#"); // completely pointless as we are using steppers, not synchro drives
+            this->sendCommand(2);
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getDate, Qt::CaseSensitive)==0) {
+            // nothing yet
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLatitude, Qt::CaseSensitive)==0) {
+            // nothing yet
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLongitude, Qt::CaseSensitive)==0) {
+            // nothing yet
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getUTCOffset, Qt::CaseSensitive)==0) {
+            // nothing yet
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLocalTime, Qt::CaseSensitive)==0) {
+            // nothing yet
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getDate, Qt::CaseSensitive)==0) {
+            // nothing yet
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setLocalTime, Qt::CaseSensitive)==0) {
+            assembledString->append("1"); // time is not being handled yet, we just act as if it's ok
+            this->sendCommand(2);
+        }
+        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setLongitude, Qt::CaseSensitive)==0) {
+            assembledString->append("1"); // longitude is not being handled yet, we just act as if it's ok
+            this->sendCommand(2);
         }
     }
     delete lx200cmd;
