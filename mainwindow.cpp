@@ -177,6 +177,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
     ui->leFrameSizeY->setText(textEntry->number(g_AllData->getCameraChipPixels(1)));
     textEntry->clear();
+        // now setting parameters in the "Settings"-tab
+    ui->leControllerName->setText(g_AllData->getSiteName());
+    ui->leLat->setText(textEntry->number(g_AllData->getSiteCoords(0)));
+    textEntry->clear();
+    ui->leLong->setText(textEntry->number(g_AllData->getSiteCoords(1)));
+    textEntry->clear();
+    ui->leUTCOffs->setText(textEntry->number(g_AllData->getSiteCoords(2)));
+    textEntry->clear();
 
         // camera and guiding class are instantiated
     camera_client = new ccd_client(); // install a camera client for guiding via INDI
@@ -261,6 +269,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
     connect(ui->pbSync, SIGNAL(clicked()), this, SLOT(syncMount())); // reset the current position and global timer, and set the global mount position to the actual coordinates
     connect(ui->pbStoreGears, SIGNAL(clicked()), this, SLOT(storeGearData())); // well - take the data from the dialog and store them in the .tsp file and in g_AllData
+    connect(ui->pbStoreSiteData, SIGNAL(clicked()), this, SLOT(storeSiteData())); // store information the observatory position and so on
     connect(ui->pbStartTracking, SIGNAL(clicked()),this,SLOT(startRATracking())); // start earth motion compensation in RA
     connect(ui->pbStopTracking, SIGNAL(clicked()),this,SLOT(stopRATracking())); // stop earth motion compensation in RA
     connect(ui->pbDeclUp, SIGNAL(clicked()),this,SLOT(declinationMoveHandboxUp())); // manual motion of the handbox - decl up
@@ -2965,6 +2974,26 @@ void MainWindow::storeDriveData(void) {
     this->StepperDriveRA->setStepperParams(g_AllData->getDriveParams(0,2),3);//current
     this->StepperDriveDecl->setStepperParams(g_AllData->getDriveParams(1,1),1);//acc
     this->StepperDriveDecl->setStepperParams(g_AllData->getDriveParams(1,2),3);//current
+}
+
+//------------------------------------------------------------------
+// store data site from the GUI to the global data and to the .tsp file ...
+void MainWindow::storeSiteData(void)  {
+    double guilat, guilong, guiUTCOffs;
+    QString *leEntry;
+
+    leEntry = new QString(ui->leLat->text());
+    guilat=leEntry->toDouble();
+    leEntry->clear();
+    leEntry->append(ui->leLong->text());
+    guilong=leEntry->toDouble();
+    leEntry->clear();
+    leEntry->append(ui->leUTCOffs->text());
+    guiUTCOffs=leEntry->toDouble();
+    delete leEntry;
+    g_AllData->setSiteParams(guilat,guilong,guiUTCOffs);
+    g_AllData->setSiteParams(ui->leControllerName->text());
+    g_AllData->storeGlobalData();
 }
 
 //----------------------------------------------------------------------

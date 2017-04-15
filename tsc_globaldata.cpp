@@ -30,22 +30,26 @@ TSC_GlobalData::TSC_GlobalData() {
     this->guidingState=false;
     this->BTMACAddress=new QString("98:D3:31:FB:2A:8C");
     if (this->loadGlobalData() == false) {
-        gearData.planetaryRatioRA=9;
-        gearData.gearRatioRA=1;
-        gearData.wormSizeRA=288;
-        gearData.stepSizeRA=1.8;
-        gearData.planetaryRatioDecl=9;
-        gearData.gearRatioDecl=1;
-        gearData.wormSizeDecl=213;
-        gearData.stepSizeDecl=1.8;
-        gearData.microsteps=16;
-        driveData.RAControllerID=-1;
-        driveData.DeclControllerID=-1;
+        this->gearData.planetaryRatioRA=9;
+        this->gearData.gearRatioRA=1;
+        this->gearData.wormSizeRA=288;
+        this->gearData.stepSizeRA=1.8;
+        this->gearData.planetaryRatioDecl=9;
+        this->gearData.gearRatioDecl=1;
+        this->gearData.wormSizeDecl=213;
+        this->gearData.stepSizeDecl=1.8;
+        this->gearData.microsteps=16;
+        this->driveData.RAControllerID=-1;
+        this->driveData.DeclControllerID=-1;
         this->driveData.driveAccRA=10000;
         this->driveData.driveAccDecl=10000;
         this->driveData.driveCurrRA=1.0;
         this->driveData.driveCurrDecl=1.0;
-        guideScopeFocalLength=1000;
+        this->guideScopeFocalLength=1000;
+        this->siteParams.latitude=48.0;
+        this->siteParams.longitude=15.0;
+        this->siteParams.UTCOffset=1.0;
+        this->siteParams.siteName=QString("TSC");
     }
 }
 
@@ -54,6 +58,42 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete BTMACAddress;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setSiteParams(double llat, double llong, double UTCOff) {
+    if ((llat >= -90) && (llat <= 90)) {
+        this->siteParams.latitude=llat;
+    }
+    if ((llat >= -180) && (llat <= 180)) {
+        this->siteParams.longitude=llong;
+    }
+    if ((UTCOff >=-12) && (UTCOff <= 12)) {
+        this->siteParams.UTCOffset=UTCOff;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setSiteParams(QString name) {
+    this->siteParams.siteName.clear();
+    this->siteParams.siteName.append(name);
+}
+
+//-----------------------------------------------
+double TSC_GlobalData::getSiteCoords(short what) {
+    double retval = 0;
+
+    switch (what) {
+        case 0: retval = this->siteParams.latitude; break;
+        case 1: retval = this->siteParams.longitude; break;
+        case 2: retval = this->siteParams.UTCOffset; break;
+    }
+    return retval;
+}
+
+//-----------------------------------------------
+QString TSC_GlobalData::getSiteName(void) {
+    return this->siteParams.siteName;
 }
 
 //-----------------------------------------------
@@ -484,6 +524,22 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Focal length of guidescope.\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr = std::to_string(this->siteParams.latitude);
+    ostr.append("// Latitude of observation site.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->siteParams.longitude);
+    ostr.append("// Longitude of observation site.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->siteParams.UTCOffset);
+    ostr.append("// UTC Offset of Observation site.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(this->siteParams.siteName.toLatin1());
+    ostr.append("// Latitude of Observation site.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -577,7 +633,22 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream iscguidescopefl(line);
     iscguidescopefl >> this->guideScopeFocalLength;
-    infile.close(); // close the reading file for preference
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream islat(line);
+    islat >> this->siteParams.latitude;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream islong(line);
+    islong >> this->siteParams.longitude;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isutcoffs(line);
+    isutcoffs >> this->siteParams.UTCOffset;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    this->siteParams.siteName.append(line.data());
+    infile.close(); // close the reading file for preferences
     return true;
 }
 

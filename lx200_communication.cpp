@@ -135,7 +135,7 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
             // now take care of the LX 200 classic protocol which establishes communication by
             // sending an <ACK> and receiving a character on the mount type. nothing but forks are directly supported yet
             if ((int)((this->incomingCommand->toLatin1())[0])==6) {
-                rs232port.write("P");
+                rs232port.write("P#");
                 rs232port.flush();
             }
             this->lastSubCmd->clear();
@@ -186,8 +186,8 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
 bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
     QString *lx200cmd, *numSubStr;
     QStringList commandList,numericalList;
-    int numberOfCommands, cmdCounter;
-    double rah,ram,ras,decldeg,declmin,declsec;
+    int numberOfCommands, cmdCounter,toDegs, coordMins;
+    double rah,ram,ras,decldeg,declmin,declsec,llong,llat,lutc,toMins;
     short declSign;
     QElapsedTimer *waitTimer;
 
@@ -347,7 +347,8 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             this->sendCommand(2);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getName, Qt::CaseSensitive)==0) {
-            assembledString->append("TSC#");
+            assembledString->append(g_AllData->getSiteName().toLatin1());
+            assembledString->append("#");
             this->sendCommand(2);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getTrackingRate, Qt::CaseSensitive)==0) {
@@ -358,13 +359,65 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             // nothing yet
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLatitude, Qt::CaseSensitive)==0) {
-            // nothing yet
+            llat=g_AllData->getSiteCoords(0);
+            if (llat < 0) {
+                assembledString->append("-");
+            } else {
+                assembledString->append("+");
+            }
+            toDegs=(floor(fabs(llat)));
+            if (toDegs < 10) {
+                assembledString->append("0");
+            }
+            assembledString->append(QString::number(toDegs));
+            assembledString->append("*");
+            toMins=fabs(llat)-fabs(floor(llat));
+            coordMins=round(toMins*60);
+            if (coordMins < 10) {
+                assembledString->append("0");
+            }
+            assembledString->append(QString::number(coordMins));
+            assembledString->append("#");
+            this->sendCommand(2);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLongitude, Qt::CaseSensitive)==0) {
-            // nothing yet
+            llong=g_AllData->getSiteCoords(1);
+            if (llong < 0) {
+                assembledString->append("-");
+            } else {
+                assembledString->append("+");
+            }
+            toDegs=(floor(fabs(llong)));
+            if (toDegs < 10) {
+                assembledString->append("00");
+            }
+            if (toDegs < 100) {
+                assembledString->append("0");
+            }
+            assembledString->append(QString::number(toDegs));
+            assembledString->append("*");
+            toMins=fabs(llong)-fabs(floor(llong));
+            coordMins=round(toMins*60);
+            if (coordMins < 10) {
+                assembledString->append("0");
+            }
+            assembledString->append(QString::number(coordMins));
+            assembledString->append("#");
+            this->sendCommand(2);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getUTCOffset, Qt::CaseSensitive)==0) {
-            // nothing yet
+            lutc=g_AllData->getSiteCoords(2);
+            if (lutc < 0) {
+                assembledString->append("-");
+            } else {
+                assembledString->append("+");
+            }
+            if (fabs(lutc) < 10) {
+                assembledString->append("0");
+            }
+            assembledString->append(QString::number(fabs(lutc)));
+            assembledString->append("#");
+            this->sendCommand(2);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLocalTime, Qt::CaseSensitive)==0) {
             // nothing yet
@@ -373,11 +426,11 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             // nothing yet
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setLocalTime, Qt::CaseSensitive)==0) {
-            assembledString->append("1"); // time is not being handled yet, we just act as if it's ok
+            assembledString->append("1"); // time is not being set by software, we just act as if it's ok
             this->sendCommand(2);
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.setLongitude, Qt::CaseSensitive)==0) {
-            assembledString->append("1"); // longitude is not being handled yet, we just act as if it's ok
+            assembledString->append("1"); // longitude is not being set by software, we just act as if it's ok
             this->sendCommand(2);
         }
     }

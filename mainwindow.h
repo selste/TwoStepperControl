@@ -110,6 +110,7 @@ private slots:
     void readST4Port(void);
     void startST4Guiding(void);
     void stopST4Guiding(void);
+    void storeSiteData(void);
 
 private:
     struct mountMotionStruct {

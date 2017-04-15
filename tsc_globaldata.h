@@ -39,14 +39,16 @@ public:
     double getActualScopePosition(short); // 0 for hour angle, 1 for decl, 2 for RA
     void incrementActualScopePosition(double, double); // add hour angle and decl increments
     void storeCameraImage(QImage);
-    void setGuideScopeFocalLength(int);
+    void setGuideScopeFocalLength(int); // FL of guidescope in mm
     int getGuideScopeFocalLength(void);
-    bool getGuidingState(void);
+    bool getGuidingState(void); // check if system is in autoguiding state
     void setGuidingState(bool);
-    bool getTrackingMode(void);
+    bool getTrackingMode(void); // a global variable checking if the mount is tracking or slewing
     void setTrackingMode(bool);
-    void setSlewOnSyncIsTrue(bool);
-    bool getSlewOnSyncIsTrue(void);
+    void setSiteParams(double, double, double); // latitude, longitude and UTC offset of site
+    void setSiteParams(QString); // set the name of the site
+    double getSiteCoords(short); // get coordinates of site
+    QString getSiteName(void); // get name of site
     QImage* getCameraImage(void);
     QString* getBTMACAddress(void);
 
@@ -55,7 +57,6 @@ private:
     bool INDIServerIsConnected;
     bool guidingState;
     bool isInTrackingMode;
-    bool slewOnSyncIsTrue; // the stellarium button - if a coordinate in LX200 is received, carry out a slew
     QImage *currentCameraImage;
     int guideScopeFocalLength;
     QString *BTMACAddress;
@@ -111,6 +112,13 @@ private:
         double actualRA;
     };
 
+    struct siteParamsStruct {
+        double longitude;
+        double latitude;
+        QString siteName;
+        double UTCOffset;
+    };
+
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
     struct cameraParametersStruct cameraParameters;
@@ -118,6 +126,7 @@ private:
     struct gearDataStruct gearData;
     struct driveDataStruct driveData;
     struct actualScopePositionStruct actualScopePosition;
+    struct siteParamsStruct siteParams;
 };
 
 #endif // TSC_GLOBALDATA_H
