@@ -1,4 +1,4 @@
-// derived from INDI client example; currently, it connects only to the QHY5
+// derived from INDI client example ...
 
 #include <string.h>
 #include <stdarg.h>
@@ -61,16 +61,21 @@ void ccd_client::setCameraName(QString camName) {
 //------------------------------------------
 bool ccd_client::setINDIServer(QString addr, int port) {
     bool serverconnected;
+    QByteArray ba = addr.toLatin1(); // convert the server tcp/ip address to a byte array
+    const char *c_str2 = ba.data();  // cast the qbytearray data to a string
 
-    QByteArray ba = addr.toLatin1();
-    const char *c_str2 = ba.data();
-    this->setServer(c_str2, port);
-    this->watchDevice(this->ccdINDIName->toLatin1());
+    this->setServer(c_str2, port); // set the server
     serverconnected= this->connectServer();
     if (serverconnected==true) {
+        this->watchDevice(this->ccdINDIName->toLatin1());
         this->setBLOBMode(B_ALSO, this->ccdINDIName->toLatin1(), NULL);
     }
     return serverconnected;
+}
+
+//------------------------------------------
+void ccd_client::disconnectFromServer(void) {
+    this->disconnectServer();
 }
 
 //------------------------------------------

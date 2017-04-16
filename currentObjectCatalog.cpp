@@ -6,26 +6,24 @@
 #include <iostream>
 
 //-------------------------------------------------
-currentObjectCatalog::currentObjectCatalog(QString filename) {
 // reading a .csv file with the special format
 // number of datasets
 // epoch
 // Constellation,ObjectName,RA[h],RA[min],RA[sec],Decl-Sign,Decl-Degree,Decl-Arcmin,Decl-Arcsec
-// ....
-    std::string constellation, name, decsign;   // string data
+currentObjectCatalog::currentObjectCatalog(QString filename) {
+    std::string constellation, name;   // string data
     long rah,ram,ras,decldeg,declamin,declasec;  // right ascension and declination
     short decSignNum;   // the sigm of declination as a number
     float radec, decldec;   // right ascension and declination as decimals
     long counter;           // guess what
-
     char delimiter(',');    // data are .csv - comma-separated
     QByteArray ba = filename.toLatin1();    //convert QString to QByteArray
     const char *cfilename = ba.data();      // convert this to a C-string
+
     std::ifstream infile(cfilename);        // open a file to read
     std::string line;   // define a line that is read until \n is encountered
     std::getline(infile, line);     // read that line
-    std::istringstream iss(line);   // convert it to a stream so that the first line
-                                    // can be converted to long
+    std::istringstream iss(line);   // convert it to a stream so that the first line can be converted to long
     iss >> this->numberOfObjects;
     std::getline(infile, line);     // read the second line
     std::istringstream issepoch(line);

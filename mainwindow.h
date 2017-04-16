@@ -40,12 +40,15 @@ private slots:
     void setMaxStepperCurrentRA(void);
     void setMaxStepperCurrentDecl(void);
     void setINDISAddrAndPort(void);
+    void disconnectFromINDIServer(void);
+    void clearINDILog(void);
+    void findOutAboutINDIServerPID(void);
+    void killRunningINDIServer(void);
     void startCCDAcquisition(void);
     void stopCCDAcquisition(void);
     void changeCCDGain(void);
-    void setCCDNameForQHY5(void);
-    void setCCDNameForASI120mm(void);
-    void setCCDNameForV4L(void);
+    void getCCDNames(void);
+    void setCCDNameForINDI(void);
     void syncMount(void);
     void storeGearData(void);
     void storeDriveData(void);
@@ -76,7 +79,6 @@ private slots:
     void LXslewMount(void);
     void displayGuideCamImage(void);
     void emergencyStop(void);
-    void storeCCDData(void);
     void handleServerMessage(void);
     void deployINDICommand(void);
     void declPGPlus(void);
@@ -218,6 +220,7 @@ private:
     void setControlsForAutoguiderCalibration(bool);
     void terminateAllMotion(void);
     void takeSingleCamShot(void);
+    void storeCCDData(void);
     double correctGuideStarPosition(float, float);
     void waitForCalibrationImage(void);
     void waitForDriveStop(bool,bool);
