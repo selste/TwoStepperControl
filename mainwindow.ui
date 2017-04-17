@@ -62,7 +62,7 @@
      </font>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>0</number>
     </property>
     <property name="movable">
      <bool>true</bool>
@@ -1437,8 +1437,8 @@
      <widget class="QGroupBox" name="gbINDI">
       <property name="geometry">
        <rect>
-        <x>410</x>
-        <y>120</y>
+        <x>390</x>
+        <y>10</y>
         <width>311</width>
         <height>111</height>
        </rect>
@@ -1526,7 +1526,7 @@
         <item>
          <widget class="QPushButton" name="pbConnectToServer">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Connect</string>
@@ -1584,7 +1584,7 @@
       </property>
       <property name="geometry">
        <rect>
-        <x>30</x>
+        <x>10</x>
         <y>10</y>
         <width>351</width>
         <height>211</height>
@@ -1671,7 +1671,7 @@
         <item row="1" column="1">
          <widget class="QRadioButton" name="rbMoravian">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Moravian</string>
@@ -1785,9 +1785,9 @@
      <widget class="QGroupBox" name="gbINDIServer">
       <property name="geometry">
        <rect>
-        <x>410</x>
+        <x>10</x>
         <y>240</y>
-        <width>351</width>
+        <width>761</width>
         <height>181</height>
        </rect>
       </property>
@@ -1802,8 +1802,8 @@
         <rect>
          <x>0</x>
          <y>30</y>
-         <width>341</width>
-         <height>101</height>
+         <width>651</width>
+         <height>141</height>
         </rect>
        </property>
        <property name="font">
@@ -1818,8 +1818,8 @@
       <widget class="QPushButton" name="pbClearINDILog">
        <property name="geometry">
         <rect>
-         <x>0</x>
-         <y>140</y>
+         <x>660</x>
+         <y>30</y>
          <width>81</width>
          <height>31</height>
         </rect>
@@ -1832,10 +1832,10 @@
      <widget class="QGroupBox" name="groupBox_3">
       <property name="geometry">
        <rect>
-        <x>410</x>
-        <y>10</y>
+        <x>380</x>
+        <y>120</y>
         <width>341</width>
-        <height>111</height>
+        <height>141</height>
        </rect>
       </property>
       <property name="title">
@@ -2007,55 +2007,22 @@
         </item>
        </layout>
       </widget>
-     </widget>
-     <widget class="Line" name="line_6">
-      <property name="geometry">
-       <rect>
-        <x>410</x>
-        <y>110</y>
-        <width>331</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-     <widget class="Line" name="line_7">
-      <property name="geometry">
-       <rect>
-        <x>410</x>
-        <y>220</y>
-        <width>331</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-     <widget class="QGroupBox" name="groupBox_4">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>230</y>
-        <width>351</width>
-        <height>191</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Devices</string>
-      </property>
-      <widget class="QListWidget" name="listWidgetCCDNames">
+      <widget class="QPushButton" name="pbStoreCCDParameters">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>30</y>
-         <width>341</width>
-         <height>141</height>
+         <y>100</y>
+         <width>321</width>
+         <height>31</height>
         </rect>
        </property>
+       <property name="text">
+        <string>Store CCD Parameters</string>
+       </property>
       </widget>
+      <zorder>layoutWidget</zorder>
+      <zorder>pbStoreCCDParameters</zorder>
+      <zorder>gbINDIServer</zorder>
      </widget>
     </widget>
     <widget class="QWidget" name="camTab">

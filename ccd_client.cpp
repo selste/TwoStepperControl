@@ -17,10 +17,6 @@
 
 using namespace std;
 
-// qhy5 is "QHY CCD QHY5-0-M-"
-// asi 120mm is "ZWO CCD ASI120MM-S"
-// video 4 linux is "V4L2 CCD"
-
 extern TSC_GlobalData *g_AllData;
 
 //------------------------------------------
@@ -66,10 +62,6 @@ bool ccd_client::setINDIServer(QString addr, int port) {
 
     this->setServer(c_str2, port); // set the server
     serverconnected= this->connectServer();
-    if (serverconnected==true) {
-        this->watchDevice(this->ccdINDIName->toLatin1());
-        this->setBLOBMode(B_ALSO, this->ccdINDIName->toLatin1(), NULL);
-    }
     return serverconnected;
 }
 
@@ -134,12 +126,12 @@ void ccd_client::sendGain(int gain) {
 }
 //------------------------------------------
 void ccd_client::newDevice(INDI::BaseDevice *dp) {
-    if (!strcmp(dp->getDeviceName(), this->ccdINDIName->toLatin1())) {
-        this->serverMessage->clear();
-        this->serverMessage->append(dp->getDeviceName());
-        emit messageFromINDIAvailable();
-    }
-    ccd = dp;
+
+    this->ccd = dp;
+    this->ccdINDIName->clear();
+    this->ccdINDIName->append(dp->getDeviceName());
+    this->watchDevice(this->ccdINDIName->toLatin1());
+    this->setBLOBMode(B_ALSO, this->ccdINDIName->toLatin1(), NULL);
 }
 
 //------------------------------------------

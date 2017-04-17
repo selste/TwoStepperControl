@@ -47,8 +47,7 @@ private slots:
     void startCCDAcquisition(void);
     void stopCCDAcquisition(void);
     void changeCCDGain(void);
-    void getCCDNames(void);
-    void setCCDNameForINDI(void);
+    void storeCCDData(void);
     void syncMount(void);
     void storeGearData(void);
     void storeDriveData(void);
@@ -220,7 +219,6 @@ private:
     void setControlsForAutoguiderCalibration(bool);
     void terminateAllMotion(void);
     void takeSingleCamShot(void);
-    void storeCCDData(void);
     double correctGuideStarPosition(float, float);
     void waitForCalibrationImage(void);
     void waitForDriveStop(bool,bool);
@@ -235,6 +233,7 @@ private:
     void handleST4State(void);
     void doDeclinationMoveForST4(short);
     bool getCCDParameters(void);
+    void setINDIrbuttons(bool);
 };
 
 #endif // MAINWINDOW_H

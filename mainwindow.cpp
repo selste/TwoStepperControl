@@ -244,7 +244,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
-    connect(ui->listWidgetCCDNames,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(setCCDNameForINDI())); // select a device name from INDI
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
     connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
@@ -261,9 +260,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
     connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
-    connect(ui->rbQHYINDI, SIGNAL(released()), this, SLOT(getCCDNames())); // connect a radiobutton for selecting the qhy5
-    connect(ui->rbZWOINDI, SIGNAL(released()), this, SLOT(getCCDNames())); // connect a radiobutton for selecting the zwo asi 120 mm
-    connect(ui->rbV4L2INDI, SIGNAL(released()), this, SLOT(getCCDNames())); // connect a radiobutton for selecting standard video sources
     connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
     connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
@@ -271,6 +267,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
     connect(ui->pbKillINDIServer, SIGNAL(clicked()),this, SLOT(killRunningINDIServer())); // a button that kill running INDI servers ...
     connect(ui->pbDisonnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectFromINDIServer())); // disconnects from INDI server
+    connect(ui->pbStoreCCDParameters, SIGNAL(clicked()), this, SLOT(storeCCDData())); // store ccd parameters to preferences file manually
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition())); // start acquiring images from the guidecam. a signal is emitted if an image arrived.
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
     connect(ui->pbClearINDILog,SIGNAL(clicked()), this, SLOT(clearINDILog())); // clear the textbox for INDI server messages
@@ -332,7 +329,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection);
     ui->rbV4L2INDI->setChecked(true);
-    this->getCCDNames(); // make sure that one possible ccd-source is selected
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
@@ -955,7 +951,6 @@ void MainWindow::setINDISAddrAndPort(void) {
         camera_client->sendGain(gainVal);
         ui->pbConnectToServer->setEnabled(false);
         ui->pbDisonnectFromServer->setEnabled(true);
-        ui->listWidgetCCDNames->setEnabled(false);
         ui->gbStartINDI->setEnabled(false);
     }
 }
@@ -970,7 +965,6 @@ void MainWindow::disconnectFromINDIServer(void) {
         ui->cbIndiIsUp->setChecked(false);
         ui->pbExpose->setEnabled(false);
         ui->pbStopExposure->setEnabled(false);
-        ui->listWidgetCCDNames->setEnabled(true);
         ui->gbStartINDI->setEnabled(true);
     }
 }
@@ -1003,6 +997,7 @@ void MainWindow::killRunningINDIServer(void) {
     ui->pbKillINDIServer->setEnabled(false);
     ui->pbStartINDIServer->setEnabled(true);
     ui->gbStartINDI->setEnabled(true);
+    this->setINDIrbuttons(true);
 }
 
 //------------------------------------------------------------------
@@ -1024,18 +1019,22 @@ void MainWindow::deployINDICommand(void) {
     int retval = 0;
 
     if (ui->rbQHYINDI->isChecked()== true) {
-        retval = system("indiserver -v -m 100 indi_qhy_ccd &");
+        retval = system("indiserver -v indi_qhy_ccd &");
     }
     if (ui->rbZWOINDI->isChecked()== true) {
-        retval = system("indiserver -v -m 100 indi_asi_ccd &");
+        retval = system("indiserver -v indi_asi_ccd &");
     }
     if (ui->rbV4L2INDI->isChecked()== true) {
-        retval = system("indiserver -v -m 100 indi_v4l2_ccd &");
+        retval = system("indiserver -v indi_v4l2_ccd &");
+    }
+    if (ui->rbMoravian->isChecked()== true) {
+        retval = system("indiserver -v indi_mi_ccd &");
     }
     if (retval == 0) {
         ui->pbStartINDIServer->setEnabled(false);
         ui->pbKillINDIServer->setEnabled(true);
         ui->gbStartINDI->setEnabled(false);
+        this->setINDIrbuttons(false);
     }
     sleep(1);
     this->findOutAboutINDIServerPID(); // store the PID in a file
@@ -1046,32 +1045,6 @@ void MainWindow::deployINDICommand(void) {
 // slot that erases the log window for INDI
 void MainWindow::clearINDILog(void) {
     ui->textEditINDIMsgs->clear();
-}
-
-//------------------------------------------------------------------
-// slot that lists available devices
-void MainWindow::getCCDNames(void) {
-    ui->listWidgetCCDNames->clear();
-    if (ui->rbQHYINDI->isChecked()) {
-        ui->listWidgetCCDNames->addItem("QHY CCD QHY5-0-M-");
-    }
-    if (ui->rbZWOINDI->isChecked()) {
-        ui->listWidgetCCDNames->addItem("ZWO CCD ASI120MM-S");
-    }
-    if (ui->rbV4L2INDI->isChecked()) {
-        ui->listWidgetCCDNames->addItem("V4L2 CCD");
-    }
-}
-
-//------------------------------------------------------------------
-// slots that tell the INDIserver which camera is connected
-void MainWindow::setCCDNameForINDI(void) {
-    QString *camName;
-
-    camName = new QString(ui->listWidgetCCDNames->currentItem()->text());
-    this->camera_client->setCameraName(camName->toLatin1());
-    ui->pbConnectToServer->setEnabled(true);
-    delete camName;
 }
 
 //------------------------------------------------------------------
@@ -2904,6 +2877,14 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->teCalibrationStatus->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::setINDIrbuttons(bool isEnabled) {
+    ui->rbMoravian->setEnabled(isEnabled);
+    ui->rbQHYINDI->setEnabled(isEnabled);
+    ui->rbV4L2INDI->setEnabled(isEnabled);
+    ui->rbZWOINDI->setEnabled(isEnabled);
 }
 
 //------------------------------------------------------------------
