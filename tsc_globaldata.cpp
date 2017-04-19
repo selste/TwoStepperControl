@@ -29,6 +29,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->driveData.actualDeclSpeed=0;
     this->guidingState=false;
     this->BTMACAddress=new QString("98:D3:31:FB:2A:8C");
+    this->LX200IPAddress = new QString("127.0.0.1");
     if (this->loadGlobalData() == false) {
         this->gearData.planetaryRatioRA=9;
         this->gearData.gearRatioRA=1;
@@ -58,6 +59,18 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete BTMACAddress;
+    delete LX200IPAddress;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setLX200IPAddress(QString ipadd) {
+    this->LX200IPAddress->clear();
+    this->LX200IPAddress->append(ipadd);
+}
+
+//-----------------------------------------------
+QString* TSC_GlobalData::getLX200IPAddress(void) {
+    return this->LX200IPAddress;
 }
 
 //-----------------------------------------------

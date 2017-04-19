@@ -9,7 +9,7 @@ extern TSC_GlobalData *g_AllData;
 //--------------------------------------------------------
 
 lx200_communication::lx200_communication(void) {
-    this->portIsUp=false;
+    this->portIsUp = false;
     rs232port.setPortName("/dev/ttyS0");
     rs232port.setBaudRate(QSerialPort::Baud9600);
     rs232port.setDataBits(QSerialPort::Data8);
@@ -91,7 +91,6 @@ void lx200_communication::shutDownPort(void) {
 }
 
 //--------------------------------------------------------
-
 void lx200_communication::openPort(void) {
     portIsUp = 1;
     if (!rs232port.open(QIODevice::ReadWrite)) {
@@ -105,14 +104,13 @@ void lx200_communication::openPort(void) {
 }
 
 //--------------------------------------------------------
-
 bool lx200_communication::getPortState(void) {
-    return portIsUp;
+    return this->portIsUp;
 }
 
 //--------------------------------------------------------
 
-qint64 lx200_communication::getDataFromSerialPort(void) {
+qint64 lx200_communication::getDataFromPortOrSocket(bool isSerialPort, QString socketData) {
     qint64 charsToBeRead=0;
     qint64 charsRead=0;
     QStringList *subCmdList;
@@ -121,61 +119,68 @@ qint64 lx200_communication::getDataFromSerialPort(void) {
     QElapsedTimer *waitTimer;
     long scmdLen;
 
-    waitTimer = new QElapsedTimer();
-    waitTimer->start();
-    do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
-    } while (waitTimer->elapsed() < 25);
-    delete waitTimer; // just wait for 25 ms if data come in ...
-    charsToBeRead=rs232port.bytesAvailable();
-    if (charsToBeRead > 1) {
-        this->serialData->append(rs232port.readAll());
-        if (charsRead != -1) {
+    if (isSerialPort) {
+        waitTimer = new QElapsedTimer();
+        waitTimer->start();
+        do {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
+        } while (waitTimer->elapsed() < 25);
+        delete waitTimer; // just wait for 25 ms if data come in ...
+        charsToBeRead=rs232port.bytesAvailable();
+        if (charsToBeRead > 1) {
+            this->serialData->append(rs232port.readAll());
             this->incomingCommand->append(serialData->data());
-            // now take care of the LX 200 classic protocol which establishes communication by
-            // sending an <ACK> and receiving a character on the mount type. nothing but forks are directly supported yet
-            if ((int)((this->incomingCommand->toLatin1())[0])==6) {
-                rs232port.write("P#");
-                rs232port.flush();
-            }
-            this->lastSubCmd->clear();
-            this->lastSubCmd->append(this->incomingCommand->toLatin1());
             this->serialData->clear();
-            subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
-            if (subCmdList->isEmpty()==false) {
-                for (cmdCounter = 0; cmdCounter < (subCmdList->length()-1); cmdCounter++) {
-                    this->subCmd->append(subCmdList->at(cmdCounter));
-                    this->subCmd->remove("#");
-                    if (this->subCmd->startsWith(":",Qt::CaseSensitive)==true) {
-                        scmdLen=this->subCmd->length();
-                        chopSCMD=this->subCmd->right((scmdLen-1));
-                        this->subCmd->clear();
-                        this->subCmd->append(chopSCMD);
-                    } // some people send commands starting with two ":" - don't ask me why ...
-                    this->handleBasicLX200Protocol(*subCmd);                
-                    emit this->RS232CommandReceived();
-                    this->subCmd->clear();
-                }      
-                this->subCmd->append(subCmdList->at(subCmdList->length()-1));
-                delete subCmdList;
-                this->incomingCommand->clear();
-                if (this->subCmd->right(1)!="#") {
-                    this->incomingCommand->append("#:");
-                    this->incomingCommand->append(this->subCmd); // remeber the command until next time
-                } else {
-                    this->subCmd->remove("#:");
-                    this->subCmd->remove("#");
-                    if (this->subCmd->startsWith(":",Qt::CaseSensitive)==true) {
-                        scmdLen=this->subCmd->length();
-                        chopSCMD=this->subCmd->right((scmdLen-1));
-                        this->subCmd->clear();
-                        this->subCmd->append(chopSCMD);
-                    }
-                    this->handleBasicLX200Protocol(*subCmd);
-                    emit this->RS232CommandReceived();
-                    this->subCmd->clear();
-                }
+        }
+    } else {
+        this->incomingCommand->append(socketData);
+    }
+
+    // now take care of the LX 200 classic protocol which establishes communication by
+    // sending an <ACK> and receiving a character on the mount type.
+    if ((int)((this->incomingCommand->toLatin1())[0])==6) {
+        if (isSerialPort) {
+            rs232port.write("P#");
+            rs232port.flush();
+        } else {
+            emit this->polarAlignmentSignal(); // socket lives in a different class, this signal triggers sending "P#" ....
+        }
+    }
+    this->lastSubCmd->clear();
+    this->lastSubCmd->append(this->incomingCommand->toLatin1());
+    subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
+    if (subCmdList->isEmpty()==false) {
+        for (cmdCounter = 0; cmdCounter < (subCmdList->length()-1); cmdCounter++) {
+            this->subCmd->append(subCmdList->at(cmdCounter));
+            this->subCmd->remove("#");
+            if (this->subCmd->startsWith(":",Qt::CaseSensitive)==true) {
+                scmdLen=this->subCmd->length();
+                chopSCMD=this->subCmd->right((scmdLen-1));
+                this->subCmd->clear();
+                this->subCmd->append(chopSCMD);
+            } // some people send commands starting with two ":" - don't ask me why ...
+                this->handleBasicLX200Protocol(*subCmd);
+                emit this->RS232CommandReceived();
+                this->subCmd->clear();
+        }
+        this->subCmd->append(subCmdList->at(subCmdList->length()-1));
+        delete subCmdList;
+        this->incomingCommand->clear();
+        if (this->subCmd->right(1)!="#") {
+            this->incomingCommand->append("#:");
+            this->incomingCommand->append(this->subCmd); // remember the command until next time; should only be necessary with serial commands
+        } else {
+            this->subCmd->remove("#:");
+            this->subCmd->remove("#");
+            if (this->subCmd->startsWith(":",Qt::CaseSensitive)==true) {
+                scmdLen=this->subCmd->length();
+                chopSCMD=this->subCmd->right((scmdLen-1));
+                this->subCmd->clear();
+                this->subCmd->append(chopSCMD);
             }
+            this->handleBasicLX200Protocol(*subCmd);
+            emit this->RS232CommandReceived();
+            this->subCmd->clear();
         }
     }
     return charsRead;
@@ -442,17 +447,32 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
 
 void lx200_communication::sendCommand(short what) {
     if (what == 0) {
-        rs232port.write((msgRAString->toLatin1()));
-        rs232port.flush();
-        emit this->RS232RASent();
+        if (this->portIsUp == true) {
+            rs232port.write((msgRAString->toLatin1()));
+            rs232port.flush();
+            emit this->RS232RASent();
+        } else {
+            emit this->TCPRASent(msgRAString);
+        }
+
     } else if (what == 1) {
-        rs232port.write((msgDeclString->toLatin1()));
-        rs232port.flush();
-        emit this->RS232DeclSent();
+        if (this->portIsUp == true) {
+            rs232port.write((msgDeclString->toLatin1()));
+            rs232port.flush();
+            emit this->RS232DeclSent();
+        } else {
+            emit this->TCPDeclSent(msgDeclString);
+        }
+
     } else {
-        rs232port.write((assembledString->toLatin1()));
-        rs232port.flush();
-        emit this->RS232CommandSent();
+        if (this->portIsUp == true) {
+            rs232port.write((assembledString->toLatin1()));
+            rs232port.flush();
+            emit this->RS232CommandSent();
+        } else {
+            emit this->TCPCommandSent(assembledString);
+        }
+
     }
 }
 

@@ -49,8 +49,10 @@ public:
     void setSiteParams(QString); // set the name of the site
     double getSiteCoords(short); // get coordinates of site
     QString getSiteName(void); // get name of site
-    QImage* getCameraImage(void);
-    QString* getBTMACAddress(void);
+    QImage* getCameraImage(void); // retrieve the topical image from the guiding camera
+    QString* getBTMACAddress(void); // get the MAC address of the BT-adapter
+    void setLX200IPAddress(QString); // store the IP address for LX200
+    QString* getLX200IPAddress(void); // get IP address for LX200
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -60,6 +62,7 @@ private:
     QImage *currentCameraImage;
     int guideScopeFocalLength;
     QString *BTMACAddress;
+    QString *LX200IPAddress;
 
     struct initialStarPosStruct {
         float screenx;

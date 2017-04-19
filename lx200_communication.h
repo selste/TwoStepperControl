@@ -8,6 +8,9 @@
 #include <QObject>
 #include <QString>
 #include <QCoreApplication>
+#include <QtNetwork/QTcpServer>
+#include <QtNetwork/QTcpSocket>
+#include <QtNetwork/QHostAddress>
 
 class lx200_communication:public QObject {
     Q_OBJECT
@@ -15,7 +18,7 @@ public:
     lx200_communication(void);
     ~lx200_communication(void);
     bool getPortState(void);
-    qint64 getDataFromSerialPort(void);
+    qint64 getDataFromPortOrSocket(bool,QString);
     void shutDownPort(void);
     void openPort(void);
     double getReceivedCoordinates(short); // 0 for RA, 1 for Decl - retrieve data conveyed from LX
@@ -45,6 +48,7 @@ private:
     void assembleDeclinationString(void);
     void assembleRAString(void);
     void sendCommand(short what);
+
     struct LX200CommandStruct {
         QString slewRA;
         QString slewDecl;
@@ -98,6 +102,10 @@ signals:
     void RS232guideSpeed(void);
     void RS232findSpeed(void);
     void RS232gotoSpeed(void);
+    void polarAlignmentSignal(void);
+    void TCPRASent(QString*);
+    void TCPDeclSent(QString*);
+    void TCPCommandSent(QString*);
 };
 
 #endif // LX200_COMMUNICATION_H

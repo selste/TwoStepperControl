@@ -5,6 +5,10 @@
 #include <qtimer.h>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QDir>
+#include <QtNetwork/QTcpServer>
+#include <QtNetwork/QTcpSocket>
+#include <QtNetwork/QHostAddress>
+#include <QtNetwork/QNetworkInterface>
 #include <math.h>
 #include <unistd.h>
 #include <opencv2/core.hpp>
@@ -28,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QFileInfo catFileInfo; // a helper on the file list of catalogs
     QStringList filter; // needed for isolating the .tsc files
     QString *catfName; // name of a .tsc catalog
+    QList<QHostAddress> ipAddressList;
+    int listIter;
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
@@ -128,6 +134,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pullUpDnControl(4,PUD_UP);
     pullUpDnControl(5,PUD_UP); // setting internal pull-ip resistors of the BCM
     ui->pbStopST4->setEnabled(false);
+
+        // read all available IP addresses and make them available
+    ipAddressList = QNetworkInterface::allAddresses();
+    for(listIter = 0; listIter < ipAddressList.count(); listIter++) {
+        if ((ipAddressList[listIter].isLoopback() == false) && (ipAddressList[listIter].protocol() == QAbstractSocket::IPv4Protocol)) {
+            ui->listWidgetIPAddresses->addItem(ipAddressList[listIter].toString());
+        }
+    }
+    this->LXServer = new QTcpServer();
+    this->LXSocket = new QTcpSocket(this);
+    this->LXServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
+    this->tcpLXdata = new QByteArray(); // a byte array holding the data coming in from the TCP/IP socket
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -244,6 +262,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
+    connect(ui->listWidgetIPAddresses,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressChosen())); // selection of IP address for LX 200
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
     connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
@@ -287,6 +306,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
+    connect(ui->pbEnableTCP, SIGNAL(clicked()), this, SLOT(connectToIPSocket())); // connect to a LX 200 socket
+    connect(ui->pbDisableTCP, SIGNAL(clicked()), this, SLOT(disconnectFromIPSocket())); // disconnect from LX 200 socket
     connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd())); // pulse guide for a given amount of time defined in a spinbox
@@ -322,13 +343,19 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
     connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
     connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
+    connect(this->lx200port,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommandViaSocket()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
+    connect(this->lx200port,SIGNAL(TCPRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(TCPDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(TCPCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage())); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
-    connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection);
-    ui->rbV4L2INDI->setChecked(true);
+    connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
+    connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink())); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
+
+    ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
@@ -346,6 +373,10 @@ MainWindow::~MainWindow() {
     delete camImg;
     delete guideStarPrev;
     delete bt_Handbox;
+    delete LXServer;
+    delete LXSocket;
+    delete LXServerAddress;
+    delete tcpLXdata;
     delete ui;
     exit(0);
 }
@@ -1007,8 +1038,7 @@ void MainWindow::handleServerMessage(void) {
 
     indiMesg=new QString(camera_client->getINDIServerMessage()->toLatin1());
     if (indiMesg->isEmpty()==false) {
-        ui->textEditINDIMsgs->insertPlainText(indiMesg->toLatin1());
-        ui->textEditINDIMsgs->insertPlainText("\n");
+        ui->textEditINDIMsgs->appendPlainText(indiMesg->toLatin1());
     }
     delete indiMesg;
 }
@@ -1871,11 +1901,108 @@ void MainWindow::setRegularFOV(void) {
 // LX 200 related stuff
 //------------------------------------------------------------------
 //------------------------------------------------------------------
+// a slot that handles things when an IP address for LX200 was chosen
+void MainWindow::IPaddressChosen(void) {
+    QString *ipaddress;
+
+    ipaddress = new QString(ui->listWidgetIPAddresses->currentItem()->text());
+    g_AllData->setLX200IPAddress(*ipaddress);
+    delete ipaddress;
+    ui->pbEnableTCP->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+// a slot that establishes LX200 TCP/IP communication
+void MainWindow::connectToIPSocket(void) {
+    QString *ipaddress;
+    qint16 lxport;
+
+    ipaddress = new QString(g_AllData->getLX200IPAddress()->toLatin1());
+    this->LXServerAddress->setAddress(*ipaddress);
+    delete ipaddress;
+    lxport = (qint16)(ui->sbLX200Port->value());
+    if (this->LXServer->listen(*LXServerAddress,lxport) != true) {
+        qDebug() << "Could not open TCPServer";
+    } else {
+        ui->pbEnableTCP->setEnabled(false);
+        ui->pbDisableTCP->setEnabled(true);
+        ui->listWidgetIPAddresses->setEnabled(false);
+        ui->pbLX200Active->setEnabled(false);
+    }
+}
+
+//------------------------------------------------------------------
+// a slot that stops LX200 TCP/IP communication
+void MainWindow::disconnectFromIPSocket(void) {
+    this->LXServer->close();
+    ui->pbEnableTCP->setEnabled(true);
+    ui->pbDisableTCP->setEnabled(false);
+    ui->listWidgetIPAddresses->setEnabled(true);
+    ui->cbTCPConnected->setChecked(false);
+    this->lx200IsOn=false;
+    ui->pbLX200Active->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+// a slot that connects a TCP/IP linked planetarium program to a socket;
+// the server listens and establishes a socket when a connection comes in
+void MainWindow::establishLX200IPLink(void) {
+    if (this->lx200port->getPortState() == 0) { // if serial connection is down, then allow connecting
+        ui->cbTCPConnected->setChecked(true);
+        this->LXSocket = this->LXServer->nextPendingConnection();
+        this->lx200IsOn=true;
+    }
+}
+
+//------------------------------------------------------------------
 // handle the serial port - called after timeout of the LX200Timer
 void MainWindow::readLX200Port(void) {
-    if ((this->lx200IsOn) && (lx200port->getPortState() == 1)) {
-        lx200port->getDataFromSerialPort();
+    qint64 charsToBeRead;
+    QString *command;
+
+    if (this->lx200IsOn) {
+        command = new QString();
+        if (lx200port->getPortState() == 1) {
+            lx200port->getDataFromPortOrSocket(true,*command);
+        } else {
+            charsToBeRead = this->LXSocket->bytesAvailable();
+            if (charsToBeRead > 0) {
+                this->tcpLXdata->clear();
+                this->tcpLXdata->append(this->LXSocket->readAll());
+
+                command->append(this->tcpLXdata->data());
+                lx200port->getDataFromPortOrSocket(false,*command);
+            }
+        }
+        delete command;
     }
+}
+
+//------------------------------------------------------------------
+// responding to a single <ACK> in classic LX 200 requires a statement on the
+// alignment; in serial communication, this is handled via the lx200communications class.
+// here, it is done in the main window as the tcp/ip socket lives here ...
+
+void MainWindow::sendPolarAlignmentCommandViaSocket(void) {
+    this->LXSocket->write("P#");
+}
+
+//------------------------------------------------------------------
+// if LX commands are sent via TCP/IP, the next three slots handle this
+void MainWindow::handleRAviaTCP(QString* racmd) {
+    this->LXSocket->write(racmd->toLatin1());
+}
+
+//------------------------------------------------------------------
+// the other TCP/IP command slot
+void MainWindow::handleDeclviaTCP(QString* declcmd) {
+    this->LXSocket->write(declcmd->toLatin1());
+}
+
+//------------------------------------------------------------------
+// the last TCP/IP command slot
+void MainWindow::handleCommandviaTCP(QString* msgcmd) {
+    this->LXSocket->write(msgcmd->toLatin1());
 }
 
 //------------------------------------------------------------------
@@ -1886,8 +2013,7 @@ void MainWindow::logLX200IncomingCmds(void) {
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Incoming: ");
         lx200msg->append(this->lx200port->getLX200Command());
-        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
-        ui->teLX200Data->insertPlainText("\n");
+        ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
 }
@@ -1900,8 +2026,7 @@ void MainWindow::logLX200OutgoingCmdsRA(void) {
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Outgoing RA: ");
         lx200msg->append(this->lx200port->getLX200ResponseRA());
-        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
-        ui->teLX200Data->insertPlainText("\n");
+        ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
 }
@@ -1914,8 +2039,7 @@ void MainWindow::logLX200OutgoingCmdsDecl(void) {
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Outgoing Decl: ");
         lx200msg->append(this->lx200port->getLX200ResponseDecl());
-        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
-        ui->teLX200Data->insertPlainText("\n");
+        ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
 }
@@ -1927,8 +2051,7 @@ void MainWindow::logLX200OutgoingCmds(void) {
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Outgoing: ");
         lx200msg->append(this->lx200port->getLX200Response());
-        ui->teLX200Data->insertPlainText(lx200msg->toLatin1());
-        ui->teLX200Data->insertPlainText("\n");
+        ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
 }
@@ -1978,7 +2101,7 @@ void MainWindow::LXsyncMount(void) {
 // terminates motion and goes into tracking state. some ASCOM drivers
 // spit out :Q# like hell. I am insecure of the meaning of this command;
 // in my opinion, it should stop all motion like an emergency stop, but
-// the documentation says only "stop slewing motion" ...
+// the documentation says only "stop slewing motion" ... here is still a bug!!!!
 void MainWindow::LXstopMotion(void) {
 
     if ((this->guidingState.guidingIsOn == false) && (this->guidingState.calibrationIsRunning == false)) {
@@ -2160,7 +2283,7 @@ void MainWindow::LXSetNumberFormatToSimple(void) {
 //---------------------------------------------------------------------
 // enable or disable the serial port
 void MainWindow::switchToLX200(void) {
-    if (this->lx200IsOn==false) {
+    if ((this->lx200IsOn==false) && (this->LXSocket->isOpen() == false)) {
         this->lx200port->openPort();
         this->lx200IsOn=true;
         ui->pbLX200Active->setText("Deactivate LX200");
@@ -2782,6 +2905,11 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->catTab->setEnabled(isEnabled);
     ui->ctrlTab->setEnabled(isEnabled);
     ui->hsThreshold->setEnabled(isEnabled);
+    if (isEnabled == true) {
+        if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
+            ui->pbLX200Active->setEnabled(false);
+        }
+    }
 }
 
 //---------------------------------------------------------------------
@@ -2807,6 +2935,11 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->pbPGRAMinus->setEnabled(isEnabled);
     ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
+    if (isEnabled == true) {
+        if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
+            ui->pbLX200Active->setEnabled(false);
+        }
+    }
 }
 //---------------------------------------------------------------------
 void MainWindow::setControlsForRATracking(bool isEnabled) {
@@ -2877,6 +3010,11 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->teCalibrationStatus->setEnabled(true);
+    if (isEnabled == true) {
+        if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
+            ui->pbLX200Active->setEnabled(false);
+        }
+    }
 }
 
 //------------------------------------------------------------------

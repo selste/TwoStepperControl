@@ -62,6 +62,13 @@ private slots:
     void startGoToObject(void);
     void changeMoveSpeed(void);
     void invertRADirection(void);
+    void IPaddressChosen(void);
+    void connectToIPSocket(void);
+    void disconnectFromIPSocket(void);
+    void establishLX200IPLink(void);
+    void handleRAviaTCP(QString*);
+    void handleDeclviaTCP(QString*);
+    void handleCommandviaTCP(QString*);
     void switchToLX200(void);
     void LXmoveEast(void);
     void LXmoveWest(void);
@@ -89,6 +96,7 @@ private slots:
     void logLX200OutgoingCmds(void);
     void logLX200OutgoingCmdsRA(void);
     void logLX200OutgoingCmdsDecl(void);
+    void sendPolarAlignmentCommandViaSocket(void);
     void clearLXLog(void);
     void LXSetNumberFormatToSimple(void);
     void enableCamImageStorage(void);
@@ -192,6 +200,10 @@ private:
     QFuture<void> futureStepperBehaviourRA_Corr;
     QFuture<void> futureStepperBehaviourDecl_Corr;
     ccd_client *camera_client;
+    QTcpServer *LXServer;
+    QTcpSocket *LXSocket;
+    QHostAddress *LXServerAddress;
+    QByteArray *tcpLXdata;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
     bool MountWasSynced;     // a flag indicating whether a sync occurred
