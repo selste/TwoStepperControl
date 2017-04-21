@@ -43,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4Timer = new QTimer();
     this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
     this->LX200Timer = new QTimer();
-    this->LX200Timer->start(250);
+    this->LX200Timer->start(200);
 
     this->findOutAboutINDIServerPID(); // check running processes and store the ID of an INDIserver in a hidden file
 
@@ -1935,6 +1935,7 @@ void MainWindow::connectToIPSocket(void) {
 // a slot that stops LX200 TCP/IP communication
 void MainWindow::disconnectFromIPSocket(void) {
     this->LXServer->close();
+    this->LXSocket->close();
     ui->pbEnableTCP->setEnabled(true);
     ui->pbDisableTCP->setEnabled(false);
     ui->listWidgetIPAddresses->setEnabled(true);
@@ -2101,12 +2102,15 @@ void MainWindow::LXsyncMount(void) {
 // terminates motion and goes into tracking state. some ASCOM drivers
 // spit out :Q# like hell. I am insecure of the meaning of this command;
 // in my opinion, it should stop all motion like an emergency stop, but
-// the documentation says only "stop slewing motion" ... here is still a bug!!!!
+// the documentation says only "stop slewing motion" ...
 void MainWindow::LXstopMotion(void) {
 
     if ((this->guidingState.guidingIsOn == false) && (this->guidingState.calibrationIsRunning == false)) {
-        this->terminateAllMotion();
-        this->startRATracking();
+        if ((this->mountMotion.GoToIsActiveInRA) || (this->mountMotion.GoToIsActiveInDecl) ||
+            (this->mountMotion.RADriveIsMoving) || (this->mountMotion.DeclDriveIsMoving)) {
+            this->emergencyStop();
+            this->startRATracking();
+        }
     }
 }
 
@@ -2283,6 +2287,7 @@ void MainWindow::LXSetNumberFormatToSimple(void) {
 //---------------------------------------------------------------------
 // enable or disable the serial port
 void MainWindow::switchToLX200(void) {
+
     if ((this->lx200IsOn==false) && (this->LXSocket->isOpen() == false)) {
         this->lx200port->openPort();
         this->lx200IsOn=true;
