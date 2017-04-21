@@ -84,9 +84,9 @@ private:
     struct LX200CommandStruct LX200Commands;
 signals:
     void RS232CommandReceived(void);
-    void RS232RASent(void);
-    void RS232DeclSent(void);
-    void RS232CommandSent(void);
+    void logRASent(void);
+    void logDeclSent(void);
+    void logCommandSent(void);
     void RS232slew(void);
     void RS232sync(void);
     void RS232stopMotion(void);

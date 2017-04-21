@@ -340,9 +340,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
     connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
     connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
-    connect(this->lx200port,SIGNAL(RS232RASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232DeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
-    connect(this->lx200port,SIGNAL(RS232CommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
+    connect(this->lx200port,SIGNAL(logRASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
+    connect(this->lx200port,SIGNAL(logDeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
+    connect(this->lx200port,SIGNAL(logCommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
     connect(this->lx200port,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommandViaSocket()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
     connect(this->lx200port,SIGNAL(TCPRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(TCPDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
@@ -2017,6 +2017,7 @@ void MainWindow::logLX200IncomingCmds(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------
@@ -2030,6 +2031,7 @@ void MainWindow::logLX200OutgoingCmdsRA(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------
@@ -2043,6 +2045,7 @@ void MainWindow::logLX200OutgoingCmdsDecl(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 //------------------------------------------------------------------
 // log outgoing commands from LX 200
@@ -2055,6 +2058,7 @@ void MainWindow::logLX200OutgoingCmds(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------

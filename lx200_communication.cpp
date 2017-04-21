@@ -450,29 +450,26 @@ void lx200_communication::sendCommand(short what) {
         if (this->portIsUp == true) {
             rs232port.write((msgRAString->toLatin1()));
             rs232port.flush();
-            emit this->RS232RASent();
         } else {
             emit this->TCPRASent(msgRAString);
         }
-
+        emit this->logRASent();
     } else if (what == 1) {
         if (this->portIsUp == true) {
             rs232port.write((msgDeclString->toLatin1()));
             rs232port.flush();
-            emit this->RS232DeclSent();
         } else {
             emit this->TCPDeclSent(msgDeclString);
         }
-
+        emit this->logDeclSent();
     } else {
         if (this->portIsUp == true) {
             rs232port.write((assembledString->toLatin1()));
             rs232port.flush();
-            emit this->RS232CommandSent();
         } else {
             emit this->TCPCommandSent(assembledString);
         }
-
+        emit this->logCommandSent();
     }
 }
 
