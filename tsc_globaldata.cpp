@@ -74,6 +74,16 @@ QString* TSC_GlobalData::getLX200IPAddress(void) {
 }
 
 //-----------------------------------------------
+void TSC_GlobalData::setLocalSTime(double lst) {
+    this->localSiderealTime = lst;
+}
+
+//-----------------------------------------------
+double TSC_GlobalData::getLocalSTime(void) {
+    return localSiderealTime;
+}
+
+//-----------------------------------------------
 void TSC_GlobalData::setSiteParams(double llat, double llong, double UTCOff) {
     if ((llat >= -90) && (llat <= 90)) {
         this->siteParams.latitude=llat;

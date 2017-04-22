@@ -184,6 +184,9 @@ private:
     QTimer *timer;
     QTimer *st4Timer;
     QTimer *LX200Timer;
+    QDate *UTDate;
+    QTime *UTTime;
+    qint64 julianDay;
     lx200_communication *lx200port;
     bt_serialcomm *bt_Handbox;
     QPixmap *camImg;
@@ -219,6 +222,7 @@ private:
     QString *textEntry;
     QString *bt_HandboxCommand;
     QFile *guidingLog;
+    void updateTimeAndDate(void);
     void updateCameraImage(void);
     void declinationPulseGuide(long, short,bool);
     void raPulseGuide(long, short,bool);

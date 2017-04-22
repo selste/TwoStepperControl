@@ -53,9 +53,12 @@ public:
     QString* getBTMACAddress(void); // get the MAC address of the BT-adapter
     void setLX200IPAddress(QString); // store the IP address for LX200
     QString* getLX200IPAddress(void); // get IP address for LX200
+    void setLocalSTime(double);
+    double getLocalSTime(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
+    double localSiderealTime;
     bool INDIServerIsConnected;
     bool guidingState;
     bool isInTrackingMode;

@@ -1884,7 +1884,7 @@
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="groupBox_3">
+     <widget class="QGroupBox" name="gbCCDParams">
       <property name="geometry">
        <rect>
         <x>380</x>
@@ -4140,10 +4140,10 @@
      <attribute name="title">
       <string>Settings</string>
      </attribute>
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="gbCoordinates">
       <property name="geometry">
        <rect>
-        <x>420</x>
+        <x>380</x>
         <y>10</y>
         <width>341</width>
         <height>271</height>
@@ -4199,7 +4199,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="leControllerName"/>
+         <widget class="QLineEdit" name="leControllerName">
+          <property name="inputMethodHints">
+           <set>Qt::ImhLatinOnly</set>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -4246,6 +4250,9 @@
             <height>30</height>
            </size>
           </property>
+          <property name="inputMethodHints">
+           <set>Qt::ImhFormattedNumbersOnly</set>
+          </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
@@ -4284,6 +4291,9 @@
             <height>30</height>
            </size>
           </property>
+          <property name="inputMethodHints">
+           <set>Qt::ImhFormattedNumbersOnly</set>
+          </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
@@ -4310,6 +4320,9 @@
             <height>30</height>
            </size>
           </property>
+          <property name="inputMethodHints">
+           <set>Qt::ImhFormattedNumbersOnly</set>
+          </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
@@ -4317,6 +4330,121 @@
         </item>
        </layout>
       </widget>
+     </widget>
+     <widget class="QGroupBox" name="gbDateAndTime">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>321</width>
+        <height>191</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Date and Time</string>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>31</y>
+         <width>295</width>
+         <height>148</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_14">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lTZTime">
+          <property name="text">
+           <string>Time (UT):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QTimeEdit" name="timeEditTimeZone">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="buttonSymbols">
+           <enum>QAbstractSpinBox::NoButtons</enum>
+          </property>
+          <property name="displayFormat">
+           <string>hh:mm:ss </string>
+          </property>
+          <property name="timeSpec">
+           <enum>Qt::TimeZone</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lTZDate">
+          <property name="text">
+           <string>Date (UT):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDateEdit" name="dateETZDate">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="buttonSymbols">
+           <enum>QAbstractSpinBox::NoButtons</enum>
+          </property>
+          <property name="displayFormat">
+           <string>dd/mm/yy</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lJulianDate">
+          <property name="text">
+           <string>Julian Date:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="teJulianDate">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="lSiderealTime">
+          <property name="text">
+           <string>Local sidereal time:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="teLSTime">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="Line" name="line_5">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>10</y>
+        <width>20</width>
+        <height>261</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
      </widget>
     </widget>
    </widget>

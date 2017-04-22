@@ -534,6 +534,9 @@ void lx200_communication::assembleRAString(void) {
     currRA = g_AllData->getActualScopePosition(2);
     RAInHours = currRA/360.0*24.0;
     RAHrs = floor(RAInHours);
+    if (RAInHours > 24) {
+        RAInHours -= 24;
+    }
     RAMin = floor((RAInHours - RAHrs)*60.0);
     remainder = ((RAInHours - RAHrs)*60.0) - RAMin;
     RASec = round(remainder*60.0);

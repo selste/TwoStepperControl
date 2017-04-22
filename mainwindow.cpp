@@ -44,7 +44,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
     this->LX200Timer = new QTimer();
     this->LX200Timer->start(200);
-
+    this->UTDate = new QDate(QDate::currentDate());
+    this->julianDay = this->UTDate->toJulianDay();
+    this->UTTime = new QTime(QTime::currentTime());
+    this->UTTime->start();
     this->findOutAboutINDIServerPID(); // check running processes and store the ID of an INDIserver in a hidden file
 
     draccRA= g_AllData->getDriveParams(0,1);
@@ -377,6 +380,8 @@ MainWindow::~MainWindow() {
     delete LXSocket;
     delete LXServerAddress;
     delete tcpLXdata;
+    delete UTDate;
+    delete UTTime;
     delete ui;
     exit(0);
 }
@@ -388,6 +393,7 @@ void MainWindow::updateReadings() {
     double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
 
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    this->updateTimeAndDate();
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
     }
@@ -493,6 +499,24 @@ void MainWindow::updateReadings() {
     ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
     ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
     // finally, the actual scope position is updated in the GUI
+}
+
+//------------------------------------------------------------------------
+// routine for handling date and time; also computes julian day and local sidereal
+// time
+void MainWindow::updateTimeAndDate(void) {
+    double secSinceMidnight, lstX, lst;
+
+    ui->timeEditTimeZone->setTime(UTTime->currentTime());
+    ui->dateETZDate->setDate(UTDate->currentDate());
+    this->julianDay = this->UTDate->toJulianDay();
+    ui->teJulianDate->setText(QString::number(this->julianDay));
+    secSinceMidnight=UTTime->hour()*3600+UTTime->minute()*60+UTTime->second()+UTTime->msec()/1000.0;
+    lstX=(this->julianDay-2451545.0)/36525.0;
+    lst=6.697374558 + 2400.051336*lstX + 0.000025862*lstX*lstX + 1.00273791*(secSinceMidnight/3600.0) + g_AllData->getSiteCoords(1)/15.0;
+    lst=lst-(int(lst/24))*24.0;
+    ui->teLSTime->setText(QString::number(lst));
+    g_AllData->setLocalSTime(lst); // store the sidereal time also in the global data class ...
 }
 
 //-------------------------------------------------------------------------------------------------------------------
