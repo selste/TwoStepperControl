@@ -224,16 +224,15 @@ void ccd_client::newBLOB(IBLOB *bp) {
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      // guide debugging code --- load a camera image for debugging here ...
- /*    efilename=new QString("GuideSimulatorImages/TestCameraImage");
+  /*   efilename=new QString("GuideSimulatorImages/TestCameraImage");
      efilename->append(QString::number((double)simulatorCounter,1,0));
      efilename->append(".jpg");
      this->simulatorCounter++;
      if (this->simulatorCounter > 40) {
          this->simulatorCounter=10;
      }
-     delete mimage;
-     mimage = new QImage(efilename->toLatin1());
-     delete efilename; */
+     fitsqimage = new QImage(efilename->toLatin1());
+     delete efilename;*/
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------
      //-----------------------------------------------------------------

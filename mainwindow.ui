@@ -3636,6 +3636,19 @@
         </layout>
        </widget>
       </widget>
+      <widget class="QPushButton" name="pbStoreGears">
+       <property name="geometry">
+        <rect>
+         <x>450</x>
+         <y>140</y>
+         <width>281</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Store gear settings</string>
+       </property>
+      </widget>
      </widget>
      <widget class="QFrame" name="frameKinetics">
       <property name="geometry">
@@ -4070,24 +4083,11 @@
         <enum>Qt::Vertical</enum>
        </property>
       </widget>
-      <widget class="QPushButton" name="pbStoreGears">
-       <property name="geometry">
-        <rect>
-         <x>460</x>
-         <y>70</y>
-         <width>281</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Store gear settings</string>
-       </property>
-      </widget>
       <widget class="QWidget" name="layoutWidget_2">
        <property name="geometry">
         <rect>
-         <x>460</x>
-         <y>10</y>
+         <x>470</x>
+         <y>100</y>
          <width>160</width>
          <height>50</height>
         </rect>
@@ -4124,9 +4124,9 @@
       <widget class="QPushButton" name="pbStoreDrive">
        <property name="geometry">
         <rect>
-         <x>460</x>
-         <y>110</y>
-         <width>281</width>
+         <x>470</x>
+         <y>150</y>
+         <width>271</width>
          <height>31</height>
         </rect>
        </property>

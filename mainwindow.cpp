@@ -1072,6 +1072,8 @@ void MainWindow::handleServerMessage(void) {
 void MainWindow::deployINDICommand(void) {
     int retval = 0;
 
+    ui->sbCCDGain->setEnabled(true);
+    ui->sbExposureTime->setEnabled(true);
     if (ui->rbQHYINDI->isChecked()== true) {
         retval = system("indiserver -v indi_qhy_ccd &");
     }
@@ -1080,6 +1082,8 @@ void MainWindow::deployINDICommand(void) {
     }
     if (ui->rbV4L2INDI->isChecked()== true) {
         retval = system("indiserver -v indi_v4l2_ccd &");
+        ui->sbCCDGain->setEnabled(false);
+        ui->sbExposureTime->setEnabled(false);
     }
     if (ui->rbMoravian->isChecked()== true) {
         retval = system("indiserver -v indi_mi_ccd &");
