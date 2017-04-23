@@ -996,9 +996,11 @@ void MainWindow::setINDISAddrAndPort(void) {
     g_AllData->setINDIState(isServerUp);
     // set a global flag on the server state
     if (isServerUp==true) {
+        ui->gbStartINDI->setEnabled(false);
         ui->pbExpose->setEnabled(true);
         ui->cbIndiIsUp->setChecked(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);   // process events before sleeping for a second
         sleep(1);
         this->getCCDParameters();
         storeCCDData();
@@ -1006,7 +1008,7 @@ void MainWindow::setINDISAddrAndPort(void) {
         camera_client->sendGain(gainVal);
         ui->pbConnectToServer->setEnabled(false);
         ui->pbDisonnectFromServer->setEnabled(true);
-        ui->gbStartINDI->setEnabled(false);
+
     }
 }
 
@@ -1091,11 +1093,12 @@ void MainWindow::deployINDICommand(void) {
     if (retval == 0) {
         ui->pbStartINDIServer->setEnabled(false);
         ui->pbKillINDIServer->setEnabled(true);
-        ui->gbStartINDI->setEnabled(false);
         this->setINDIrbuttons(false);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);   // process events before sleeping for a second
     }
     sleep(1);
     this->findOutAboutINDIServerPID(); // store the PID in a file
+
 
 }
 
