@@ -288,7 +288,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills the program, including killing the drives
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
     connect(ui->pbKillINDIServer, SIGNAL(clicked()),this, SLOT(killRunningINDIServer())); // a button that kill running INDI servers ...
-    connect(ui->pbDisonnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectFromINDIServer())); // disconnects from INDI server
+    connect(ui->pbDisconnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectFromINDIServer())); // disconnects from INDI server
     connect(ui->pbStoreCCDParameters, SIGNAL(clicked()), this, SLOT(storeCCDData())); // store ccd parameters to preferences file manually
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition())); // start acquiring images from the guidecam. a signal is emitted if an image arrived.
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
@@ -1007,7 +1007,7 @@ void MainWindow::setINDISAddrAndPort(void) {
         gainVal=ui->sbCCDGain->value();
         camera_client->sendGain(gainVal);
         ui->pbConnectToServer->setEnabled(false);
-        ui->pbDisonnectFromServer->setEnabled(true);
+        ui->pbDisconnectFromServer->setEnabled(true);
 
     }
 }
@@ -1018,7 +1018,7 @@ void MainWindow::disconnectFromINDIServer(void) {
     if (this->ccdCameraIsAcquiring==false) {
         this->camera_client->disconnectFromServer();
         ui->pbConnectToServer->setEnabled(true);
-        ui->pbDisonnectFromServer->setEnabled(false);
+        ui->pbDisconnectFromServer->setEnabled(false);
         ui->cbIndiIsUp->setChecked(false);
         ui->pbExpose->setEnabled(false);
         ui->pbStopExposure->setEnabled(false);
@@ -1136,6 +1136,7 @@ void MainWindow::startCCDAcquisition(void) {
     ui->pbStopExposure->setEnabled(true);
     takeSingleCamShot();
     ui->pbSelectGuideStar->setEnabled(true);
+    ui->pbDisconnectFromServer->setEnabled(false);
 }
 
 //------------------------------------------------------------------
@@ -1143,6 +1144,7 @@ void MainWindow::startCCDAcquisition(void) {
 void MainWindow::stopCCDAcquisition(void) {
     this->ccdCameraIsAcquiring=false;
     ui->pbStopExposure->setEnabled(false);
+    ui->pbDisconnectFromServer->setEnabled(true);
     this->camImageWasReceived=false;
 }
 
@@ -1160,6 +1162,7 @@ bool MainWindow::abortCCDAcquisition(void) {
 
     this->ccdCameraIsAcquiring=false;
     ui->pbStopExposure->setEnabled(false);
+    ui->pbDisconnectFromServer->setEnabled(true);
     this->camImageWasReceived=false;
     timeElapsedLocal = new QElapsedTimer();
     timeElapsedLocal->start();
