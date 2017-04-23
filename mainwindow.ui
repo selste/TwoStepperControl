@@ -1736,7 +1736,7 @@
         <item row="1" column="2">
          <widget class="QRadioButton" name="rbSLXPress">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>SL XPress</string>

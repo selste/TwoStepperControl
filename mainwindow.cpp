@@ -1090,6 +1090,9 @@ void MainWindow::deployINDICommand(void) {
     if (ui->rbMoravian->isChecked()== true) {
         retval = system("indiserver -v indi_mi_ccd &");
     }
+    if (ui->rbSLXPress->isChecked() == true) {
+        retval = system("indiserver -v indi_sx_ccd &");
+    }
     if (retval == 0) {
         ui->pbStartINDIServer->setEnabled(false);
         ui->pbKillINDIServer->setEnabled(true);
@@ -3063,6 +3066,7 @@ void MainWindow::setINDIrbuttons(bool isEnabled) {
     ui->rbQHYINDI->setEnabled(isEnabled);
     ui->rbV4L2INDI->setEnabled(isEnabled);
     ui->rbZWOINDI->setEnabled(isEnabled);
+    ui->rbSLXPress->setEnabled(isEnabled);
 }
 
 //------------------------------------------------------------------
