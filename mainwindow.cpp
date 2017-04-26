@@ -244,10 +244,17 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
 
         // instantiate the class for serial communication via LX200
+    this->LX200SerialPortIsUp = false;
+    this->lx200SerialPort = new QSerialPort();
+    this->lx200SerialPort->setPortName("/dev/ttyS0");
+    this->lx200SerialPort->setBaudRate(QSerialPort::Baud9600);
+    this->lx200SerialPort->setDataBits(QSerialPort::Data8);
+    this->lx200SerialPort->setParity(QSerialPort::NoParity);
+    this->lx200SerialPort->setStopBits(QSerialPort::OneStop);
+    this->lx200SerialPort->setFlowControl(QSerialPort::NoFlowControl);
+    this->lx200SerialData = new QByteArray();
     this->lx200port= new lx200_communication();
-    if (this->lx200port->getPortState() == 1) {
-        ui->cbRS232Open->setChecked(true);
-    }
+
     this->LXSetNumberFormatToSimple(); // LX200 knows a simple and a complex number format for RA and Decl - set format to simple here ...
 
         // instantiate communications with handbox
@@ -346,10 +353,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(logRASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
     connect(this->lx200port,SIGNAL(logDeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
     connect(this->lx200port,SIGNAL(logCommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
-    connect(this->lx200port,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommandViaSocket()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
-    connect(this->lx200port,SIGNAL(TCPRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(TCPDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(TCPCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommand()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
+    connect(this->lx200port,SIGNAL(clientRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(clientDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200port,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage())); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
@@ -382,6 +389,8 @@ MainWindow::~MainWindow() {
     delete tcpLXdata;
     delete UTDate;
     delete UTTime;
+    delete lx200SerialPort;
+    delete lx200SerialData;
     delete ui;
     exit(0);
 }
@@ -1985,7 +1994,7 @@ void MainWindow::disconnectFromIPSocket(void) {
 // a slot that connects a TCP/IP linked planetarium program to a socket;
 // the server listens and establishes a socket when a connection comes in
 void MainWindow::establishLX200IPLink(void) {
-    if (this->lx200port->getPortState() == 0) { // if serial connection is down, then allow connecting
+    if (this->LX200SerialPortIsUp == 0) { // if serial connection is down, then allow connecting
         ui->cbTCPConnected->setChecked(true);
         this->LXSocket = this->LXServer->nextPendingConnection();
         this->lx200IsOn=true;
@@ -1997,50 +2006,80 @@ void MainWindow::establishLX200IPLink(void) {
 void MainWindow::readLX200Port(void) {
     qint64 charsToBeRead;
     QString *command;
+    QElapsedTimer *waitTimer;
 
     if (this->lx200IsOn) {
         command = new QString();
-        if (lx200port->getPortState() == 1) {
-            lx200port->getDataFromPortOrSocket(true,*command);
+        if (this->LX200SerialPortIsUp == 1) {
+            charsToBeRead=this->lx200SerialPort->bytesAvailable();
+            if (charsToBeRead > 0) {
+                waitTimer = new QElapsedTimer();
+                waitTimer->start();
+                do {
+                    QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
+                } while (waitTimer->elapsed() < 25);
+                delete waitTimer; // just wait for 25 ms if data come in ...
+                this->lx200SerialData->clear();
+                this->lx200SerialData->append(this->lx200SerialPort->readAll());
+                command->append(this->lx200SerialData->data());
+            }
         } else {
             charsToBeRead = this->LXSocket->bytesAvailable();
             if (charsToBeRead > 0) {
                 this->tcpLXdata->clear();
                 this->tcpLXdata->append(this->LXSocket->readAll());
-
                 command->append(this->tcpLXdata->data());
-                lx200port->getDataFromPortOrSocket(false,*command);
             }
         }
+        lx200port->handleDataFromClient(*command);
         delete command;
     }
 }
 
 //------------------------------------------------------------------
 // responding to a single <ACK> in classic LX 200 requires a statement on the
-// alignment; in serial communication, this is handled via the lx200communications class.
-// here, it is done in the main window as the tcp/ip socket lives here ...
+// alignment
 
-void MainWindow::sendPolarAlignmentCommandViaSocket(void) {
-    this->LXSocket->write("P#");
+void MainWindow::sendPolarAlignmentCommand(void) {
+    if (this->LX200SerialPortIsUp == true) {
+        this->lx200SerialPort->write("P#");
+        this->lx200SerialPort->flush();
+    } else {
+        this->LXSocket->write("P#");
+    }
 }
 
 //------------------------------------------------------------------
-// if LX commands are sent via TCP/IP, the next three slots handle this
+// if LX send RA, this slot handles it ...
 void MainWindow::handleRAviaTCP(QString* racmd) {
-    this->LXSocket->write(racmd->toLatin1());
+    if (this->LX200SerialPortIsUp == true) {
+        this->lx200SerialPort->write(racmd->toLatin1());
+        this->lx200SerialPort->flush();
+    } else {
+        this->LXSocket->write(racmd->toLatin1());
+    }
 }
 
 //------------------------------------------------------------------
-// the other TCP/IP command slot
+//  if LX send decl, this slot handles it ...
 void MainWindow::handleDeclviaTCP(QString* declcmd) {
-    this->LXSocket->write(declcmd->toLatin1());
+    if (this->LX200SerialPortIsUp == true) {
+        this->lx200SerialPort->write(declcmd->toLatin1());
+        this->lx200SerialPort->flush();
+    } else {
+        this->LXSocket->write(declcmd->toLatin1());
+    }
 }
 
 //------------------------------------------------------------------
-// the last TCP/IP command slot
+// handles other replies by LX ...
 void MainWindow::handleCommandviaTCP(QString* msgcmd) {
-    this->LXSocket->write(msgcmd->toLatin1());
+    if (this->LX200SerialPortIsUp == true) {
+        this->lx200SerialPort->write(msgcmd->toLatin1());
+        this->lx200SerialPort->flush();
+    } else {
+        this->LXSocket->write(msgcmd->toLatin1());
+    }
 }
 
 //------------------------------------------------------------------
@@ -2326,19 +2365,48 @@ void MainWindow::LXSetNumberFormatToSimple(void) {
 }
 
 //---------------------------------------------------------------------
+// open the serial port for LX200 communication
+void MainWindow::openPort(void) {
+      this->LX200SerialPortIsUp = 1;
+      if (!lx200SerialPort->open(QIODevice::ReadWrite)) {
+          this->LX200SerialPortIsUp = 0;
+    } else {
+        this->lx200SerialPort->setBreakEnabled(false);
+        this->LX200SerialPortIsUp = 1;
+        this->lx200SerialPort->clear(QSerialPort::AllDirections);
+    }
+      this->lx200port->clearReplyString();
+}
+
+//---------------------------------------------------------------------
+// close the serial port for LX 200 commuinication
+void MainWindow::shutDownPort(void) {
+    this->lx200SerialPort->setBreakEnabled(true);
+    this->LX200SerialPortIsUp = 0;
+    this->lx200SerialPort->clear(QSerialPort::AllDirections);
+    this->lx200SerialPort->close();
+    this->lx200port->clearReplyString();
+}
+
+
+//---------------------------------------------------------------------
 // enable or disable the serial port
 void MainWindow::switchToLX200(void) {
 
     if ((this->lx200IsOn==false) && (this->LXSocket->isOpen() == false)) {
-        this->lx200port->openPort();
-        this->lx200IsOn=true;
-        ui->pbLX200Active->setText("Deactivate LX200");
-        ui->cbRS232Open->setChecked(true);
+        this->openPort();
+        if (this->LX200SerialPortIsUp == true) {
+            this->lx200IsOn=true;
+            ui->pbLX200Active->setText("Deactivate LX200");
+            ui->cbRS232Open->setChecked(true);
+            ui->tabLXTCP->setEnabled(false);
+        }
     } else {
-        this->lx200port->shutDownPort();
+        this->shutDownPort();
         this->lx200IsOn=false;
         ui->pbLX200Active->setText("Activate LX200");
         ui->cbRS232Open->setChecked(false);
+        ui->tabLXTCP->setEnabled(true);
     }
 }
 

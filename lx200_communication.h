@@ -1,8 +1,6 @@
 #ifndef LX200_COMMUNICATION_H
 #define LX200_COMMUNICATION_H
 
-#include <QSerialPort>
-#include <QSerialPortInfo>
 #include <QTimer>
 #include <QByteArray>
 #include <QObject>
@@ -17,19 +15,16 @@ class lx200_communication:public QObject {
 public:
     lx200_communication(void);
     ~lx200_communication(void);
-    bool getPortState(void);
-    qint64 getDataFromPortOrSocket(bool,QString);
-    void shutDownPort(void);
-    void openPort(void);
+    void handleDataFromClient(QString);
     double getReceivedCoordinates(short); // 0 for RA, 1 for Decl - retrieve data conveyed from LX
     QString* getLX200Command(void);
     QString* getLX200Response(void);
     QString* getLX200ResponseRA(void);
     QString* getLX200ResponseDecl(void);
+    void clearReplyString(void);
     void setNumberFormat(bool);
 
 private:
-    QSerialPort rs232port;
     QString *replyStrLX;
     QString *assembledString;
     QString *msgRAString;
@@ -37,8 +32,6 @@ private:
     QString *incomingCommand;
     QString *subCmd;
     QString *lastSubCmd;
-    bool portIsUp;
-    QByteArray *serialData;
     double receivedRAFromLX;
     double receivedDeclFromLX;
     bool handleBasicLX200Protocol(QString);
@@ -103,9 +96,9 @@ signals:
     void RS232findSpeed(void);
     void RS232gotoSpeed(void);
     void polarAlignmentSignal(void);
-    void TCPRASent(QString*);
-    void TCPDeclSent(QString*);
-    void TCPCommandSent(QString*);
+    void clientRASent(QString*);
+    void clientDeclSent(QString*);
+    void clientCommandSent(QString*);
 };
 
 #endif // LX200_COMMUNICATION_H

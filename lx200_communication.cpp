@@ -9,16 +9,8 @@ extern TSC_GlobalData *g_AllData;
 //--------------------------------------------------------
 
 lx200_communication::lx200_communication(void) {
-    this->portIsUp = false;
-    rs232port.setPortName("/dev/ttyS0");
-    rs232port.setBaudRate(QSerialPort::Baud9600);
-    rs232port.setDataBits(QSerialPort::Data8);
-    rs232port.setParity(QSerialPort::NoParity);
-    rs232port.setStopBits(QSerialPort::OneStop);
-    rs232port.setFlowControl(QSerialPort::NoFlowControl);
     replyStrLX = new QString();
     assembledString = new QString();
-    this->serialData = new QByteArray();
     this->incomingCommand = new QString();
     this->msgRAString = new QString();
     this->msgDeclString = new QString();
@@ -64,14 +56,7 @@ lx200_communication::lx200_communication(void) {
 //--------------------------------------------------------
 
 lx200_communication::~lx200_communication(void) {
-    if (portIsUp == 1) {
-        rs232port.setBreakEnabled(true);
-        rs232port.clear(QSerialPort::AllDirections);
-        rs232port.close();
-        portIsUp = 0;
-    }
     delete replyStrLX;
-    delete serialData;
     delete incomingCommand;
     delete assembledString;
     delete msgRAString;
@@ -81,70 +66,23 @@ lx200_communication::~lx200_communication(void) {
 }
 
 //--------------------------------------------------------
-
-void lx200_communication::shutDownPort(void) {
-    rs232port.setBreakEnabled(true);
-    portIsUp = 0;
-    rs232port.clear(QSerialPort::AllDirections);
-    rs232port.close();
-    replyStrLX->clear();
-}
-
-//--------------------------------------------------------
-void lx200_communication::openPort(void) {
-    portIsUp = 1;
-    if (!rs232port.open(QIODevice::ReadWrite)) {
-        portIsUp = 0;
-    } else {
-        rs232port.setBreakEnabled(false);
-        portIsUp = 1;
-        rs232port.clear(QSerialPort::AllDirections);
-    }
-    replyStrLX->clear();
-}
-
-//--------------------------------------------------------
-bool lx200_communication::getPortState(void) {
-    return this->portIsUp;
+void lx200_communication::clearReplyString(void) {
+    this->replyStrLX->clear();
 }
 
 //--------------------------------------------------------
 
-qint64 lx200_communication::getDataFromPortOrSocket(bool isSerialPort, QString socketData) {
-    qint64 charsToBeRead=0;
-    qint64 charsRead=0;
+void lx200_communication::handleDataFromClient(QString cmdData) {
     QStringList *subCmdList;
     QString chopSCMD;
     int cmdCounter;
-    QElapsedTimer *waitTimer;
     long scmdLen;
 
-    if (isSerialPort) {
-        waitTimer = new QElapsedTimer();
-        waitTimer->start();
-        do {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 25);
-        } while (waitTimer->elapsed() < 25);
-        delete waitTimer; // just wait for 25 ms if data come in ...
-        charsToBeRead=rs232port.bytesAvailable();
-        if (charsToBeRead > 1) {
-            this->serialData->append(rs232port.readAll());
-            this->incomingCommand->append(serialData->data());
-            this->serialData->clear();
-        }
-    } else {
-        this->incomingCommand->append(socketData);
-    }
-
-    // now take care of the LX 200 classic protocol which establishes communication by
-    // sending an <ACK> and receiving a character on the mount type.
+    this->incomingCommand->append(cmdData);
+        // first, take care of the LX 200 classic protocol which establishes communication by
+        // sending an <ACK> and receiving a character on the mount type.
     if ((int)((this->incomingCommand->toLatin1())[0])==6) {
-        if (isSerialPort) {
-            rs232port.write("P#");
-            rs232port.flush();
-        } else {
-            emit this->polarAlignmentSignal(); // socket lives in a different class, this signal triggers sending "P#" ....
-        }
+        emit this->polarAlignmentSignal(); // this signal triggers sending "P#" ....
     }
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
@@ -183,7 +121,6 @@ qint64 lx200_communication::getDataFromPortOrSocket(bool isSerialPort, QString s
             this->subCmd->clear();
         }
     }
-    return charsRead;
 }
 
 //--------------------------------------------------------
@@ -447,29 +384,14 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
 
 void lx200_communication::sendCommand(short what) {
     if (what == 0) {
-        if (this->portIsUp == true) {
-            rs232port.write((msgRAString->toLatin1()));
-            rs232port.flush();
-        } else {
-            emit this->TCPRASent(msgRAString);
-        }
         emit this->logRASent();
+        emit this->clientRASent(msgRAString);
     } else if (what == 1) {
-        if (this->portIsUp == true) {
-            rs232port.write((msgDeclString->toLatin1()));
-            rs232port.flush();
-        } else {
-            emit this->TCPDeclSent(msgDeclString);
-        }
         emit this->logDeclSent();
+        emit this->clientDeclSent(msgDeclString);
     } else {
-        if (this->portIsUp == true) {
-            rs232port.write((assembledString->toLatin1()));
-            rs232port.flush();
-        } else {
-            emit this->TCPCommandSent(assembledString);
-        }
         emit this->logCommandSent();
+        emit this->clientCommandSent(assembledString);
     }
 }
 

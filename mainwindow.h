@@ -6,6 +6,8 @@
 #include <QListWidgetItem>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QSerialPort>
+#include <QSerialPortInfo>
 #include <stdlib.h>
 #include "qstepperphidgetsRA.h"
 #include "qstepperphidgetsDecl.h"
@@ -96,7 +98,7 @@ private slots:
     void logLX200OutgoingCmds(void);
     void logLX200OutgoingCmdsRA(void);
     void logLX200OutgoingCmdsDecl(void);
-    void sendPolarAlignmentCommandViaSocket(void);
+    void sendPolarAlignmentCommand(void);
     void clearLXLog(void);
     void LXSetNumberFormatToSimple(void);
     void enableCamImageStorage(void);
@@ -207,6 +209,9 @@ private:
     QTcpSocket *LXSocket;
     QHostAddress *LXServerAddress;
     QByteArray *tcpLXdata;
+    QSerialPort *lx200SerialPort;
+    QByteArray *lx200SerialData;
+    bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
     bool MountWasSynced;     // a flag indicating whether a sync occurred
@@ -250,6 +255,8 @@ private:
     void doDeclinationMoveForST4(short);
     bool getCCDParameters(void);
     void setINDIrbuttons(bool);
+    void shutDownPort(void);
+    void openPort(void);
 };
 
 #endif // MAINWINDOW_H
