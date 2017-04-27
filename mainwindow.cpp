@@ -399,7 +399,7 @@ MainWindow::~MainWindow() {
 // the main event queue, triggered by this->timer
 void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
-    double relativeTravelRA, relativeTravelDecl,totalGearRatio; // a few helpers
+    double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
 
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     this->updateTimeAndDate();
@@ -505,7 +505,10 @@ void MainWindow::updateReadings() {
                     // needs to be updated ...
         }
     } // slew has ended ...
-    ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
+
+ //   ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
+    hourAngleForDisplay=abs(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
+    ui->leHourAngle->setText(textEntry->number(hourAngleForDisplay,'f',5));
     ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
     // finally, the actual scope position is updated in the GUI
 }

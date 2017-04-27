@@ -285,7 +285,7 @@ int TSC_GlobalData::getCameraChipPixels(short what) {
 void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->syncPosition.rightAscension=ra;
     this->syncPosition.declination=dec;
-    this->actualScopePosition.actualHA=ra;
+    this->actualScopePosition.actualHA= ra;
     this->actualScopePosition.actualRA=ra;
     this->actualScopePosition.actualDecl=dec;
     this->monotonicGlobalTimer->restart();
