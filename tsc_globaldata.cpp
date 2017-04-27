@@ -5,6 +5,7 @@ TSC_GlobalData::TSC_GlobalData() {
 
     this->INDIServerIsConnected=false;
     this->isInTrackingMode=false;
+    this->syncPosition.mountWasSynced=false;
     initialStarPos.screenx=0;
     initialStarPos.screeny=0;
     initialStarPos.ccdx=0;
@@ -281,7 +282,6 @@ int TSC_GlobalData::getCameraChipPixels(short what) {
     return retval;
 }
 //-----------------------------------------------
-
 void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->syncPosition.rightAscension=ra;
     this->syncPosition.declination=dec;
@@ -289,10 +289,10 @@ void TSC_GlobalData::setSyncPosition(float ra, float dec) {
     this->actualScopePosition.actualRA=ra;
     this->actualScopePosition.actualDecl=dec;
     this->monotonicGlobalTimer->restart();
+    this->syncPosition.mountWasSynced = true;
 }
 
 //-----------------------------------------------
-
 float TSC_GlobalData::getSyncPositionCoords(short what) {
     float retval;
 
@@ -307,9 +307,13 @@ float TSC_GlobalData::getSyncPositionCoords(short what) {
         retval=-1;
     }
     return retval;
-};
+}
 //-----------------------------------------------
+bool TSC_GlobalData::wasMountSynced(void) {
+    return this->syncPosition.mountWasSynced;
+}
 
+//-----------------------------------------------
 qint64 TSC_GlobalData::getTimeSinceLastSync(void) {
     qint64 mselapsed;
 

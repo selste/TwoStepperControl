@@ -214,7 +214,6 @@ private:
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
-    bool MountWasSynced;     // a flag indicating whether a sync occurred
     bool ccdCameraIsAcquiring;
     float ra; // right ascension of a current object
     float decl;// declination of a current object

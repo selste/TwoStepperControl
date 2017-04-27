@@ -105,7 +105,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.emergencyStopTriggered = false; // system can be halted by brute force. true if this was triggered
     this->lx200IsOn = false; // true if a serial connection was opened vai RS232
     this->ccdCameraIsAcquiring=false; // true if images are coming in from INDI-server
-    this->MountWasSynced = false; // true if mount was synced, either trough internal catalogs or by LX200
     this->mountMotion.DeclDriveDirection = 1; // 1 for forward, -1 for backward
     this->mountMotion.RADriveDirection = 1; // 1 for forward, -1 for backward
     this->mountMotion.RASpeedFactor=1;
@@ -137,18 +136,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pullUpDnControl(4,PUD_UP);
     pullUpDnControl(5,PUD_UP); // setting internal pull-ip resistors of the BCM
     ui->pbStopST4->setEnabled(false);
-
-        // read all available IP addresses and make them available
-    ipAddressList = QNetworkInterface::allAddresses();
-    for(listIter = 0; listIter < ipAddressList.count(); listIter++) {
-        if ((ipAddressList[listIter].isLoopback() == false) && (ipAddressList[listIter].protocol() == QAbstractSocket::IPv4Protocol)) {
-            ui->listWidgetIPAddresses->addItem(ipAddressList[listIter].toString());
-        }
-    }
-    this->LXServer = new QTcpServer();
-    this->LXSocket = new QTcpSocket(this);
-    this->LXServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
-    this->tcpLXdata = new QByteArray(); // a byte array holding the data coming in from the TCP/IP socket
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -242,6 +229,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+
+    // read all available IP addresses and make them available for LX200
+    ipAddressList = QNetworkInterface::allAddresses();
+    for(listIter = 0; listIter < ipAddressList.count(); listIter++) {
+        if ((ipAddressList[listIter].isLoopback() == false) && (ipAddressList[listIter].protocol() == QAbstractSocket::IPv4Protocol)) {
+            ui->listWidgetIPAddresses->addItem(ipAddressList[listIter].toString());
+        }
+    }
+    this->LXServer = new QTcpServer();
+    this->LXSocket = new QTcpSocket(this);
+    this->LXServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
+    this->tcpLXdata = new QByteArray(); // a byte array holding the data coming in from the TCP/IP socket
 
         // instantiate the class for serial communication via LX200
     this->LX200SerialPortIsUp = false;
@@ -506,7 +505,7 @@ void MainWindow::updateReadings() {
         }
     } // slew has ended ...
 
- //   ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
+//    ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
     hourAngleForDisplay=abs(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
     ui->leHourAngle->setText(textEntry->number(hourAngleForDisplay,'f',5));
     ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
@@ -586,7 +585,6 @@ void MainWindow::syncMount(void) {
     // a microtimer starts ...
     this->startRATracking(); // start tracking again
     ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
-    this->MountWasSynced = true; // set a global flag
 }
 //---------------------------------------------------------------------
 // that one handles GOTO-commands. it leaves when the destination is reached ...
@@ -2176,7 +2174,6 @@ void MainWindow::LXsyncMount(void) {
         lestr = QString::number(this->decl, 'g', 8);
         ui->lineEditDecl->setText(lestr);
         ui->leLX200Decl->setText(lestr);
-        this->MountWasSynced = true;
     }
 }
 
@@ -2204,7 +2201,7 @@ void MainWindow::LXslewMount(void) {
     if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
              && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
-            if (this->MountWasSynced == true) {
+            if (g_AllData->wasMountSynced() == true) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
                 this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
@@ -3162,7 +3159,7 @@ void MainWindow::catalogChosen(QListWidgetItem* catalogName) {
     if (this->objCatalog != NULL) {
         delete this->objCatalog;
     }
-    if (this->MountWasSynced == true) {
+    if (g_AllData->wasMountSynced() == true) {
         ui->pbGoTo->setEnabled(true);
     }
     ui->pbSync->setEnabled(false);
