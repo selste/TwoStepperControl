@@ -221,8 +221,6 @@ void ccd_client::newBLOB(IBLOB *bp) {
     // get the scaling factor for scaling the QImage to the QPixmap
 
     //-----------------------------------------------------------------
-     //-----------------------------------------------------------------
-     //-----------------------------------------------------------------
      // guide debugging code --- load a camera image for debugging here ...
   /*   efilename=new QString("GuideSimulatorImages/TestCameraImage");
      efilename->append(QString::number((double)simulatorCounter,1,0));
@@ -234,21 +232,12 @@ void ccd_client::newBLOB(IBLOB *bp) {
      fitsqimage = new QImage(efilename->toLatin1());
      delete efilename;*/
      //-----------------------------------------------------------------
-     //-----------------------------------------------------------------
-     //-----------------------------------------------------------------
 
     g_AllData->storeCameraImage(*fitsqimage);
     smallQImage = new QImage(fitsqimage->scaled(widgetWidth,widgetHeight,Qt::KeepAspectRatio,Qt::FastTransformation));
-    displayPMap->convertFromImage(*smallQImage,0);
+    this->displayPMap->convertFromImage(*smallQImage,0);
     delete smallQImage;
-    emit this->imageAvailable();
-}
-
-//------------------------------------------
-
-QPixmap* ccd_client::getScaledPixmapFromCamera(void) {
-    // deliver a small image from the camera to other routines for display
-    return displayPMap;
+    emit this->imageAvailable(displayPMap);
 }
 
 //------------------------------------------

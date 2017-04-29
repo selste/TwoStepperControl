@@ -16,7 +16,6 @@ class ccd_client:public QObject, public INDI::BaseClient {
     void takeExposure(int);
     void sendGain(int);
     bool setINDIServer(QString, int);
-    QPixmap* getScaledPixmapFromCamera(void);
     QString* getINDIServerMessage(void);
     void sayGoodbyeToINDIServer(void);
     bool getCCDParameters(void);
@@ -58,6 +57,6 @@ private:
    short simulatorCounter; // a helper for debugging
 
 signals:
-   void imageAvailable(void);
+   void imageAvailable(QPixmap*);
    void messageFromINDIAvailable(void);
 };

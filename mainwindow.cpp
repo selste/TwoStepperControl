@@ -358,7 +358,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->lx200port,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF))); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot())); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
-    connect(this->camera_client,SIGNAL(imageAvailable()),this,SLOT(displayGuideCamImage())); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
+    connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*))); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview())); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
@@ -1212,7 +1212,7 @@ void MainWindow::changeCCDGain(void) {
 // displays the bigger image, but if a guidestar is selected, it also
 // takes care of processing the preview image. also polls new images
 // if the appropriate flag is set
-void MainWindow::displayGuideCamImage(void) {
+void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
     int thrshld,beta;
     float newX, newY,alpha;
     bool medianOn;
@@ -1225,7 +1225,9 @@ void MainWindow::displayGuideCamImage(void) {
        // now cope with different states and images needed ...
 
     if (g_AllData->getINDIState() == true) { // ... if the camera class is connected to the INDI server ...
-        this->updateCameraImage(); // get a pixmap from the camera class   
+        delete camImg;
+        this->camImg = new QPixmap(*camPixmap);
+        this->camView->addBgImage(*camImg); // receive the pixmap from the camera ...
         if (this->guidingState.calibrationIsRunning == true) { // autoguider is calibrating
             this->guidingState.calibrationImageReceived=true; // in calibration, this camera image is to be used
         } // we only take a single shot here
@@ -1244,12 +1246,7 @@ void MainWindow::displayGuideCamImage(void) {
         }
     }
 }
-//------------------------------------------------------------------
-// retrieve a pixmap for display from the camera class
-void MainWindow::updateCameraImage(void) {
-    camImg=camera_client->getScaledPixmapFromCamera();
-    this->camView->addBgImage(*camImg);
-}
+
 //------------------------------------------------------------------
 // retrieve parameters for the CCD from the camera class
  bool MainWindow::getCCDParameters(void) {

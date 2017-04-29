@@ -85,7 +85,7 @@ private slots:
     void LXhiSpeed(void);
     void LXsyncMount(void);
     void LXslewMount(void);
-    void displayGuideCamImage(void);
+    void displayGuideCamImage(QPixmap*);
     void emergencyStop(void);
     void handleServerMessage(void);
     void deployINDICommand(void);
@@ -227,7 +227,6 @@ private:
     QString *bt_HandboxCommand;
     QFile *guidingLog;
     void updateTimeAndDate(void);
-    void updateCameraImage(void);
     void declinationPulseGuide(long, short,bool);
     void raPulseGuide(long, short,bool);
     void emergencyShutdown(short);
