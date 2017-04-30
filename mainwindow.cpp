@@ -506,7 +506,13 @@ void MainWindow::updateReadings() {
     } // slew has ended ...
 
 //    ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
-    hourAngleForDisplay=abs(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
+    hourAngleForDisplay=(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
+    while (hourAngleForDisplay < 0) {
+        hourAngleForDisplay += 360;
+    }
+    while (hourAngleForDisplay > 360) {
+        hourAngleForDisplay -= 360;
+    }
     ui->leHourAngle->setText(textEntry->number(hourAngleForDisplay,'f',5));
     ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
     // finally, the actual scope position is updated in the GUI
@@ -589,7 +595,7 @@ void MainWindow::syncMount(void) {
 //---------------------------------------------------------------------
 // that one handles GOTO-commands. it leaves when the destination is reached ...
 void MainWindow::startGoToObject(void) {
-    double travelRA, travelDecl, speedFactorRA, speedFactorDecl,TRamp, SRamp,
+    double travelRA, travelDecl, absShortRATravel, speedFactorRA, speedFactorDecl,TRamp, SRamp,
             SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
             convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA; // variables for assessing travel time and so on
     float targetRA, targetDecl; // desired ra and decl in decimal degrees
@@ -606,13 +612,20 @@ void MainWindow::startGoToObject(void) {
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     shortSlew=false; // we do not know how long the slew takes, so this flag is false
-    timeDifference=0; // difference between estimated travcel and real travel in RA - needed for correction after slew
-
+    timeDifference=0; // difference between estimated travel and real travel in RA - needed for correction after slew
         // determine the travel to be taken based on steps, acceleration and end velocity
     travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
+    if (fabs(travelRA) > 180) {
+        absShortRATravel = 360.0 - fabs(travelRA);
+        if (travelRA > 0) {
+            travelRA = -absShortRATravel;
+        } else {
+            travelRA = absShortRATravel;
+        }
+    } // determine the shorter travel path
     travelDecl=this->decl-g_AllData->getActualScopePosition(1); // travel in both axes based on current position
     targetRA = this->ra;
-    targetDecl = this->decl; // destination
+    targetDecl = this->decl; // destination as given by LX200 or the menu of TSC
     if (travelRA < 0) {
         this->mountMotion.RADriveDirection = -1;
     } else {
@@ -623,6 +636,7 @@ void MainWindow::startGoToObject(void) {
     } else {
         this->mountMotion.DeclDriveDirection = 1;
     } // determine direction in declination
+
     speedFactorDecl=ui->sbGoToSpeed->value();
     speedFactorRA=ui->sbGoToSpeed->value(); // set the drive speed to GOTO speed according to spinbox in GUI
     convertDegreesToMicrostepsDecl=1.0/g_AllData->getGearData(7)*g_AllData->getGearData(8)*
@@ -1233,7 +1247,6 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         } // we only take a single shot here
         if ((this->ccdCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
             this->takeSingleCamShot(); // ... request another one from INDI
-            qDebug() << "Streaming images...";
         } else {
             ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
         }
@@ -3046,6 +3059,10 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->pbPGRAMinus->setEnabled(isEnabled);
     ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
+    ui->INDITab->setEnabled(isEnabled);
+    ui->gearTab->setEnabled(isEnabled);
+    ui->camTab->setEnabled(isEnabled);
+    ui->settingsTab->setEnabled(isEnabled);
     if (isEnabled == true) {
         if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
             ui->pbLX200Active->setEnabled(false);
