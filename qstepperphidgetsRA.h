@@ -24,6 +24,7 @@ public:
     QStepperPhidgetsRA(double,double);
     ~QStepperPhidgetsRA(void);
     void startTracking(void);
+    void setRADirection(short);
     bool travelForNSteps(long,short,int,bool);
     int retrievePhidgetStepperData (int);
     double getKinetics(short);
@@ -32,7 +33,6 @@ public:
     bool getStopped(void);
     void stopDrive(void);
     void engageDrive(void);
-    void setRADirection(short);
     void changeSpeedForGearChange(void);
     bool hasHBoxSlewEnded(void);
 };

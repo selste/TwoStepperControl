@@ -9,8 +9,8 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <stdlib.h>
-#include "qstepperphidgetsRA.h"
-#include "qstepperphidgetsDecl.h"
+#include "QtContinuousStepper.h"
+#include "QtKineticStepper.h"
 #include "ccd_client.h"
 #include "currentObjectCatalog.h"
 #include "QDisplay2D.h"
@@ -181,8 +181,8 @@ private:
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;
     struct ST4stateDurationsStruct ST4stateDurations;
-    QStepperPhidgetsRA *StepperDriveRA;
-    QStepperPhidgetsDecl *StepperDriveDecl;
+    QtContinuousStepper *StepperDriveRA;
+    QtKineticStepper *StepperDriveDecl;
     QTimer *timer;
     QTimer *st4Timer;
     QTimer *LX200Timer;
