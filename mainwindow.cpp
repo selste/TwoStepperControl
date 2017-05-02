@@ -681,10 +681,10 @@ void MainWindow::startGoToObject(void) {
         shortSlew=true; // in this case,
     }
 
-    this->approximateGOTOSpeedRA=RASteps/(timeEstimatedInRAInMS/1000.0); // for LX 200 display, a mean speed during GOTO not taking ramps into account is computed
-    this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0); // same as above
+    this->approximateGOTOSpeedRA=RASteps/(timeEstimatedInRAInMS/1000.0)*0.95; // for LX 200 display, a mean speed during GOTO not taking ramps into account is computed; it is shortened to avoid overshooting (in graphical display)
+    this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0)*0.95; // same as above
+    gotoETA *= 1.05; // just overerestimate the time in order to avoid negative times ...
     ui->lcdGotoTime->display(round(gotoETA/1000.0)); // determined the estimated duration of the GoTo - Process and display it in the GUI. it is reduced in the event queue
-
     QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue); // just make sure that events are processed ...
 
         // let the games begin ... GOTO is ready to start ...
