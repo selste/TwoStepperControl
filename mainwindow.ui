@@ -1581,7 +1581,7 @@
         <item>
          <widget class="QPushButton" name="pbConnectToServer">
           <property name="enabled">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="text">
            <string>Connect</string>
@@ -4146,7 +4146,7 @@
         <x>380</x>
         <y>10</y>
         <width>341</width>
-        <height>271</height>
+        <height>261</height>
        </rect>
       </property>
       <property name="title">
@@ -4156,29 +4156,13 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>230</y>
+         <y>180</y>
          <width>311</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
         <string>Store Data</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>190</y>
-         <width>181</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Northern Hemisphere</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
        </property>
       </widget>
       <widget class="QWidget" name="layoutWidget">
@@ -4330,6 +4314,22 @@
         </item>
        </layout>
       </widget>
+      <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>220</y>
+         <width>181</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Northern Hemisphere</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
      </widget>
      <widget class="QGroupBox" name="gbDateAndTime">
       <property name="geometry">
@@ -4337,7 +4337,7 @@
         <x>10</x>
         <y>10</y>
         <width>321</width>
-        <height>191</height>
+        <height>261</height>
        </rect>
       </property>
       <property name="title">
@@ -4349,7 +4349,7 @@
          <x>10</x>
          <y>31</y>
          <width>295</width>
-         <height>148</height>
+         <height>182</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_14">
@@ -4360,39 +4360,10 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QTimeEdit" name="timeEditTimeZone">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="buttonSymbols">
-           <enum>QAbstractSpinBox::NoButtons</enum>
-          </property>
-          <property name="displayFormat">
-           <string>hh:mm:ss </string>
-          </property>
-          <property name="timeSpec">
-           <enum>Qt::TimeZone</enum>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="lTZDate">
           <property name="text">
            <string>Date (UT):</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QDateEdit" name="dateETZDate">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="buttonSymbols">
-           <enum>QAbstractSpinBox::NoButtons</enum>
-          </property>
-          <property name="displayFormat">
-           <string>dd/mm/yy</string>
           </property>
          </widget>
         </item>
@@ -4425,6 +4396,20 @@
           <property name="enabled">
            <bool>true</bool>
           </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="leDate">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="leTime">
           <property name="readOnly">
            <bool>true</bool>
           </property>

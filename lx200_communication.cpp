@@ -83,6 +83,7 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
         // sending an <ACK> and receiving a character on the mount type.
     if ((int)((this->incomingCommand->toLatin1())[0])==6) {
         emit this->polarAlignmentSignal(); // this signal triggers sending "P#" ....
+        return;
     }
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
