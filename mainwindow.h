@@ -17,7 +17,7 @@
 #include "lx200_communication.h"
 #include "wiringPi.h"
 #include "ocv_guiding.h"
-#include "bt_serialcomm.h"
+#include "tsc_bt_serialcomm.h"
 
 using namespace QtConcurrent;
 
@@ -192,7 +192,7 @@ private:
     QTime *UTTime;
     qint64 julianDay;
     lx200_communication *lx200port;
-    bt_serialcomm *bt_Handbox;
+    tsc_bt_serialcomm *bt_Handbox;
     QPixmap *camImg;
     QPixmap *guideStarPrev;
     currentObjectCatalog *objCatalog;

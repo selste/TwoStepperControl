@@ -23,10 +23,10 @@ SOURCES += \
     tsc_globaldata.cpp \
     lx200_communication.cpp \
     ocv_guiding.cpp \
-    bt_serialcomm.cpp \
     ccd_client.cpp \
     QtKineticStepper.cpp \
-    QtContinuousStepper.cpp
+    QtContinuousStepper.cpp \
+    tsc_bt_serialcomm.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -35,10 +35,10 @@ HEADERS  += \
     tsc_globaldata.h \
     lx200_communication.h \
     ocv_guiding.h \
-    bt_serialcomm.h \
     ccd_client.h \
     QtKineticStepper.h \
-    QtContinuousStepper.h
+    QtContinuousStepper.h \
+    tsc_bt_serialcomm.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/

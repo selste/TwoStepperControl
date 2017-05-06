@@ -17,7 +17,7 @@
 #include <QMessageBox>
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"
-#include "bt_serialcomm.h"
+#include "tsc_bt_serialcomm.h"
 
 TSC_GlobalData *g_AllData; // a global class that holds system specific parameters on drive, current mount position, gears and so on ...
 
@@ -264,7 +264,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
         // instantiate communications with handbox
     ui->leBTMACAddress->setText(*(g_AllData->getBTMACAddress()));
-    this->bt_Handbox = new bt_serialcomm(*(g_AllData->getBTMACAddress()));
+    this->bt_Handbox = new tsc_bt_serialcomm(*(g_AllData->getBTMACAddress()));
     this->bt_HandboxCommand=new QString(); // a string that holds the data from the bluetooth-handbox
     this->mountMotion.btMoveNorth=0;
     this->mountMotion.btMoveEast=0;
