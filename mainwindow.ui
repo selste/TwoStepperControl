@@ -4146,7 +4146,7 @@
         <x>380</x>
         <y>10</y>
         <width>341</width>
-        <height>261</height>
+        <height>221</height>
        </rect>
       </property>
       <property name="title">
@@ -4314,22 +4314,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>220</y>
-         <width>181</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Northern Hemisphere</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
      </widget>
      <widget class="QGroupBox" name="gbDateAndTime">
       <property name="geometry">
@@ -4337,7 +4321,7 @@
         <x>10</x>
         <y>10</y>
         <width>321</width>
-        <height>261</height>
+        <height>231</height>
        </rect>
       </property>
       <property name="title">
@@ -4424,12 +4408,106 @@
         <x>320</x>
         <y>10</y>
         <width>20</width>
-        <height>261</height>
+        <height>221</height>
        </rect>
       </property>
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
+     </widget>
+     <widget class="QGroupBox" name="gbGeneralSettings">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>260</y>
+        <width>741</width>
+        <height>151</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>General Settings </string>
+      </property>
+      <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
+       <property name="geometry">
+        <rect>
+         <x>530</x>
+         <y>50</y>
+         <width>181</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Northern Hemisphere</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>40</y>
+         <width>136</width>
+         <height>92</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <item>
+         <widget class="QRadioButton" name="rbSiderealSpeed">
+          <property name="text">
+           <string>Sidereal Speed</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="rbLunarSpeed">
+          <property name="text">
+           <string>Lunar Speed</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="rbSolarSpeed">
+          <property name="text">
+           <string>Solar Speed</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>40</y>
+         <width>351</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_10">
+        <item>
+         <widget class="QPushButton" name="pbMeridianFlip">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Carry out Meridian Flip</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbStop3">
+          <property name="text">
+           <string>Emergency Stop</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
    </widget>

@@ -56,6 +56,8 @@ public:
     QString* getLX200IPAddress(void); // get IP address for LX200
     void setLocalSTime(double);
     double getLocalSTime(void);
+    void setCelestialSpeed(short);
+    double getCelestialSpeed(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -67,6 +69,7 @@ private:
     int guideScopeFocalLength;
     QString *BTMACAddress;
     QString *LX200IPAddress;
+    double celestialSpeed;
 
     struct initialStarPosStruct {
         float screenx;

@@ -31,6 +31,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->guidingState=false;
     this->BTMACAddress=new QString("98:D3:31:FB:2A:8C");
     this->LX200IPAddress = new QString("127.0.0.1");
+    this->celestialSpeed=0.0041780746; // default speed is sidereal speed
     if (this->loadGlobalData() == false) {
         this->gearData.planetaryRatioRA=9;
         this->gearData.gearRatioRA=1;
@@ -67,6 +68,21 @@ TSC_GlobalData::~TSC_GlobalData(void){
 void TSC_GlobalData::setLX200IPAddress(QString ipadd) {
     this->LX200IPAddress->clear();
     this->LX200IPAddress->append(ipadd);
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setCelestialSpeed(short what) {
+    switch (what) {
+        case 0: this->celestialSpeed=0.0041780746; break; // sidereal tracking rate
+        case 1: this->celestialSpeed=0.0040791667; break; // lunar tracking rate
+        case 2: this->celestialSpeed=0.0041666667; break; // solar tracking rate
+        default: this->celestialSpeed=0.0041780746; break;
+    }
+}
+
+//-----------------------------------------------
+double TSC_GlobalData::getCelestialSpeed(void) {
+    return this->celestialSpeed;
 }
 
 //-----------------------------------------------
@@ -709,7 +725,7 @@ void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDe
         this->actualScopePosition.actualHA = this->actualScopePosition.actualHA-360.0;
     }
     // compute the HA at sideral time 0, which is here the time of the last sync
-    actRA=this->actualScopePosition.actualHA+0.0041780746*(this->getTimeSinceLastSync()/1000.0);
+    actRA=this->actualScopePosition.actualHA+this->celestialSpeed*(this->getTimeSinceLastSync()/1000.0);
     this->actualScopePosition.actualRA=actRA;
     this->actualScopePosition.actualDecl += deltaDec;
  }

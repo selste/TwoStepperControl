@@ -62,7 +62,7 @@ void QtKineticStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double l
         this->currMax=lcurr;
         CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
         CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
-        this->stepsPerSecond=round(0.0041780746*(this->gearRatio)*(this->microsteps));
+        this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
         this->speedMax=stepsPerSecond;
         CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     }
@@ -72,7 +72,7 @@ void QtKineticStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double l
 bool QtKineticStepper::travelForNSteps(long steps,short direction, int factor,bool isHBSlew) {
 
     this->hBoxSlewEnded = false;
-    this->speedMax=factor*0.0041780746*(this->gearRatio)*(this->microsteps);
+    this->speedMax=factor*g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps);
     if (direction < 0) {
         direction = -1;
     } else {
@@ -87,7 +87,7 @@ bool QtKineticStepper::travelForNSteps(long steps,short direction, int factor,bo
         CPhidgetStepper_getStopped((CPhidgetStepperHandle)SH, 0, &stopped);
     }
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
-    this->speedMax=0.0041780746*(this->gearRatio)*(this->microsteps);
+    this->speedMax=g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps);
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     if (isHBSlew == 1) {
         this->hBoxSlewEnded=true;
@@ -195,7 +195,7 @@ void QtKineticStepper::engageDrive(void) {
 
 void QtKineticStepper::changeSpeedForGearChange(void) {
 
-    this->stepsPerSecond=round(0.0041780746*(this->gearRatio)*(this->microsteps));
+    this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
     this->speedMax=stepsPerSecond;
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     // 360°/sidereal day in seconds*gear ratios*microsteps/steps

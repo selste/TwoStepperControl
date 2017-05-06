@@ -127,6 +127,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
     this->guidingState.st4IsActive = false;
+    ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
+    this->setTrackingRate();
 
         // now instantiate the GPIO - ports on the raspberry for ST 4 guiding
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
@@ -292,6 +294,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
     connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
+    connect(ui->rbSiderealSpeed, SIGNAL(released()), SLOT(setTrackingRate())); // set sidereal tracking rate
+    connect(ui->rbLunarSpeed, SIGNAL(released()), SLOT(setTrackingRate())); // set lunar tracking rate
+    connect(ui->rbSolarSpeed, SIGNAL(released()), SLOT(setTrackingRate())); // set solar tracking rate
     connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
     connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
@@ -318,6 +323,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStartINDIServer, SIGNAL(clicked()), this, SLOT(deployINDICommand())); // call a system command to start an INDI server with given driver parameters
     connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
+    connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbEnableTCP, SIGNAL(clicked()), this, SLOT(connectToIPSocket())); // connect to a LX 200 socket
     connect(ui->pbDisableTCP, SIGNAL(clicked()), this, SLOT(disconnectFromIPSocket())); // disconnect from LX 200 socket
@@ -337,6 +343,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
     connect(ui->pbStopST4, SIGNAL(clicked()),this, SLOT(stopST4Guiding())); // stop ST4 pulse guiding
+    connect(ui->pbMeridianFlip, SIGNAL(clicked()), this, SLOT(doMeridianFlip())); // carry out meridian flip
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -601,7 +608,7 @@ void MainWindow::startGoToObject(void) {
     shortSlew=false; // we do not know how long the slew takes, so this flag is false
     timeDifference=0; // difference between estimated travel and real travel in RA - needed for correction after slew
         // determine the travel to be taken based on steps, acceleration and end velocity
-    travelRA=((g_AllData->getActualScopePosition(0))+0.0041780746*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
+    travelRA=((g_AllData->getActualScopePosition(0))+g_AllData->getCelestialSpeed()*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
     if (fabs(travelRA) > 180) {
         absShortRATravel = 360.0 - fabs(travelRA);
         if (travelRA > 0) {
@@ -656,7 +663,7 @@ void MainWindow::startGoToObject(void) {
         timeEstimatedInRAInMS = (TAtFullSpeed+2.0*TRamp)*1000+timeForProcessingEventQueue;
     }
 
-    earthTravelDuringGOTOinMSteps=(0.0041780746*((double)timeEstimatedInRAInMS)/1000.0)*
+    earthTravelDuringGOTOinMSteps=(g_AllData->getCelestialSpeed()*((double)timeEstimatedInRAInMS)/1000.0)*
             convertDegreesToMicrostepsRA; // determine the addition of earth travel in sideral time into account
 
         // compensate for earth travel in fwd or bwd direction
@@ -788,7 +795,7 @@ void MainWindow::startGoToObject(void) {
     usleep(100); // just a little bit of rest :D
     this->stopRATracking(); // stop tracking, either for correction of for sync
     if (abs(timeDifference)>100) { // if the error in goto time estimation is bigger than 0.1 s, correcct in RA
-        corrsteps=(0.0041780746*((double)(timeDifference))/1000.0)*convertDegreesToMicrostepsRA; // number of correction steps
+        corrsteps=(g_AllData->getCelestialSpeed()*((double)(timeDifference))/1000.0)*convertDegreesToMicrostepsRA; // number of correction steps
         futureStepperBehaviourRA_Corr = QtConcurrent::run(this->StepperDriveRA,
                 &QtContinuousStepper::travelForNSteps,corrsteps, 1,10,false);
         while (!futureStepperBehaviourRA_Corr.isFinished()) {
@@ -1817,6 +1824,8 @@ void MainWindow::resetGuidingCalibration(void) {
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingState.guidingIsOn ==false) {
+        ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
+        this->setTrackingRate();
         this->guidingState.maxDevInArcSec=0.0;
         this->guidingState.guidingIsOn = true;
         if (ui->cbLogGuidingData->isChecked()==true) {
@@ -2843,7 +2852,7 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, 
     } // if the decl drive was moving, it is now set to stop
     this->setCorrectionSpeed();
     ui->rbCorrSpeed->setChecked(true); // switch to correction speed
-    declSpeed = 0.0041780746*
+    declSpeed = g_AllData->getCelestialSpeed()*
             (g_AllData->getGearData(4))*
             (g_AllData->getGearData(5))*
             (g_AllData->getGearData(6))*
@@ -2945,7 +2954,7 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isTh
     }
     if (direction == 1) {
         this->mountMotion.RADriveDirection=direction;
-        raSpeed=0.0041780746*
+        raSpeed=g_AllData->getCelestialSpeed()*
                 (g_AllData->getGearData(0))*
                 (g_AllData->getGearData(1))*
                 (g_AllData->getGearData(2))*
@@ -2995,7 +3004,7 @@ void MainWindow::compensateDeclBacklashPG(short ddir) {
     long compSteps;
 
     if (this->guidingState.systemIsCalibrated == true) { // compensate backlash only if system was calibrated ...
-        compSteps=round((0.0041780746*(g_AllData->getGearData(4))*
+        compSteps=round((g_AllData->getCelestialSpeed()*(g_AllData->getGearData(4))*
                 (g_AllData->getGearData(5))*(g_AllData->getGearData(6))*
                 (g_AllData->getGearData(8))/(g_AllData->getGearData(7)))*
                 (this->guidingState.backlashCompensationInMS/1000.0)); // sidereal speed in declination*compensation time in s == # of steps for compensation
@@ -3066,7 +3075,14 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->INDITab->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->camTab->setEnabled(isEnabled);
-    ui->settingsTab->setEnabled(isEnabled);
+    ui->gbCoordinates->setEnabled(isEnabled);
+    ui->gbGeneralSettings->setEnabled(true);
+    ui->rbSiderealSpeed->setEnabled(isEnabled);
+    ui->rbLunarSpeed->setEnabled(isEnabled);
+    ui->rbSolarSpeed->setEnabled(isEnabled);
+    ui->pbMeridianFlip->setEnabled(isEnabled);
+    ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
+    ui->pbStop3->setEnabled(true);
     if (isEnabled == true) {
         if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
             ui->pbLX200Active->setEnabled(false);
@@ -3327,6 +3343,58 @@ void MainWindow::storeSiteData(void)  {
     g_AllData->setSiteParams(guilat,guilong,guiUTCOffs);
     g_AllData->setSiteParams(ui->leControllerName->text());
     g_AllData->storeGlobalData();
+}
+
+//----------------------------------------------------------------------
+// slot that takes care of changing the tracking rates
+void MainWindow::setTrackingRate(void) {
+    double dracc, drcurr;
+
+    if (ui->rbSiderealSpeed->isChecked()) {
+        g_AllData->setCelestialSpeed(0);
+    }
+    if (ui->rbLunarSpeed->isChecked()) {
+        g_AllData->setCelestialSpeed(1);
+    }
+    if (ui->rbSolarSpeed->isChecked()) {
+        g_AllData->setCelestialSpeed(2);
+    }
+    dracc=this->StepperDriveRA->getKineticsFromController(2);
+    drcurr=this->StepperDriveRA->getKineticsFromController(1);
+    this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed(dracc,drcurr);
+    dracc=this->StepperDriveDecl->getKineticsFromController(2);
+    drcurr=this->StepperDriveDecl->getKineticsFromController(1);
+    this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(dracc,drcurr);
+}
+
+//----------------------------------------------------------------------
+// carry out a meridian flip for german mounts
+void MainWindow::doMeridianFlip(void) {
+    QString lestr;
+    double targetRA, targetDecl;
+
+    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
+             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
+        if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
+            if (g_AllData->wasMountSynced() == true) {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                targetRA=g_AllData->getActualScopePosition(0)-180.0;
+                if (targetRA < 0.0) {
+                    targetRA+=360.0;
+                }
+                this->ra = targetRA;
+                targetDecl = g_AllData->getActualScopePosition(1)+180.0;
+                this->decl = targetDecl;
+                lestr = QString::number(this->ra, 'g', 8);
+                ui->lineEditRA->setText(lestr);
+                ui->leLX200RA->setText(lestr);
+                lestr = QString::number(this->decl, 'g', 8);
+                ui->lineEditDecl->setText(lestr);
+                ui->leLX200Decl->setText(lestr);
+                this->startGoToObject();
+            }
+        }
+    }
 }
 
 //----------------------------------------------------------------------

@@ -122,6 +122,8 @@ private slots:
     void startST4Guiding(void);
     void stopST4Guiding(void);
     void storeSiteData(void);
+    void setTrackingRate(void);
+    void doMeridianFlip(void);
 
 private:
     struct mountMotionStruct {

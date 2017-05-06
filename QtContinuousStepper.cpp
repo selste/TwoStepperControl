@@ -1,10 +1,13 @@
 #include "QtContinuousStepper.h"
 #include <stdlib.h>
+#include "tsc_globaldata.h"
+
+extern TSC_GlobalData *g_AllData;
 
 //----------------------------------------------
 
 void QtContinuousStepper::startTracking(void) {
-    this->speedMax=0.0041780746*(this->gearRatio*this->microsteps);
+    this->speedMax=g_AllData->getCelestialSpeed()*(this->gearRatio*this->microsteps);
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
     CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
@@ -21,7 +24,7 @@ void QtContinuousStepper::startTracking(void) {
 bool QtContinuousStepper::travelForNSteps(long steps,short direction, int factor, bool isHBSlew) {
 
     this->hBoxSlewEnded = false;
-    this->speedMax=factor*0.0041780746*(this->gearRatio)*(this->microsteps);
+    this->speedMax=factor*g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps);
     if (direction < 0) {
         direction = -1;
     } else {
@@ -36,7 +39,7 @@ bool QtContinuousStepper::travelForNSteps(long steps,short direction, int factor
         CPhidgetStepper_getStopped((CPhidgetStepperHandle)SH, 0, &stopped);
     }
     CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
-    this->speedMax=0.0041780746*(this->gearRatio)*(this->microsteps);
+    this->speedMax=g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps);
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     if (isHBSlew == 1) {
         this->hBoxSlewEnded=true;
