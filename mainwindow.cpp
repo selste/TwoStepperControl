@@ -127,21 +127,25 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
     this->guidingState.st4IsActive = false;
+    this->dslrStates.dslrExposureIsRunning = false;
+    this->dslrStates.dslrSeriesRunning = false;
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
     this->setTrackingRate();
 
-        // now instantiate the GPIO - ports on the raspberry for ST 4 guiding
+        // now instantiate the GPIO - ports on the raspberry for ST4 guiding and DSLR control
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
     wiringPiSetup();
     pinMode (2, INPUT);
     pinMode (3, INPUT);
     pinMode (4, INPUT);
-    pinMode (5, INPUT); // setting up BCM-pins 22, 23, 24 and 27 as inputs
+    pinMode (5, INPUT); // setting up BCM-pins 22, 23, 24 and 27 as inputs for ST4
     pullUpDnControl(2,PUD_UP);
     pullUpDnControl(3,PUD_UP);
     pullUpDnControl(4,PUD_UP);
     pullUpDnControl(5,PUD_UP); // setting internal pull-ip resistors of the BCM
     ui->pbStopST4->setEnabled(false);
+    pinMode (0, OUTPUT);
+    pinMode (1, OUTPUT); // settin BCM-pins 17 and 18 to output mode for dslr-control
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -344,6 +348,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
     connect(ui->pbStopST4, SIGNAL(clicked()),this, SLOT(stopST4Guiding())); // stop ST4 pulse guiding
     connect(ui->pbMeridianFlip, SIGNAL(clicked()), this, SLOT(doMeridianFlip())); // carry out meridian flip
+    connect(ui->pbDSLRSingleShot, SIGNAL(clicked()), this, SLOT(handleDSLRSingleExposure())); // start a dslr exposure
+    connect(ui->pbDSLRStartSeries, SIGNAL(clicked()), this, SLOT(startDSLRSeries())); // start a series of DSLR exposures
+    connect(ui->pbDSLRStopSeries, SIGNAL(clicked()), this, SLOT(terminateDSLRSeries())); // terminate a dslr series exposure early
+    connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
@@ -398,6 +406,9 @@ void MainWindow::updateReadings() {
     this->updateTimeAndDate();
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
+    }
+    if (this->dslrStates.dslrExposureIsRunning == true) { // check a timer and update display of the remaining time ...
+        this->updateDSLRGUIAndCountdown();
     }
     if (this->mountMotion.RATrackingIsOn == true) { // standard mode - mount compensates for earth motion
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
@@ -3454,22 +3465,22 @@ void MainWindow::handleBTHandbox(void) {
             if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveNorth = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->declinationMoveHandboxUp();
             } else if (localBTCommand->compare("0100") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveWest = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->RAMoveHandboxFwd();
             } else if (localBTCommand->compare("0010") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveSouth = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->declinationMoveHandboxDown();
             } else if (localBTCommand->compare("0001") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveEast = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->RAMoveHandboxBwd();
             }
         }
@@ -3496,5 +3507,109 @@ void MainWindow::handleBTHandbox(void) {
     delete localBTCommand; // delete the local deep copy of the command string
 }
 
+//-----------------------------------------------------------------
+//-----------------------------------------------------------------
+//-----------------------------------------------------------------
+// series of methods related to the DSLR ...
+//-----------------------------------------------------------------
+//-----------------------------------------------------------------
+//-----------------------------------------------------------------
+// slot that handles start of DSLR exposure ...
+void MainWindow::handleDSLRSingleExposure(void) {
+    int duration;
 
+    duration = ui->sbDSLRDuration->value();
+    dslrStates.dslrExpTime=duration;
+    dslrStates.dslrExposureIsRunning=true;
+    dslrStates.dslrExpElapsed.start();
+    ui->pbDSLRSingleShot->setEnabled(false);
+    ui->sbDSLRDuration->setEnabled(false);
+    ui->pbDSLRStartSeries->setEnabled(false);
+    digitalWrite(0,1); // set wiring pi pin 0 to high ...
+}
 
+//------------------------------------------------------------------
+// slot that handles updates of the GUI during DSLR exposure - i.e.
+// display of the remaining exposure time. it emits a signal once
+// the exposure is done. this may trigger another exposure if a series
+// is carried out ...
+void MainWindow::updateDSLRGUIAndCountdown(void) {
+    int remTime;
+
+    remTime = (this->dslrStates.dslrExpTime - round(this->dslrStates.dslrExpElapsed.elapsed()/1000.0));
+    ui->lcdDSLRTimeRemaining->display(QString::number(remTime));
+    if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
+        digitalWrite(0,0); // set wiring pi pin 0 to low ...
+        ui->pbDSLRSingleShot->setEnabled(true);
+        ui->sbDSLRDuration->setEnabled(true);
+        this->dslrStates.dslrExposureIsRunning = false;
+        ui->pbDSLRStartSeries->setEnabled(true);
+        if (this->dslrStates.dslrSeriesRunning == true) {
+            emit dslrExposureDone();
+        }
+    }
+}
+
+//------------------------------------------------------------------
+// slot that starts a series of exposures ...
+void MainWindow::startDSLRSeries(void) {
+
+    if (ui->sbDSLRRepeat->value() > 0) {
+        ui->cbExpSeriesDone->setChecked(false);
+        ui->sbDSLRRepeat->setEnabled(false);
+        ui->pbDSLRStartSeries->setEnabled(false);
+        ui->pbDSLRStopSeries->setEnabled(true);
+        this->dslrStates.dslrSeriesRunning = true;
+        this->dslrStates.noOfExposures = ui->sbDSLRRepeat->value();
+        this->dslrStates.noOfExposuresLeft=this->dslrStates.noOfExposures;
+        ui->sbDSLRRepeat->setEnabled(false);
+        ui->lcdDSLRExpsTaken->display("0");
+        this->handleDSLRSingleExposure();
+    }
+}
+
+//-------------------------------------------------------------------
+// slot that is called once an exposure was taken
+void MainWindow::takeNextExposureInSeries(void) {
+    QElapsedTimer *wait;
+    int expsTaken;
+
+    ui->pbDSLRSingleShot->setEnabled(false);
+    ui->sbDSLRDuration->setEnabled(false);
+    ui->pbDSLRStartSeries->setEnabled(false);
+    this->dslrStates.noOfExposuresLeft--;
+    expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
+    ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
+    if (this->dslrStates.noOfExposuresLeft > 0) {
+    wait = new QElapsedTimer();
+    wait->start();
+    do {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    } while (wait->elapsed() < 5000); // just wait for 5 seconds until next exposure is taken
+    delete wait;
+        this->handleDSLRSingleExposure();
+    } else {
+        this->stopDSLRExposureSeries();
+    }
+}
+
+//-------------------------------------------------------------------
+// this slot is called when all exposures of a series are taken
+void MainWindow::stopDSLRExposureSeries(void) {
+    ui->pbDSLRSingleShot->setEnabled(true);
+    ui->sbDSLRDuration->setEnabled(true);
+    ui->cbExpSeriesDone->setChecked(true);
+    ui->sbDSLRRepeat->setEnabled(true);
+    ui->pbDSLRStartSeries->setEnabled(true);
+    ui->pbDSLRStopSeries->setEnabled(false);
+    ui->sbDSLRRepeat->setValue(0);
+    this->dslrStates.dslrSeriesRunning = false;
+}
+
+//--------------------------------------------------------------------
+// this slot terminates a series of exposures prematurely
+void MainWindow::terminateDSLRSeries(void) {
+    this->stopDSLRExposureSeries();
+    this->dslrStates.noOfExposuresLeft = 0;
+    ui->lcdDSLRExpsTaken->display("0");
+}

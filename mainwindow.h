@@ -124,6 +124,11 @@ private slots:
     void storeSiteData(void);
     void setTrackingRate(void);
     void doMeridianFlip(void);
+    void handleDSLRSingleExposure(void);
+    void startDSLRSeries(void);
+    void takeNextExposureInSeries(void);
+    void stopDSLRExposureSeries(void);
+    void terminateDSLRSeries(void);
 
 private:
     struct mountMotionStruct {
@@ -178,11 +183,21 @@ private:
         QElapsedTimer rElapsed;
     };
 
+    struct DSLRStateStruct {
+        QElapsedTimer dslrExpElapsed;
+        bool dslrExposureIsRunning;
+        bool dslrSeriesRunning;
+        int dslrExpTime;
+        int noOfExposures;
+        int noOfExposuresLeft;
+    };
+
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;
     struct ST4stateDurationsStruct ST4stateDurations;
+    struct DSLRStateStruct dslrStates;
     QtContinuousStepper *StepperDriveRA;
     QtKineticStepper *StepperDriveDecl;
     QTimer *timer;
@@ -257,6 +272,11 @@ private:
     void setINDIrbuttons(bool);
     void shutDownPort(void);
     void openPort(void);
+    void updateDSLRGUIAndCountdown(void);
+
+signals:
+    void dslrExposureDone(void);
+
 };
 
 #endif // MAINWINDOW_H
