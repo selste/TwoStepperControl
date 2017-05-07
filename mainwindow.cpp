@@ -67,9 +67,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
         serNo = StepperDriveDecl->retrieveKineticStepperData(1); // get the serial number of the phidget board
         g_AllData->setDriveData(1,serNo); // remember the ID of the Decl-drive in the global class
-
-        ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
-        ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));  // display the IDs in the LCD-display on the "Drive" tab
     } else { // IDs are written in the "TSC_Preferences.tsc" file
         dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
         serNo = dummyDrive->retrieveKineticStepperData(1);
@@ -77,22 +74,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
             StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
             serNo =StepperDriveRA->retrieveKineticStepperData(1);
             g_AllData->setDriveData(0,serNo);
-            ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
             delete dummyDrive; // set the other board to RA
             StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
             serNo = StepperDriveDecl->retrieveKineticStepperData(1);
             g_AllData->setDriveData(1,serNo);
-            ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
         } else {
             StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
             serNo = StepperDriveDecl->retrieveKineticStepperData(1);
             g_AllData->setDriveData(1,serNo);
-            ui->lcdDeclID->display(QString::number(g_AllData->getDriveID(1)));
             delete dummyDrive; // set the other board to Decl
             StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
             serNo =StepperDriveRA->retrieveKineticStepperData(1);
             g_AllData->setDriveData(0,serNo);
-            ui->lcdRAID->display(QString::number(g_AllData->getDriveID(0)));
         }
     }
     this->StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2)/g_AllData->getGearData(3),g_AllData->getGearData(8));
