@@ -129,6 +129,8 @@ private slots:
     void takeNextExposureInSeries(void);
     void stopDSLRExposureSeries(void);
     void terminateDSLRSeries(void);
+    void transferCoordinates(void);
+    void terminateDSLRSingleShot(void);
 
 private:
     struct mountMotionStruct {

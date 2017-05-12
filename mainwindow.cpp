@@ -344,6 +344,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbDSLRSingleShot, SIGNAL(clicked()), this, SLOT(handleDSLRSingleExposure())); // start a dslr exposure
     connect(ui->pbDSLRStartSeries, SIGNAL(clicked()), this, SLOT(startDSLRSeries())); // start a series of DSLR exposures
     connect(ui->pbDSLRStopSeries, SIGNAL(clicked()), this, SLOT(terminateDSLRSeries())); // terminate a dslr series exposure early
+    connect(ui->pbConveyCoordinates, SIGNAL(clicked()), this, SLOT(transferCoordinates())); // slot that transfers coordinates to the controller
+    connect(ui->pbDSLRTerminateExposure, SIGNAL(clicked()), this, SLOT(terminateDSLRSingleShot())); // stop a single DSLR exposure
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -375,7 +377,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
-
     ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     this->StepperDriveRA->stopDrive();
@@ -3260,6 +3261,36 @@ void MainWindow::catalogObjectChosen(void) {
 }
 
 //------------------------------------------------------------------
+// slot that conveys manual coordinates to the controller
+void MainWindow::transferCoordinates(void) {
+    short rah, ram, declDeg, declMin;
+    float ras, declSec;
+    double lRA, lDecl, lSubVal;
+    QString lestr;
+
+    rah = ui->sbRAhours->value();
+    ram = ui->sbRAmins->value();
+    ras = ui->sbRASecs->value();
+    declDeg = ui->sbDeclDegrees->value();
+    declMin = ui->sbDeclMin->value();
+    declSec = ui->sbDeclSec->value();
+    lRA = ras/3600.0+ram/60.0+rah;
+    lSubVal = declSec/3600.0+declMin/60.0;
+    if (declDeg < 0) {
+        lDecl = declDeg-lSubVal;
+    } else {
+        lDecl = declDeg+lSubVal;
+    }
+    this->ra=lRA;
+    this->decl=lDecl;
+    lestr = QString::number(this->ra, 'g', 8);
+    ui->lineEditRA->setText(lestr);
+    lestr = QString::number(this->decl, 'g', 8);
+    ui->lineEditDecl->setText(lestr);
+    ui->pbSync->setEnabled(true);
+}
+
+//------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 // store drive and gear data to g_AllData and preference file
@@ -3518,6 +3549,9 @@ void MainWindow::handleDSLRSingleExposure(void) {
     ui->pbDSLRSingleShot->setEnabled(false);
     ui->sbDSLRDuration->setEnabled(false);
     ui->pbDSLRStartSeries->setEnabled(false);
+    if (this->dslrStates.dslrSeriesRunning == false) {
+        ui->pbDSLRTerminateExposure->setEnabled(true);
+    }
     digitalWrite(0,1); // set wiring pi pin 0 to high ...
 }
 
@@ -3534,6 +3568,9 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
     if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
         digitalWrite(0,0); // set wiring pi pin 0 to low ...
         ui->pbDSLRSingleShot->setEnabled(true);
+        if (this->dslrStates.dslrSeriesRunning == false) {
+            ui->pbDSLRTerminateExposure->setEnabled(false);
+        }
         ui->sbDSLRDuration->setEnabled(true);
         this->dslrStates.dslrExposureIsRunning = false;
         ui->pbDSLRStartSeries->setEnabled(true);
@@ -3552,6 +3589,7 @@ void MainWindow::startDSLRSeries(void) {
         ui->sbDSLRRepeat->setEnabled(false);
         ui->pbDSLRStartSeries->setEnabled(false);
         ui->pbDSLRStopSeries->setEnabled(true);
+        ui->pbDSLRTerminateExposure->setEnabled(false);
         this->dslrStates.dslrSeriesRunning = true;
         this->dslrStates.noOfExposures = ui->sbDSLRRepeat->value();
         this->dslrStates.noOfExposuresLeft=this->dslrStates.noOfExposures;
@@ -3604,5 +3642,19 @@ void MainWindow::stopDSLRExposureSeries(void) {
 void MainWindow::terminateDSLRSeries(void) {
     this->stopDSLRExposureSeries();
     this->dslrStates.noOfExposuresLeft = 0;
+    this->terminateDSLRSingleShot();
     ui->lcdDSLRExpsTaken->display("0");
+}
+
+//--------------------------------------------------------------------
+// this slot stops a single exposure
+void MainWindow::terminateDSLRSingleShot(void) {
+    this->dslrStates.dslrExposureIsRunning=false;
+    this->dslrStates.dslrExpElapsed.invalidate();
+    ui->pbDSLRSingleShot->setEnabled(true);
+    ui->pbDSLRTerminateExposure->setEnabled(false);
+    ui->sbDSLRDuration->setEnabled(true);
+    ui->pbDSLRStartSeries->setEnabled(true);
+    ui->lcdDSLRTimeRemaining->display("0");
+    digitalWrite(0,0); // set wiring pi pin 0 to low ...
 }
