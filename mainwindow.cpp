@@ -595,8 +595,8 @@ void MainWindow::syncMount(void) {
 // that one handles GOTO-commands. it leaves when the destination is reached ...
 void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, absShortRATravel, speedFactorRA, speedFactorDecl,TRamp, SRamp,
-            SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
-            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA; // variables for assessing travel time and so on
+           SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps,
+           convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA; // variables for assessing travel time and so on
     float targetRA, targetDecl; // desired ra and decl in decimal degrees
     qint64 timestampGOTOStarted, timeDifference, timeTaken; // various time stamps
     qint64 timeEstimatedInRAInMS = 0; // estimate for travel time in RA [ms]
@@ -605,7 +605,9 @@ void MainWindow::startGoToObject(void) {
     int timeForProcessingEventQueue = 100; // should be the same as the time for the event queue given in this->timer
     bool RAtakesLonger, shortSlew; // two flags. RAtakes longer = true: RAtravel longer than Decl travel. short sles of a few seconds are carried out one after another to avaid timing problems
     bool RARideIsDone; // a flag set to true when slew in RA is done
+    QElapsedTimer *waitState;
 
+    waitState = new QElapsedTimer(); // a timer to give the muproc a little time to breathe ...
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
     this->setControlsForGoto(false); // set some controls on disabled
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
@@ -635,7 +637,6 @@ void MainWindow::startGoToObject(void) {
     } else {
         this->mountMotion.DeclDriveDirection = 1;
     } // determine direction in declination
-
     speedFactorDecl=ui->sbGoToSpeed->value();
     speedFactorRA=ui->sbGoToSpeed->value(); // set the drive speed to GOTO speed according to spinbox in GUI
     convertDegreesToMicrostepsDecl=1.0/g_AllData->getGearData(7)*g_AllData->getGearData(8)*
@@ -644,7 +645,6 @@ void MainWindow::startGoToObject(void) {
     convertDegreesToMicrostepsRA=1.0/g_AllData->getGearData(3)*g_AllData->getGearData(8)*
             g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2);
     RASteps=round(fabs(travelRA)*convertDegreesToMicrostepsRA); // determine the number of microsteps necessary to reach target. direction is already given and unimportant here ...
-
     TRamp = (this->StepperDriveDecl->getKineticsFromController(3)*(speedFactorDecl))/this->StepperDriveDecl->getKineticsFromController(2);// time needed until drive reaches full speed - vel/acc ...
     SRamp = 0.5*this->StepperDriveDecl->getKineticsFromController(2)*TRamp*TRamp; // travel in microsteps until full speed is reached
     SAtFullSpeed = DeclSteps-2.0*SRamp; // travel after acceleration and before de-acceleration
@@ -706,33 +706,49 @@ void MainWindow::startGoToObject(void) {
     if (shortSlew == true) { // is the target is nearby, carry out the slews one after another ...
         this->startRATracking(); // RA still has to track while decl slews here ...
         ui->pbStopTracking->setEnabled(false);
-        futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QtKineticStepper::travelForNSteps,
-                                                           DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
-        while (!futureStepperBehaviourDecl.isStarted()) { // wait for thread to start
+        if (DeclSteps > 50) {
+            futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QtKineticStepper::travelForNSteps,
+                                                            DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
+            while (!futureStepperBehaviourDecl.isStarted()) { // wait for thread to start
+            }
         }
         this->mountMotion.GoToIsActiveInDecl=true;
         timestampGOTOStarted = g_AllData->getTimeSinceLastSync(); // set a global timestamp
         this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
+        waitState->start();
+        do {
+        } while (waitState->elapsed() < 100);
         while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
             if (this->mountMotion.emergencyStopTriggered==true) { // if the emergency button is pressed, terminate routine immediately
                 this->mountMotion.emergencyStopTriggered=false;
+                this->mountMotion.GoToIsActiveInRA=false;
+                this->mountMotion.GoToIsActiveInDecl=false;
                 return;
             }
         }
         this->mountMotion.GoToIsActiveInDecl=false; // goto in Decl is now done, so start travel in RA. set also the flag for decl-goto ...
+        waitState->start();
+        do {
+        } while (waitState->elapsed() < 100);
         this->stopRATracking(); // now, the decl slew is done and slewing in RA starts - therefore tracking is stopped
         ui->pbStartTracking->setEnabled(false);
-        futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QtContinuousStepper::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA,false);
-        while (!futureStepperBehaviourRA.isStarted()) { // wait for thread to start
+        if (RASteps > 50) {
+            futureStepperBehaviourRA_GOTO =QtConcurrent::run(this->StepperDriveRA,&QtContinuousStepper::travelForNSteps,RASteps,this->mountMotion.RADriveDirection,speedFactorRA,false);
+            while (!futureStepperBehaviourRA.isStarted()) { // wait for thread to start
+            }
         }
         this->mountMotion.GoToIsActiveInRA=true;
         this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync(); // set a global timestamp
+        waitState->start();
+        do {
+        } while (waitState->elapsed() < 100);
         while (!futureStepperBehaviourRA_GOTO.isFinished()) {
             QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
             if (this->mountMotion.emergencyStopTriggered==true) { // if the emergency button is pressed, terminate routine immediately
                 this->mountMotion.emergencyStopTriggered=false;
                 this->mountMotion.GoToIsActiveInRA=false; // flag on RA-GOTO set to false - important for event queue
+                this->mountMotion.GoToIsActiveInDecl=false;
                 return;
             }
         } // RA travel is done here
@@ -762,6 +778,8 @@ void MainWindow::startGoToObject(void) {
                 } // declination has finished here, flag is set to false
                 if (this->mountMotion.emergencyStopTriggered==true) { // if the emergency button is pressed, terminate routine immediately
                     this->mountMotion.emergencyStopTriggered=false;
+                    this->mountMotion.GoToIsActiveInRA=false;
+                    this->mountMotion.GoToIsActiveInDecl=false;
                     return;
                 }
             } // now, RA is done as well
@@ -784,19 +802,21 @@ void MainWindow::startGoToObject(void) {
                     }
                     if (this->mountMotion.emergencyStopTriggered==true) { // emergency stop handling
                         this->mountMotion.emergencyStopTriggered=false;
+                        this->mountMotion.GoToIsActiveInRA=false;
+                        this->mountMotion.GoToIsActiveInDecl=false;
                         return;
                     }
                 }
             }
             if (this->mountMotion.emergencyStopTriggered==true) { // emergency stop handling
                 this->mountMotion.emergencyStopTriggered=false;
+                this->mountMotion.GoToIsActiveInRA=false;
+                this->mountMotion.GoToIsActiveInDecl=false;
                 return;
             }
             this->mountMotion.GoToIsActiveInDecl=false; // declination is now done
         }
     }
-    this->mountMotion.GoToIsActiveInRA=false;
-    this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
     usleep(100); // just a little bit of rest :D
     this->stopRATracking(); // stop tracking, either for correction of for sync
     if (abs(timeDifference)>100) { // if the error in goto time estimation is bigger than 0.1 s, correcct in RA
@@ -808,18 +828,25 @@ void MainWindow::startGoToObject(void) {
         }
         if (this->mountMotion.emergencyStopTriggered==true) { // emergency stop handling
             this->mountMotion.emergencyStopTriggered=false;
+            this->mountMotion.GoToIsActiveInRA=false;
+            this->mountMotion.GoToIsActiveInDecl=false;
             return;
         }
     } // correction is now done as well
     this->ra=targetRA;
     this->decl=targetDecl;
     this->syncMount(); // sync the mount
+    while (!futureStepperBehaviourRATracking.isStarted()) {
+       QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+    }
     ui->lcdGotoTime->display(0); // set the LCD counter to zero again
-    ui->pbGoTo->setEnabled(true);
     ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
     this->setControlsForRATravel(true); // set GUI back in base state
     this->setControlsForRATracking(false);
+    this->mountMotion.GoToIsActiveInRA=false;
+    this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
+    delete waitState;
     return;
 }
 
@@ -3088,6 +3115,13 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->pbMeridianFlip->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
     ui->pbStop3->setEnabled(true);
+    ui->pbConveyCoordinates->setEnabled(isEnabled);
+    ui->sbRAhours->setEnabled(isEnabled);
+    ui->sbRAmins->setEnabled(isEnabled);
+    ui->sbRASecs->setEnabled(isEnabled);
+    ui->sbDeclDegrees->setEnabled(isEnabled);
+    ui->sbDeclMin->setEnabled(isEnabled);
+    ui->sbDeclSec->setEnabled(isEnabled);
     if (isEnabled == true) {
         if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
             ui->pbLX200Active->setEnabled(false);
@@ -3268,13 +3302,14 @@ void MainWindow::transferCoordinates(void) {
     double lRA, lDecl, lSubVal;
     QString lestr;
 
+    ui->pbGoTo->setEnabled(false);
     rah = ui->sbRAhours->value();
     ram = ui->sbRAmins->value();
     ras = ui->sbRASecs->value();
     declDeg = ui->sbDeclDegrees->value();
     declMin = ui->sbDeclMin->value();
     declSec = ui->sbDeclSec->value();
-    lRA = ras/3600.0+ram/60.0+rah;
+    lRA = ras/3600.0+ram/60.0+rah*15.0;
     lSubVal = declSec/3600.0+declMin/60.0;
     if (declDeg < 0) {
         lDecl = declDeg-lSubVal;
@@ -3288,6 +3323,7 @@ void MainWindow::transferCoordinates(void) {
     lestr = QString::number(this->decl, 'g', 8);
     ui->lineEditDecl->setText(lestr);
     ui->pbSync->setEnabled(true);
+    ui->pbGoTo->setEnabled(true);
 }
 
 //------------------------------------------------------------------
