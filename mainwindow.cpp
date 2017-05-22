@@ -1164,7 +1164,7 @@ void MainWindow::deployINDICommand(void) {
         ui->pbKillINDIServer->setEnabled(true);
         ui->pbConnectToServer->setEnabled(true);
         this->setINDIrbuttons(false);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);   // process events before sleeping for a second
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);   // process events before sleeping for a second
     }
     sleep(1);
     this->findOutAboutINDIServerPID(); // store the PID in a file
@@ -1232,15 +1232,15 @@ bool MainWindow::abortCCDAcquisition(void) {
     timeElapsedLocal = new QElapsedTimer();
     timeElapsedLocal->start();
     maxTime = ui->sbExposureTime->value()*5000; // wait for a maximum of 5* the exposure time for a last image
-    while ((this->camImageWasReceived==false) || (timeElapsedLocal->elapsed() < maxTime)) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);   // process events while waiting for the last image
+    while (this->camImageWasReceived==false) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);   // process events while waiting for the last image
+        if (timeElapsedLocal->elapsed() > maxTime) {
+            delete timeElapsedLocal;
+            return false;
+        }
     }
     delete timeElapsedLocal;
-    if (this->camImageWasReceived==true) {
-        return true;
-    } else {
-        return false;
-    }
+    return true;
 }
 
 //------------------------------------------------------------------
@@ -1294,6 +1294,7 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
             this->guidingState.noOfGuidingSteps++; // every odd one, corrections are applied ...
             this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             newX = g_AllData->getInitialStarPosition(2);
             newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
             correctGuideStarPosition(newX,newY); // ... and is used to correct the position
@@ -1603,6 +1604,7 @@ void MainWindow::calibrateAutoGuider(void) {
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
     this->waitForCalibrationImage(); // small subroutine - waits for 2 images
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
@@ -1613,6 +1615,7 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->pbPGRAPlus->setEnabled(false);
     this->waitForCalibrationImage();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100); // try to force screen updates as "doGuideStarImageProcesing" emits a signal ...
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
     currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
     slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -1633,6 +1636,7 @@ void MainWindow::calibrateAutoGuider(void) {
         imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
         this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
         this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
@@ -1642,6 +1646,7 @@ void MainWindow::calibrateAutoGuider(void) {
         ui->pbPGRAPlus->setEnabled(false);
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -1698,6 +1703,7 @@ void MainWindow::calibrateAutoGuider(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         this->waitForCalibrationImage(); // small subroutine - waits for image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             // now get a position
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew
@@ -1715,6 +1721,7 @@ void MainWindow::calibrateAutoGuider(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -1736,6 +1743,7 @@ void MainWindow::calibrateAutoGuider(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -1904,9 +1912,11 @@ void MainWindow::selectGuideStar(void) {
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         ui->pbTrainAxes->setEnabled(true);
     }
 }
@@ -1923,6 +1933,7 @@ void MainWindow::changePrevImgProc(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta, this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------
@@ -1963,6 +1974,7 @@ void MainWindow::setHalfFOV(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------
@@ -1978,6 +1990,7 @@ void MainWindow::setDoubleFOV(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------
@@ -1993,6 +2006,7 @@ void MainWindow::setRegularFOV(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 //------------------------------------------------------------------
@@ -3505,12 +3519,19 @@ void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it f
 void MainWindow::handleBTHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
     short speedSwitchState; // set to 1 or 0 concerning the motion speed
+    QElapsedTimer *wait;
 
+    wait = new QElapsedTimer();
+    wait->start();
+    do {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
+    } while (wait->elapsed() < 250);
     this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
     localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
     if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false) &&
             (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA==false)) {
         // ignore this if system is in guiding or autoguider calibration
+
         speedSwitchState=(localBTCommand->right(1)).toInt(); // the last digit is the motion state
         localBTCommand->chop(1); // remove the last character
         if (speedSwitchState == 1) {
@@ -3525,22 +3546,18 @@ void MainWindow::handleBTHandbox(void) {
             if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveNorth = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->declinationMoveHandboxUp();
             } else if (localBTCommand->compare("0100") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveWest = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->RAMoveHandboxFwd();
             } else if (localBTCommand->compare("0010") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveSouth = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->declinationMoveHandboxDown();
             } else if (localBTCommand->compare("0001") == 0) {
                 ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveEast = 1;
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
                 this->RAMoveHandboxBwd();
             }
         }
@@ -3565,6 +3582,7 @@ void MainWindow::handleBTHandbox(void) {
         } // stop the respective motions
     }
     delete localBTCommand; // delete the local deep copy of the command string
+    delete wait;
 }
 
 //-----------------------------------------------------------------

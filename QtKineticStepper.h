@@ -30,7 +30,7 @@ public:
     ~QtKineticStepper(void); // destructor
     void setGearRatioAndMicrosteps(double, double); // the product of the gears divided by the step size and the number of microsteps is stored here
     void setInitialParamsAndComputeBaseSpeed(double,double); // after opening
-    bool travelForNSteps(long,short,int,bool); // tell the drive to travel for steps, direction (+/-1),
+    virtual bool travelForNSteps(long,short,int,bool); // tell the drive to travel for steps, direction (+/-1),
         // a multiple of sidereal speed and a flag that indicates whether the slew was triggered by the handbox.
         // handbox slews terminate either after 180 or 360 degrees ...
     int retrieveKineticStepperData (int); // retrieve basic controller data such as identifiers of the controller

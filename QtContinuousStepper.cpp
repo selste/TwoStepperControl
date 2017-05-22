@@ -1,6 +1,7 @@
 #include "QtContinuousStepper.h"
 #include <stdlib.h>
 #include "tsc_globaldata.h"
+#include <QDebug>
 
 extern TSC_GlobalData *g_AllData;
 

@@ -1,4 +1,5 @@
 #include "tsc_bt_serialcomm.h"
+#include <QElapsedTimer>
 #include <QDebug>
 
 //---------------------------------------------------

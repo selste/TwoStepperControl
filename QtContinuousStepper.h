@@ -9,7 +9,7 @@ protected:
     short RADirection = 1; // a value that takes +/-1; it inverts continuous motion, for instance when moving to the southern hemisphere
 public:
     void startTracking(void); // start continuous motion to compensate for earth's rotation
-    bool travelForNSteps(long,short,int,bool); // override this function from "QtKineticStepper" so that "RADirection" is also respected ...
+    bool travelForNSteps(long,short,int,bool) override; // override this function from "QtKineticStepper" so that "RADirection" is also respected ...
     void setRADirection(short); // switch "RADirection"
 };
 #endif // QTCONTINUOUSSTEPPER_H
