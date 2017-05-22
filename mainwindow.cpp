@@ -320,7 +320,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStartINDIServer, SIGNAL(clicked()), this, SLOT(deployINDICommand())); // call a system command to start an INDI server with given driver parameters
     connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
-    connect(ui->pbStop3, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbEnableTCP, SIGNAL(clicked()), this, SLOT(connectToIPSocket())); // connect to a LX 200 socket
     connect(ui->pbDisableTCP, SIGNAL(clicked()), this, SLOT(disconnectFromIPSocket())); // disconnect from LX 200 socket
@@ -525,8 +524,8 @@ void MainWindow::updateTimeAndDate(void) {
 
     ui->leTime->setText(this->UTTime->currentTime().toString());
     ui->leDate->setText(this->UTDate->currentDate().toString("dd/MM/yyyy"));
-    this->julianDay = this->UTDate->toJulianDay();
-    ui->teJulianDate->setText(QString::number(this->julianDay));
+    this->julianDay = this->UTDate->toJulianDay()-0.5;
+    ui->teJulianDate->setText(QString::number(long(this->julianDay)));
     secSinceMidnight=UTTime->currentTime().hour()*3600.0+UTTime->currentTime().minute()*60.0+UTTime->currentTime().second()+UTTime->currentTime().msec()/1000.0;
     lstX=(this->julianDay-2451545.0)/36525.0;
     lst=6.697374558 + 2400.051336*lstX + 0.000025862*lstX*lstX + 1.00273791*(secSinceMidnight/3600.0) + g_AllData->getSiteCoords(1)/15.0;
@@ -3128,7 +3127,6 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->rbSolarSpeed->setEnabled(isEnabled);
     ui->pbMeridianFlip->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
-    ui->pbStop3->setEnabled(true);
     ui->pbConveyCoordinates->setEnabled(isEnabled);
     ui->sbRAhours->setEnabled(isEnabled);
     ui->sbRAmins->setEnabled(isEnabled);
@@ -3522,10 +3520,6 @@ void MainWindow::handleBTHandbox(void) {
     QElapsedTimer *wait;
 
     wait = new QElapsedTimer();
-    wait->start();
-    do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 200);
-    } while (wait->elapsed() < 250);
     this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
     localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
     if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false) &&
@@ -3543,20 +3537,24 @@ void MainWindow::handleBTHandbox(void) {
         } // set speeds according to the last digit
         if ((this->mountMotion.RADriveIsMoving==false) && (this->mountMotion.DeclDriveIsMoving==false)) {
             // just to make sure that the handbox does not mess up a motion initiated from the GUI
+            ui->fMainHBCtrl->setEnabled(false); // disable handcontrol widget
+            ui->fHBSpeeds->setEnabled(false);
+            ui->pbMeridianFlip->setEnabled(false);
+            this->repaint();
+            wait->start();
+            do {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            } while (wait->elapsed() < 250);
             if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
-                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveNorth = 1;
                 this->declinationMoveHandboxUp();
             } else if (localBTCommand->compare("0100") == 0) {
-                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveWest = 1;
                 this->RAMoveHandboxFwd();
             } else if (localBTCommand->compare("0010") == 0) {
-                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveSouth = 1;
                 this->declinationMoveHandboxDown();
             } else if (localBTCommand->compare("0001") == 0) {
-                ui->ctrlTab->setEnabled(false); // disable handcontrol widget
                 this->mountMotion.btMoveEast = 1;
                 this->RAMoveHandboxBwd();
             }
@@ -3578,7 +3576,9 @@ void MainWindow::handleBTHandbox(void) {
                 this->mountMotion.btMoveWest = 0;
                 this->RAMoveHandboxFwd();
             }
-            ui->ctrlTab->setEnabled(true);
+            ui->fMainHBCtrl->setEnabled(true); // disable handcontrol widget
+            ui->fHBSpeeds->setEnabled(true);
+            ui->pbMeridianFlip->setEnabled(true);
         } // stop the respective motions
     }
     delete localBTCommand; // delete the local deep copy of the command string
