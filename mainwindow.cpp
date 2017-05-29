@@ -63,7 +63,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
         serNo = StepperDriveRA->retrieveKineticStepperData(1);     // get the serial number of the phidget board
         g_AllData->setDriveData(0,serNo); // remember the ID of the RA-drive in the global class
-
         StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
         serNo = StepperDriveDecl->retrieveKineticStepperData(1); // get the serial number of the phidget board
         g_AllData->setDriveData(1,serNo); // remember the ID of the Decl-drive in the global class
@@ -764,11 +763,17 @@ void MainWindow::startGoToObject(void) {
         this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
         timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
         ui->pbStartTracking->setEnabled(false);
+        waitState->start();
+        do {
+        } while (waitState->elapsed() < 100);
         futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QtKineticStepper::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) {
         }
         this->mountMotion.GoToIsActiveInDecl=true;
         this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync(); // now, all drives are started and timestamps were taken
+        waitState->start();
+        do {
+        } while (waitState->elapsed() < 100);
         if (RAtakesLonger == true) { // then decl will finish earlier
             while (!futureStepperBehaviourRA_GOTO.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
@@ -782,6 +787,9 @@ void MainWindow::startGoToObject(void) {
                     return;
                 }
             } // now, RA is done as well
+            waitState->start();
+            do {
+            } while (waitState->elapsed() < 100);
             timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
             timeDifference = timeTaken-timeEstimatedInRAInMS; // compute difference between real and estimated travel
             this->startRATracking();
@@ -793,6 +801,9 @@ void MainWindow::startGoToObject(void) {
                 if (futureStepperBehaviourRA_GOTO.isFinished()) { // ra is finished, decl still active ...
                     this->mountMotion.GoToIsActiveInRA=false;
                     if (RARideIsDone==false) { // ok - if RA is finished FOR THE FIRST TIME ...
+                        waitState->start();
+                        do {
+                        } while (waitState->elapsed() < 100);
                         RARideIsDone=true;
                         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
                         timeDifference = timeTaken-timeEstimatedInRAInMS;
@@ -816,7 +827,9 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.GoToIsActiveInDecl=false; // declination is now done
         }
     }
-    usleep(100); // just a little bit of rest :D
+    waitState->start();
+    do {
+    } while (waitState->elapsed() < 100); // just a little rest
     this->stopRATracking(); // stop tracking, either for correction of for sync
     if (abs(timeDifference)>100) { // if the error in goto time estimation is bigger than 0.1 s, correcct in RA
         corrsteps=(g_AllData->getCelestialSpeed()*((double)(timeDifference))/1000.0)*convertDegreesToMicrostepsRA; // number of correction steps

@@ -1,5 +1,4 @@
 #include "QtKineticStepper.h"
-#include <stdlib.h>
 #include <unistd.h>
 #include "tsc_globaldata.h"
 #include <stdlib.h>

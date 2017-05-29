@@ -27,7 +27,7 @@ protected:
 
 public:
     QtKineticStepper(void); // contructor, gets maximum acceleration and maximum current
-    ~QtKineticStepper(void); // destructor
+    virtual ~QtKineticStepper(void); // destructor
     void setGearRatioAndMicrosteps(double, double); // the product of the gears divided by the step size and the number of microsteps is stored here
     void setInitialParamsAndComputeBaseSpeed(double,double); // after opening
     virtual bool travelForNSteps(long,short,int,bool); // tell the drive to travel for steps, direction (+/-1),
