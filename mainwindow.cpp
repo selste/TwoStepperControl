@@ -254,7 +254,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->lx200SerialPort->setStopBits(QSerialPort::OneStop);
     this->lx200SerialPort->setFlowControl(QSerialPort::NoFlowControl);
     this->lx200SerialData = new QByteArray();
-    this->lx200port= new lx200_communication();
+    this->lx200Comm= new lx200_communication();
 
     this->LXSetNumberFormatToSimple(); // LX200 knows a simple and a complex number format for RA and Decl - set format to simple here ...
 
@@ -269,7 +269,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
         // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
-    connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
+    connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Comm())); // this is the event for reading LX200
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
@@ -345,29 +345,29 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbConveyCoordinates, SIGNAL(clicked()), this, SLOT(transferCoordinates())); // slot that transfers coordinates to the controller
     connect(ui->pbDSLRTerminateExposure, SIGNAL(clicked()), this, SLOT(terminateDSLRSingleShot())); // stop a single DSLR exposure
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
-    connect(this->lx200port,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232moveSouth()), this, SLOT(LXmoveSouth()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232stopMoveEast()), this, SLOT(LXstopMoveEast()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232stopMoveWest()), this, SLOT(LXstopMoveWest()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232stopMoveNorth()), this, SLOT(LXstopMoveNorth()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232stopMoveSouth()), this, SLOT(LXstopMoveSouth()),Qt::QueuedConnection); // LX 200 handbox commands
-    connect(this->lx200port,SIGNAL(RS232stopMotion()), this, SLOT(LXstopMotion()),Qt::QueuedConnection); // total stop of all motion by LX 200
-    connect(this->lx200port,SIGNAL(RS232guideSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232centerSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232findSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
-    connect(this->lx200port,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
-    connect(this->lx200port,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
-    connect(this->lx200port,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
-    connect(this->lx200port,SIGNAL(logRASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
-    connect(this->lx200port,SIGNAL(logDeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
-    connect(this->lx200port,SIGNAL(logCommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
-    connect(this->lx200port,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommand()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
-    connect(this->lx200port,SIGNAL(clientRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(clientDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
-    connect(this->lx200port,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232moveSouth()), this, SLOT(LXmoveSouth()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232stopMoveEast()), this, SLOT(LXstopMoveEast()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232stopMoveWest()), this, SLOT(LXstopMoveWest()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232stopMoveNorth()), this, SLOT(LXstopMoveNorth()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232stopMoveSouth()), this, SLOT(LXstopMoveSouth()),Qt::QueuedConnection); // LX 200 handbox commands
+    connect(this->lx200Comm,SIGNAL(RS232stopMotion()), this, SLOT(LXstopMotion()),Qt::QueuedConnection); // total stop of all motion by LX 200
+    connect(this->lx200Comm,SIGNAL(RS232guideSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232centerSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232findSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
+    connect(this->lx200Comm,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
+    connect(this->lx200Comm,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
+    connect(this->lx200Comm,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
+    connect(this->lx200Comm,SIGNAL(logRASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
+    connect(this->lx200Comm,SIGNAL(logDeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
+    connect(this->lx200Comm,SIGNAL(logCommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
+    connect(this->lx200Comm,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommand()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
+    connect(this->lx200Comm,SIGNAL(clientRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(clientDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
+    connect(this->lx200Comm,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*)),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
@@ -869,7 +869,6 @@ void MainWindow::shutDownProgram() {
     sleep(ui->sbExposureTime->value());
     camera_client->sayGoodbyeToINDIServer();
     delete camera_client;
-    this->bt_Handbox->shutDownPort();
     this->StepperDriveRA->stopDrive();
     delete StepperDriveRA;
     this->StepperDriveDecl->stopDrive();
@@ -877,7 +876,7 @@ void MainWindow::shutDownProgram() {
     delete timer;
     delete textEntry;
     delete bt_HandboxCommand;
-    delete lx200port;
+    delete lx200Comm;
     delete g_AllData;
     delete camImg;
     delete guideStarPrev;
@@ -2117,7 +2116,7 @@ void MainWindow::readLX200Port(void) {
                 command->append(this->tcpLXdata->data());
             }
         }
-        lx200port->handleDataFromClient(*command);
+        lx200Comm->handleDataFromClient(*command);
         delete command;
     }
 }
@@ -2175,7 +2174,7 @@ void MainWindow::logLX200IncomingCmds(void) {
 
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Incoming: ");
-        lx200msg->append(this->lx200port->getLX200Command());
+        lx200msg->append(this->lx200Comm->getLX200Command());
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
@@ -2189,7 +2188,7 @@ void MainWindow::logLX200OutgoingCmdsRA(void) {
 
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Outgoing RA: ");
-        lx200msg->append(this->lx200port->getLX200ResponseRA());
+        lx200msg->append(this->lx200Comm->getLX200ResponseRA());
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
@@ -2203,7 +2202,7 @@ void MainWindow::logLX200OutgoingCmdsDecl(void) {
 
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Outgoing Decl: ");
-        lx200msg->append(this->lx200port->getLX200ResponseDecl());
+        lx200msg->append(this->lx200Comm->getLX200ResponseDecl());
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
@@ -2216,7 +2215,7 @@ void MainWindow::logLX200OutgoingCmds(void) {
 
     if ((this->lx200IsOn==true) && (ui->cbLX200Logs->isChecked()==true)) {
         lx200msg = new QString("Outgoing: ");
-        lx200msg->append(this->lx200port->getLX200Response());
+        lx200msg->append(this->lx200Comm->getLX200Response());
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
@@ -2246,8 +2245,8 @@ void MainWindow::LXsyncMount(void) {
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             }
         }
-        this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
-        this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
+        this->ra = (float)(this->lx200Comm->getReceivedCoordinates(0));
+        this->decl = (float)(this->lx200Comm->getReceivedCoordinates(1));
         QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
         g_AllData->setSyncPosition(this->ra, this->decl);
         // convey right ascension and declination to the global parameters;
@@ -2288,8 +2287,8 @@ void MainWindow::LXslewMount(void) {
         if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
             if (g_AllData->wasMountSynced() == true) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-                this->ra = (float)(this->lx200port->getReceivedCoordinates(0));
-                this->decl = (float)(this->lx200port->getReceivedCoordinates(1));
+                this->ra = (float)(this->lx200Comm->getReceivedCoordinates(0));
+                this->decl = (float)(this->lx200Comm->getReceivedCoordinates(1));
                 lestr = QString::number(this->ra, 'g', 8);
                 ui->lineEditRA->setText(lestr);
                 ui->leLX200RA->setText(lestr);
@@ -2443,9 +2442,9 @@ void MainWindow::LXhiSpeed(void) {
 void MainWindow::LXSetNumberFormatToSimple(void) {
 
     if (ui->cbLXSimpleNumbers->isChecked() == true) {
-        this->lx200port->setNumberFormat(true);
+        this->lx200Comm->setNumberFormat(true);
     } else {
-        this->lx200port->setNumberFormat(false);
+        this->lx200Comm->setNumberFormat(false);
     }
 }
 
@@ -2460,7 +2459,7 @@ void MainWindow::openPort(void) {
         this->LX200SerialPortIsUp = 1;
         this->lx200SerialPort->clear(QSerialPort::AllDirections);
     }
-      this->lx200port->clearReplyString();
+      this->lx200Comm->clearReplyString();
 }
 
 //---------------------------------------------------------------------
@@ -2470,7 +2469,7 @@ void MainWindow::shutDownPort(void) {
     this->LX200SerialPortIsUp = 0;
     this->lx200SerialPort->clear(QSerialPort::AllDirections);
     this->lx200SerialPort->close();
-    this->lx200port->clearReplyString();
+    this->lx200Comm->clearReplyString();
 }
 
 
@@ -3488,6 +3487,7 @@ void MainWindow::doMeridianFlip(void) {
                 ui->lineEditDecl->setText(lestr);
                 ui->leLX200Decl->setText(lestr);
                 this->startGoToObject();
+                g_AllData->incrementActualScopePosition(0.0, -180.0);
             }
         }
     }

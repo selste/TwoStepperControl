@@ -208,7 +208,7 @@ private:
     QDate *UTDate;
     QTime *UTTime;
     double julianDay;
-    lx200_communication *lx200port;
+    lx200_communication *lx200Comm;
     tsc_bt_serialcomm *bt_Handbox;
     QPixmap *camImg;
     QPixmap *guideStarPrev;

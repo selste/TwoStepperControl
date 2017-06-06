@@ -52,9 +52,9 @@ tsc_bt_serialcomm::~tsc_bt_serialcomm(void) {
 //---------------------------------------------------
 void tsc_bt_serialcomm::shutDownPort(void) {
     rfcommport.setBreakEnabled(true);
-    portIsUp = 0;
     rfcommport.clear(QSerialPort::AllDirections);
     rfcommport.close();
+    portIsUp = 0;
 }
 
 //---------------------------------------------------
