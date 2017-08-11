@@ -8,10 +8,8 @@
 #include <qdebug.h>
 #include <qcolor.h>
 #include <qpixmap.h>
-#include <baseclient.h>
 #include <basedevice.h>
 #include <indiproperty.h>
-#include "indicom.h"
 #include "tsc_globaldata.h"
 #include "ccd_client.h"
 
