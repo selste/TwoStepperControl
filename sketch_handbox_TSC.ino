@@ -5,16 +5,16 @@ int sSwitch = LOW;
 int wSwitch = LOW;
 int speedSwitch; 
 int switchStateChanged = 0;
-SoftwareSerial tscHB(10,11); //RX, TX
+SoftwareSerial tscHB(7,8); //RX, TX
   
 void setup() {
   // put your setup code here, to run once:
   pinMode(2,INPUT); // north
-  pinMode(4,INPUT); // east
-  pinMode(7,INPUT); // south
-  pinMode(12,INPUT); // west
-  pinMode(13,INPUT); // speed selection switch
-  if (digitalRead(13) == LOW) {
+  pinMode(3,INPUT); // east
+  pinMode(5,INPUT); // south
+  pinMode(4,INPUT); // west
+  pinMode(6,INPUT); // speed selection switch
+  if (digitalRead(6) == LOW) {
     speedSwitch=LOW;
   } else {
     speedSwitch=HIGH;
@@ -22,7 +22,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) {}
   tscHB.begin(9600);
-  while (!tscHB) {}
+//  while (!tscHB) {}
 }
 
 void loop() {
@@ -30,20 +30,20 @@ if (digitalRead(2) != nSwitch) {
   nSwitch = digitalRead(2);
   switchStateChanged=1;
 }
-if (digitalRead(4) != eSwitch) {
-  eSwitch = digitalRead(4);
+if (digitalRead(3) != eSwitch) {
+  eSwitch = digitalRead(3);
   switchStateChanged=1;
 }
-if (digitalRead(7) != sSwitch) {
-  sSwitch = digitalRead(7);
+if (digitalRead(5) != sSwitch) {
+  sSwitch = digitalRead(5);
   switchStateChanged=1;
 }
-if (digitalRead(12) != wSwitch) {
-  wSwitch = digitalRead(12);
+if (digitalRead(4) != wSwitch) {
+  wSwitch = digitalRead(4);
   switchStateChanged=1;
 }
-if (digitalRead(13) != speedSwitch) {
-  speedSwitch = digitalRead(12);
+if (digitalRead(6) != speedSwitch) {
+  speedSwitch = digitalRead(6);
   switchStateChanged=1;
 }
 if (switchStateChanged == 1) {
