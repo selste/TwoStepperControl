@@ -136,8 +136,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pullUpDnControl(4,PUD_UP);
     pullUpDnControl(5,PUD_UP); // setting internal pull-ip resistors of the BCM
     ui->pbStopST4->setEnabled(false);
-    pinMode (0, OUTPUT);
-    pinMode (1, OUTPUT); // settin BCM-pins 17 and 18 to output mode for dslr-control
+    pinMode (1, OUTPUT);
+    pinMode (27, OUTPUT); // settin BCM-pins 18 and 27 to output mode for dslr-control
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -3608,8 +3608,9 @@ void MainWindow::handleBTHandbox(void) {
 // slot that handles start of DSLR exposure ...
 void MainWindow::handleDSLRSingleExposure(void) {
     int duration;
+    QElapsedTimer *lWait;
 
-    duration = ui->sbDSLRDuration->value();
+    duration = ui->sbDSLRDuration->value()+0.5; // add the 500 ms for pre-release on pin 27 ...
     dslrStates.dslrExpTime=duration;
     dslrStates.dslrExposureIsRunning=true;
     dslrStates.dslrExpElapsed.start();
@@ -3619,7 +3620,13 @@ void MainWindow::handleDSLRSingleExposure(void) {
     if (this->dslrStates.dslrSeriesRunning == false) {
         ui->pbDSLRTerminateExposure->setEnabled(true);
     }
-    digitalWrite(0,1); // set wiring pi pin 0 to high ...
+    digitalWrite(27,1); // set wiring pi pin 27=ring to high ... focus ...
+    lWait = new QElapsedTimer();
+    lWait->start();
+    do {
+    } while (lWait->elapsed() < 500);
+    delete lWait;
+    digitalWrite(1,1); // set wiring pi pin 1=tip to high ... start exposure
 }
 
 //------------------------------------------------------------------
@@ -3633,7 +3640,9 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
     remTime = (this->dslrStates.dslrExpTime - round(this->dslrStates.dslrExpElapsed.elapsed()/1000.0));
     ui->lcdDSLRTimeRemaining->display(QString::number(remTime));
     if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
-        digitalWrite(0,0); // set wiring pi pin 0 to low ...
+        digitalWrite(27,0);
+        usleep(10);
+        digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
         ui->pbDSLRSingleShot->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == false) {
             ui->pbDSLRTerminateExposure->setEnabled(false);
@@ -3723,5 +3732,8 @@ void MainWindow::terminateDSLRSingleShot(void) {
     ui->sbDSLRDuration->setEnabled(true);
     ui->pbDSLRStartSeries->setEnabled(true);
     ui->lcdDSLRTimeRemaining->display("0");
-    digitalWrite(0,0); // set wiring pi pin 0 to low ...
+    digitalWrite(27,0);
+    usleep(10);
+    digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
+
 }
