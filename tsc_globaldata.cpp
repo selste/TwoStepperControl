@@ -1,5 +1,6 @@
 #include "tsc_globaldata.h"
 #include <QDebug>
+#include <QFile>
 
 TSC_GlobalData::TSC_GlobalData() {
 
@@ -29,7 +30,8 @@ TSC_GlobalData::TSC_GlobalData() {
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
     this->guidingState=false;
-    this->BTMACAddress=new QString("98:D3:31:FB:2A:8C");
+    this->BTMACAddress=new QString("00:00:00:00:00:00");
+    this->getBTMACAddress(); // if a MAC address is stored for the BT-adapter in ".TSC_BTMAC.tsp" - use it ...
     this->LX200IPAddress = new QString("127.0.0.1");
     this->celestialSpeed=0.0041780746; // default speed is sidereal speed
     if (this->loadGlobalData() == false) {
@@ -148,6 +150,19 @@ void TSC_GlobalData::setTrackingMode(bool isTracking) {
 
 //-----------------------------------------------
 QString* TSC_GlobalData::getBTMACAddress(void) {
+    std::string line;
+    QString *btmacaddr;
+
+    std::ifstream infile(".TSC_BTMAC.tsp");  // read that preferences file ...
+    if (!infile.is_open()) {
+        return this->BTMACAddress;
+    }
+
+    std::getline(infile, line);
+    btmacaddr = new QString(line.data());
+    this->BTMACAddress->clear();
+    this->BTMACAddress->append(btmacaddr);
+    delete btmacaddr;
     return this->BTMACAddress;
 }
 

@@ -336,6 +336,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbResetGdErr, SIGNAL(clicked()), this, SLOT(resetGuidingError())); // reset autoguider guiding error
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
     connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
+    connect(ui->pbSaveBTMACAddress, SIGNAL(clicked()), this, SLOT(saveBTMACAddr())); // save the MAC address of the BT module to a ".TSC_BTMAC.tsp" file.
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
     connect(ui->pbStopST4, SIGNAL(clicked()),this, SLOT(stopST4Guiding())); // stop ST4 pulse guiding
     connect(ui->pbMeridianFlip, SIGNAL(clicked()), this, SLOT(doMeridianFlip())); // carry out meridian flip
@@ -3511,6 +3512,20 @@ void MainWindow::startBTComm(void) { // start BT communications
 void MainWindow::stopBTComm(void) {  // stop BT communications
     this->bt_Handbox->shutDownPort();
     ui->cbBTIsUp->setChecked(false);
+}
+
+//----------------------------------------------------------------------
+void MainWindow::saveBTMACAddr(void) {
+    QString *btmacaddr;
+    QFile *macfile;
+
+    btmacaddr = new QString(ui->leBTMACAddress->text());
+    macfile = new QFile(".TSC_BTMAC.tsp");
+    macfile->open((QIODevice::ReadWrite | QIODevice::Text));
+    macfile->write(btmacaddr->toLatin1(),btmacaddr->length());
+    macfile->close();
+    delete btmacaddr;
+    delete macfile;
 }
 
 //----------------------------------------------------------------------

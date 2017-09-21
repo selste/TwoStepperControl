@@ -116,6 +116,7 @@ private slots:
     void resetGuidingError(void);
     void startBTComm(void);
     void stopBTComm(void);
+    void saveBTMACAddr(void);
     void restartBTComm(void);
     void handleBTHandbox(void);
     void readST4Port(void);
