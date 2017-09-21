@@ -29,7 +29,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
     this->guidingState=false;
-    this->BTMACAddress=new QString("20:16:02:22:00:61");
+    this->BTMACAddress=new QString("98:D3:31:FB:2A:8C");
     this->LX200IPAddress = new QString("127.0.0.1");
     this->celestialSpeed=0.0041780746; // default speed is sidereal speed
     if (this->loadGlobalData() == false) {
