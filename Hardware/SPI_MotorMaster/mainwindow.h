@@ -34,6 +34,7 @@ private:
         QString *guiData;
     };
     currentCommunicationParameters commParams;
+    void waitForNMSecs(int);
 
 private slots:
     void startDrive(void);
@@ -42,6 +43,7 @@ private slots:
     void terminateProgram(void);
     void switchChannel(void);
     void checkDrivesForActivity(void);
+    void checkForController(void);
 };
 
 #endif // MAINWINDOW_H

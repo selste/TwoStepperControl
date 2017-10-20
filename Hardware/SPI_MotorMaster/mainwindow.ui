@@ -31,7 +31,7 @@
     <property name="geometry">
      <rect>
       <x>590</x>
-      <y>40</y>
+      <y>20</y>
       <width>151</width>
       <height>91</height>
      </rect>
@@ -39,7 +39,7 @@
     <property name="title">
      <string>Enabled Drives</string>
     </property>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -68,7 +68,7 @@
       </item>
      </layout>
     </widget>
-    <widget class="QWidget" name="">
+    <widget class="QWidget" name="layoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -102,9 +102,9 @@
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>40</y>
+      <y>20</y>
       <width>191</width>
-      <height>171</height>
+      <height>181</height>
      </rect>
     </property>
     <property name="title">
@@ -121,7 +121,7 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pbProbeController">
         <property name="minimumSize">
          <size>
           <width>150</width>
@@ -155,7 +155,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
+       <y>70</y>
        <width>141</width>
        <height>101</height>
       </rect>

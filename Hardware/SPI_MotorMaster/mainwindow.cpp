@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
+#include <QElapsedTimer>
 
 //-------------------------------------------------------------------------------------
 
@@ -26,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         this->commParams.selectedChannel = 1;
     }
     this->timer = new QTimer();
-    this->timer->setInterval(100);
+    this->timer->setInterval(1000);
     this->timer->start();
     connect(ui->pbSendKinematics, SIGNAL(clicked()), this, SLOT(sendKinematics()));
     connect(ui->pbStart, SIGNAL(clicked()), this, SLOT(startDrive()));
@@ -36,7 +37,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->rbSPI1, SIGNAL(released()), this, SLOT(switchChannel()));
     connect(this->timer, SIGNAL(timeout()), this, SLOT(checkDrivesForActivity()));
     this->commParams.guiData = new QString("t"); // query type of driver ... to be completed
-
 }
 
 //--------------------------------------------------------------------------------------
@@ -46,17 +46,35 @@ MainWindow::~MainWindow() {
 }
 
 //--------------------------------------------------------------------------------------
+void MainWindow::waitForNMSecs(int msecs) {
+    QElapsedTimer *qelap;
+
+    qelap = new QElapsedTimer();
+    qelap->start();
+    do {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, msecs);
+    } while (qelap->elapsed() < msecs);
+    delete qelap;
+}
+
+//--------------------------------------------------------------------------------------
+// send a frequent request whether drives are up ...
 
 void MainWindow::checkDrivesForActivity(void) {
     this->commParams.guiData->clear();
     this->commParams.guiData->append("d0");
-    qDebug() << this->commParams.guiData->toLatin1();
     this->commParams.guiData->clear();
     this->commParams.guiData->append("d1");
-    qDebug() << this->commParams.guiData->toLatin1();
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(10);
 }
 
 //--------------------------------------------------------------------------------------
+// disables the drives and exits the program
 
 void MainWindow::terminateProgram(void) {
     this->enableDrive(0,0);
@@ -65,6 +83,7 @@ void MainWindow::terminateProgram(void) {
 }
 
 //--------------------------------------------------------------------------------------
+// sets an internal variable that holds the spi channel to be used
 
 void MainWindow::switchChannel(void) {
     if (ui->rbSPI0->isChecked()) {
@@ -72,10 +91,10 @@ void MainWindow::switchChannel(void) {
     } else {
         this->commParams.selectedChannel = 1;
     }
-    qDebug() << this->commParams.selectedChannel;
 }
 
 //--------------------------------------------------------------------------------------
+// assembles a command that takes the acceleration from the GUI and sends it to the controller
 
 void MainWindow::getAcc(void) {
     int val;
@@ -91,7 +110,12 @@ void MainWindow::getAcc(void) {
     this->commParams.guiData->append("a");
     this->commParams.guiData->append(QString::number(driveAddressed));
     this->commParams.guiData->append(QString::number(val));
-    qDebug() << this->commParams.guiData->toLatin1();
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(150);
 }
 
 //--------------------------------------------------------------------------------------
@@ -110,7 +134,12 @@ void MainWindow::getVel(void) {
     this->commParams.guiData->append("v");
     this->commParams.guiData->append(QString::number(driveAddressed));
     this->commParams.guiData->append(QString::number(val));
-    qDebug() << this->commParams.guiData->toLatin1();
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(150);
 }
 
 //--------------------------------------------------------------------------------------
@@ -129,7 +158,12 @@ void MainWindow::getSteps(void) {
     this->commParams.guiData->append("s");
     this->commParams.guiData->append(QString::number(driveAddressed));
     this->commParams.guiData->append(QString::number(val));
-    qDebug() << this->commParams.guiData->toLatin1();
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(150);
 }
 //--------------------------------------------------------------------------------------
 
@@ -164,9 +198,13 @@ void MainWindow::getMSteps(void) {
     this->commParams.guiData->clear();
     this->commParams.guiData->append(val);
     delete val;
-    qDebug() << this->commParams.guiData->toLatin1();
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(150);
 }
-
 
 //--------------------------------------------------------------------------------------
 
@@ -186,18 +224,22 @@ void MainWindow::enableDrive(short which, short enable) {
     } else {
         this->commParams.guiData->append("1");
     }
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
     if (which == 0) {
         ui->cbEnableDrive1->setChecked(enable);
     } else {
         ui->cbEnableDrive2->setChecked(enable);
     }
-    qDebug() << this->commParams.guiData->toLatin1();
+    this->waitForNMSecs(150);
 }
 
 //--------------------------------------------------------------------------------------
 
 void MainWindow::startDrive(void) {
-
 
     if (ui->rbCtrlDrive1->isChecked()) {
         this->enableDrive(0,1);
@@ -208,7 +250,12 @@ void MainWindow::startDrive(void) {
         this->commParams.guiData->clear();
         this->commParams.guiData->append("o1");
     }
-    qDebug() << this->commParams.guiData->toLatin1();
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(150);
 }
 
 //--------------------------------------------------------------------------------------
@@ -217,22 +264,30 @@ void MainWindow::stopDrive(void) {
 
     this->commParams.guiData->clear();
     if (ui->rbCtrlDrive1->isChecked()) {
-        this->commParams.guiData->append("x0");
-        qDebug() << this->commParams.guiData->toLatin1();
         this->enableDrive(0,0);
+        this->commParams.guiData->clear();
+        this->commParams.guiData->append("x0");
     } else {
-        this->commParams.guiData->append("x1");
-        qDebug() << this->commParams.guiData->toLatin1();
         this->enableDrive(1,0);
+        this->commParams.guiData->clear();
+        this->commParams.guiData->append("x1");
     }
-
+    if (this->commParams.selectedChannel == 0) {
+        this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    } else {
+        this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    }
+    this->waitForNMSecs(150);
 }
 
 //--------------------------------------------------------------------------------------
 
 void MainWindow::sendKinematics(void) {
+
     this->getAcc();
     this->getVel();
     this->getSteps();
     this->getMSteps();
 }
+
+//--------------------------------------------------------------------------------------

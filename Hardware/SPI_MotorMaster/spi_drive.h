@@ -12,6 +12,7 @@ public:
 private:
     int SPIChannel; //0 or 1, there is 2 channels on the Pi
     QString *parameter;
+    char bytecmd[32];
     int fileDesc; // filedescriptor for opening a channel. -1 if failed ...
 };
 
