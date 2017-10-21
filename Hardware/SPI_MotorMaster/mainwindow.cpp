@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QElapsedTimer>
 
+
 //-------------------------------------------------------------------------------------
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -35,8 +36,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->pbExit, SIGNAL(clicked()), this, SLOT(terminateProgram()));
     connect(ui->rbSPI0, SIGNAL(released()), this, SLOT(switchChannel()));
     connect(ui->rbSPI1, SIGNAL(released()), this, SLOT(switchChannel()));
-    connect(this->timer, SIGNAL(timeout()), this, SLOT(checkDrivesForActivity()));
-    this->commParams.guiData = new QString("t"); // query type of driver ... to be completed
+    //connect(this->timer, SIGNAL(timeout()), this, SLOT(checkDrivesForActivity()));
+    this->commParams.guiData = new QString();
+    this->checkForController();
 }
 
 //--------------------------------------------------------------------------------------
@@ -52,7 +54,7 @@ void MainWindow::waitForNMSecs(int msecs) {
     qelap = new QElapsedTimer();
     qelap->start();
     do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, msecs);
+      QCoreApplication::processEvents(QEventLoop::AllEvents, msecs);
     } while (qelap->elapsed() < msecs);
     delete qelap;
 }
@@ -71,6 +73,47 @@ void MainWindow::checkDrivesForActivity(void) {
         this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
     }
     this->waitForNMSecs(10);
+}
+
+//--------------------------------------------------------------------------------------
+// just checks whether an arduino is connected
+void MainWindow::checkForController(void) {
+    char reply1, reply2;
+
+    this->commParams.guiData->clear();
+    this->commParams.guiData->append("tt");
+    this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
+    this->waitForNMSecs(50);
+    this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
+    this->waitForNMSecs(50);
+    reply1 = this->spiDrOnChan0->getResponse();
+    if ((reply1=='A') || (reply1=='D') || (reply1=='R') ){
+         ui->cbControllerSPI0Available->setChecked(true);
+         switch (reply1) {
+             case 'A': ui->cbA4988->setChecked(true); break;
+             case 'D': ui->cbDRV8825->setChecked(true); break;
+             case 'R': ui->cbRAPS128->setChecked(true); break;
+         }
+    }
+    reply2 = this->spiDrOnChan1->getResponse();
+    if ((reply2=='A') || (reply2=='D') || (reply2=='R') ){
+         ui->cbControllerSPI1Available->setChecked(true);
+         switch (reply2) {
+             case 'A': ui->cbA4988->setChecked(true); break;
+             case 'D': ui->cbDRV8825->setChecked(true); break;
+             case 'R': ui->cbRAPS128->setChecked(true); break;
+         }
+    } // the microcontroller always send one of these three characters in dependence of the
+      // driver boards used...
+    if (ui->cbA4988->isChecked() == true) {
+        ui->rb128thStep->setEnabled(false);
+        ui->rb64thStep->setEnabled(false);
+        ui->rb32thStep->setEnabled(false);
+    }
+    if (ui->cbDRV8825->isChecked() == true) {
+        ui->rb128thStep->setEnabled(false);
+        ui->rb64thStep->setEnabled(false);
+    }
 }
 
 //--------------------------------------------------------------------------------------
@@ -264,11 +307,9 @@ void MainWindow::stopDrive(void) {
 
     this->commParams.guiData->clear();
     if (ui->rbCtrlDrive1->isChecked()) {
-        this->enableDrive(0,0);
         this->commParams.guiData->clear();
         this->commParams.guiData->append("x0");
     } else {
-        this->enableDrive(1,0);
         this->commParams.guiData->clear();
         this->commParams.guiData->append("x1");
     }
@@ -278,6 +319,11 @@ void MainWindow::stopDrive(void) {
         this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
     }
     this->waitForNMSecs(150);
+    if (ui->rbCtrlDrive1->isChecked()) {
+        enableDrive(0,0);
+    } else {
+        enableDrive(1,0);
+    }
 }
 
 //--------------------------------------------------------------------------------------

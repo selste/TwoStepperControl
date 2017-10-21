@@ -17,13 +17,16 @@ SPI_Drive::SPI_Drive(short channel) {
 
 void SPI_Drive::spidrReceiveCommand(QString cmd) {
     int len;
+    char bytecmd[32];
 
     this->parameter->clear();
     this->parameter->append(cmd);
-    strncpy(this->bytecmd, (const char*)(this->parameter->toLatin1()),30);
-    len = strlen(this->bytecmd);
-    this->bytecmd[len] = 0x00;
-    wiringPiSPIDataRW(this->SPIChannel, (unsigned char*)(this->bytecmd), (len+1));
+    strncpy(bytecmd, (const char*)(this->parameter->toLatin1()),30);
+    len = strlen(bytecmd);
+    bytecmd[len] = 0x00;
+    len++;
+    wiringPiSPIDataRW(this->SPIChannel, (unsigned char*)(bytecmd), len);
+    this->muprocReply=bytecmd[1];
 }
 
 //--------------------------------------------------------------
@@ -33,3 +36,7 @@ int SPI_Drive::spidrGetFD(void) {
 }
 
 //--------------------------------------------------------------
+
+char SPI_Drive::getResponse(void) {
+    return this->muprocReply;
+}
