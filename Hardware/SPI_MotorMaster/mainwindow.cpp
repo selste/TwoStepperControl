@@ -3,7 +3,6 @@
 #include <QDebug>
 #include <QElapsedTimer>
 
-
 //-------------------------------------------------------------------------------------
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -81,35 +80,29 @@ void MainWindow::checkForController(void) {
     char reply1, reply2;
 
     this->commParams.guiData->clear();
-    this->commParams.guiData->append("tt");
+    this->commParams.guiData->append("ttt");
     this->spiDrOnChan0->spidrReceiveCommand(*commParams.guiData);
     this->waitForNMSecs(50);
     this->spiDrOnChan1->spidrReceiveCommand(*commParams.guiData);
     this->waitForNMSecs(50);
     reply1 = this->spiDrOnChan0->getResponse();
-    if ((reply1=='A') || (reply1=='D') || (reply1=='R') ){
+    if ((reply1=='D') || (reply1=='R')){
          ui->cbControllerSPI0Available->setChecked(true);
          switch (reply1) {
-             case 'A': ui->cbA4988->setChecked(true); break;
              case 'D': ui->cbDRV8825->setChecked(true); break;
              case 'R': ui->cbRAPS128->setChecked(true); break;
          }
     }
     reply2 = this->spiDrOnChan1->getResponse();
-    if ((reply2=='A') || (reply2=='D') || (reply2=='R') ){
+    if ((reply2=='D') || (reply2=='R')){
          ui->cbControllerSPI1Available->setChecked(true);
          switch (reply2) {
-             case 'A': ui->cbA4988->setChecked(true); break;
              case 'D': ui->cbDRV8825->setChecked(true); break;
              case 'R': ui->cbRAPS128->setChecked(true); break;
          }
     } // the microcontroller always send one of these three characters in dependence of the
       // driver boards used...
-    if (ui->cbA4988->isChecked() == true) {
-        ui->rb128thStep->setEnabled(false);
-        ui->rb64thStep->setEnabled(false);
-        ui->rb32thStep->setEnabled(false);
-    }
+
     if (ui->cbDRV8825->isChecked() == true) {
         ui->rb128thStep->setEnabled(false);
         ui->rb64thStep->setEnabled(false);
