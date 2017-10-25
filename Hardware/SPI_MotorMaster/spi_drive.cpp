@@ -27,7 +27,6 @@ void SPI_Drive::spidrReceiveCommand(QString cmd) {
     len++;
     wiringPiSPIDataRW(this->SPIChannel, (unsigned char*)(bytecmd), len);
     this->muprocReply=bytecmd[1];
-    qDebug() << this->muprocReply;
 }
 
 //--------------------------------------------------------------

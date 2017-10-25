@@ -10,6 +10,7 @@ struct kinematicParametersStruct {
   long steps;
   long maxSpeed;
   long acceleration;
+  bool isActive;
 };
 
 struct kinematicParametersStruct raDriveParams; 
@@ -18,8 +19,8 @@ struct kinematicParametersStruct deDriveParams;
 char buf[32];
 volatile byte pos;
 volatile boolean process_it;
-const bool showDebug = true; // if set to false, serial output is supressed ... good for performance
-const char whatDriver = 'D'; // the A 4988 (= 'A'), the DRV 8825 (= 'D') and the RAPS 128 (='R') are 
+const bool showDebug = false; // if set to false, serial output is supressed ... good for performance
+const char whatDriver = 'D'; // the DRV 8825 (= 'D') and the RAPS 128 (='R') are 
                              // supported. insert the letter applicable. RAPS has different logic on the enable pin.
 
 //--------------------------------------------------------------
@@ -33,7 +34,7 @@ void setup (void) {
   pinMode(6,OUTPUT); // connected to M2 of the drv 8825 - sets microstepping for both drives
   digitalWrite(8,LOW);
   digitalWrite(7,LOW);    
-  digitalWrite(6,LOW); // LLL=full, HLL=half,LHL=1/4,HHL=1/8,LLH=1/16,HLH=LHH=HHH=1/32 for the DRV8825
+  digitalWrite(6,HIGH); // LLL=full, HLL=half,LHL=1/4,HHL=1/8,LLH=1/16,HLH=LHH=HHH=1/32 for the DRV8825
   pinMode(A0,OUTPUT); // connected to ENABLE pin of drive 1
   pinMode(A1,OUTPUT); // connected to ENABLE pin of drive 2
   if (whatDriver == 'R') {
@@ -44,12 +45,14 @@ void setup (void) {
     digitalWrite(A1,HIGH);
   }
    
-  raDriveParams.steps = 500;
-  raDriveParams.maxSpeed = 100;
-  raDriveParams.acceleration = 500;   
-  deDriveParams.steps = 500;
-  deDriveParams.maxSpeed = 100;
+  raDriveParams.steps = 5000;
+  raDriveParams.maxSpeed = 500;
+  raDriveParams.acceleration = 500; 
+  raDriveParams.isActive = false; 
+  deDriveParams.steps = 5000;
+  deDriveParams.maxSpeed = 500;
   deDriveParams.acceleration = 500;
+  deDriveParams.isActive = false;   
   raStepper.setMaxSpeed(raDriveParams.maxSpeed); 
   raStepper.setAcceleration(raDriveParams.acceleration); 
   deStepper.setMaxSpeed(deDriveParams.maxSpeed); 
@@ -77,33 +80,49 @@ short bCounter;
     switch (readCommand) {
       case 'e': // enable drives 1 or 2
         enableDrive(buf[1],buf[2]); 
+        raStepper.run();
+        deStepper.run();
         break;
       case 'a': // set acceleration for drive 1 or 2
         numVal = convertBufToLParam();
         setAcc(buf[1],numVal);
+        raStepper.run();
+        deStepper.run();        
         break;
       case 'm': // set microstepping rate for drive 1 or 2 
         numVal = convertBufToLParam();
         setMicrosteps(numVal);
+        raStepper.run();
+        deStepper.run();        
         break;
       case 'v': // set velocity for drive 1 or 2
         numVal = convertBufToLParam();
         setVelocity(buf[1],numVal);
+        raStepper.run();
+        deStepper.run();        
         break;
       case 's': // set steps for drive 1 or 2
         numVal = convertBufToLParam();
         setSteps(buf[1],numVal);
+        raStepper.run();
+        deStepper.run();        
         break;
       case 't': // if the master wants to know whether there is a slave connected, it sends 't'
         if (showDebug == true) {
           Serial.println("Ping received");
         }
+        raStepper.run();
+        deStepper.run();        
         break;
       case 'x': // stops drive 1 or 2
         stopDrive(buf[1]);
+        raStepper.run();
+        deStepper.run();        
         break;
       case 'o': 
         startDrive(buf[1]);
+        raStepper.run();
+        deStepper.run();        
         break; 
        case 'd':
          // report whether drive is at rest
@@ -113,6 +132,14 @@ short bCounter;
       buf[bCounter]='#';
     }
   }  
+  if ((raDriveParams.isActive == true) &&  (raStepper.isRunning() == false)) {
+    raDriveParams.isActive = false;
+    enableDrive('0','0');
+  }
+  if ((deDriveParams.isActive == true) &&  (deStepper.isRunning() == false)) {
+    deDriveParams.isActive = false;
+    enableDrive('1','0');
+  }
 } // end of loop
 
 //--------------------------------------------------------------
@@ -158,32 +185,32 @@ void enableDrive(char whatDrive, char setEnabled) { // reacts to "exy" where x i
     Serial.println(setEnabled);
     Serial.println ("--------");
   }
-  if (whatDrive != 'R') {
+  if (whatDriver == 'R') {
     if (whatDrive == '0') {
       if (setEnabled == '1') {
-        digitalWrite(A0,LOW);
-      } else {
         digitalWrite(A0,HIGH);
+      } else {
+        digitalWrite(A0,LOW);
       }
     } else { 
       if (setEnabled == '1') {
-        digitalWrite(A1,LOW);
-      } else {
         digitalWrite(A1,HIGH);
+      } else {
+        digitalWrite(A1,LOW);
       }
     }
   } else { // the raps driver has an inverted logic for enabling and diabling the drive ....
     if (whatDrive == '0') {
       if (setEnabled == '1') {
-        digitalWrite(A0,HIGH);
-      } else {
         digitalWrite(A0,LOW);
+      } else {
+        digitalWrite(A0,HIGH);
       }
     } else { 
       if (setEnabled == '1') {
-        digitalWrite(A1,HIGH);
-      } else {
         digitalWrite(A1,LOW);
+      } else {
+        digitalWrite(A1,HIGH);
       }
     }
   }  
@@ -302,8 +329,10 @@ void stopDrive(char whatDrive) { // stops drive 1/2 immediately; reacts on 'x'
   }
   if (whatDrive == '0') {
     raStepper.stop();
+    raDriveParams.isActive = false;    
   } else {
     deStepper.stop();
+    deDriveParams.isActive = false;
   }
 }
 
@@ -316,8 +345,12 @@ void startDrive(char whatDrive) { // sets drive in motion; reacts on 'o'. distan
     Serial.println ("--------");
   }
   if (whatDrive == '0') {
-    raStepper.move(raDriveParams.steps);
+    raStepper.setCurrentPosition(0);
+    raStepper.moveTo(raDriveParams.steps);
+    raDriveParams.isActive = true;
   } else {
-    deStepper.move(deDriveParams.steps);
+    deStepper.setCurrentPosition(0);
+    deStepper.moveTo(deDriveParams.steps);
+    deDriveParams.isActive = true;
   }
 }
