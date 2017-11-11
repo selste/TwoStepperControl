@@ -2,8 +2,8 @@
 #include <AccelStepper.h>
 #include <stdlib.h>
 
-AccelStepper raStepper(AccelStepper::DRIVER,3,2); // pin 3 connected to STEP, pin 2 connected to DIR
-AccelStepper deStepper(AccelStepper::DRIVER,5,4); // pin 5 connected to STEP, pin 4 connected to DIR
+AccelStepper aux1Stepper(AccelStepper::DRIVER,3,2); // pin 3 connected to STEP, pin 2 connected to DIR
+AccelStepper aux2Stepper(AccelStepper::DRIVER,5,4); // pin 5 connected to STEP, pin 4 connected to DIR
 char readCommand;
 short sign;
 struct kinematicParametersStruct {
@@ -13,15 +13,14 @@ struct kinematicParametersStruct {
   bool isActive;
 };
 
-struct kinematicParametersStruct raDriveParams; 
-struct kinematicParametersStruct deDriveParams;
+struct kinematicParametersStruct aux1DriveParams; 
+struct kinematicParametersStruct aux2DriveParams;
 
 char buf[32];
 volatile byte pos;
 volatile boolean process_it;
 const bool showDebug = false; // if set to false, serial output is supressed ... good for performance
-const char whatDriver = 'D'; // the DRV 8825 (= 'D') and the RAPS 128 (='R') are 
-                             // supported. insert the letter applicable. RAPS has different logic on the enable pin.
+const char whatDriver = 'D'; 
 
 //--------------------------------------------------------------
 
@@ -32,31 +31,26 @@ void setup (void) {
   pinMode(8,OUTPUT); // connected to M0
   pinMode(7,OUTPUT); // connected to M1 
   pinMode(6,OUTPUT); // connected to M2 of the drv 8825 - sets microstepping for both drives
-  digitalWrite(8,LOW);
-  digitalWrite(7,LOW);    
+  digitalWrite(8,HIGH);
+  digitalWrite(7,HIGH);    
   digitalWrite(6,HIGH); // LLL=full, HLL=half,LHL=1/4,HHL=1/8,LLH=1/16,HLH=LHH=HHH=1/32 for the DRV8825
   pinMode(A0,OUTPUT); // connected to ENABLE pin of drive 1
   pinMode(A1,OUTPUT); // connected to ENABLE pin of drive 2
-  if (whatDriver == 'R') {
-    digitalWrite(A0,LOW);
-    digitalWrite(A1,LOW); // for the RAPS, both drives are now disabled ... 
-  } else {
-    digitalWrite(A0,HIGH);
-    digitalWrite(A1,HIGH);
-  }
-   
-  raDriveParams.steps = 5000;
-  raDriveParams.maxSpeed = 500;
-  raDriveParams.acceleration = 500; 
-  raDriveParams.isActive = false; 
-  deDriveParams.steps = 5000;
-  deDriveParams.maxSpeed = 500;
-  deDriveParams.acceleration = 500;
-  deDriveParams.isActive = false;   
-  raStepper.setMaxSpeed(raDriveParams.maxSpeed); 
-  raStepper.setAcceleration(raDriveParams.acceleration); 
-  deStepper.setMaxSpeed(deDriveParams.maxSpeed); 
-  deStepper.setAcceleration(deDriveParams.acceleration); 
+  digitalWrite(A0,HIGH);
+  digitalWrite(A1,HIGH);
+  
+  aux1DriveParams.steps = 5000;
+  aux1DriveParams.maxSpeed = 500;
+  aux1DriveParams.acceleration = 500; 
+  aux1DriveParams.isActive = false; 
+  aux2DriveParams.steps = 5000;
+  aux2DriveParams.maxSpeed = 500;
+  aux2DriveParams.acceleration = 500;
+  aux2DriveParams.isActive = false;   
+  aux1Stepper.setMaxSpeed(aux1DriveParams.maxSpeed); 
+  aux1Stepper.setAcceleration(aux1DriveParams.acceleration); 
+  aux2Stepper.setMaxSpeed(aux2DriveParams.maxSpeed); 
+  aux2Stepper.setAcceleration(aux2DriveParams.acceleration); 
   
   pinMode(MISO, OUTPUT); // have to send on master in, *slave out*
   SPCR |= _BV(SPE);  // turn on SPI in slave mode
@@ -71,8 +65,8 @@ void loop (void) { // main loop - wait for flag set in interrupt routine
 long numVal;
 short bCounter;
 
-  raStepper.run();
-  deStepper.run();
+  aux1Stepper.run();
+  aux2Stepper.run();
   if (process_it) { // got a string via SPI 
     pos = 0;
     readCommand=buf[0];
@@ -80,49 +74,49 @@ short bCounter;
     switch (readCommand) {
       case 'e': // enable drives 1 or 2
         enableDrive(buf[1],buf[2]); 
-        raStepper.run();
-        deStepper.run();
+        aux1Stepper.run();
+        aux2Stepper.run();
         break;
       case 'a': // set acceleration for drive 1 or 2
         numVal = convertBufToLParam();
         setAcc(buf[1],numVal);
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break;
       case 'm': // set microstepping rate for drive 1 or 2 
         numVal = convertBufToLParam();
         setMicrosteps(numVal);
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break;
       case 'v': // set velocity for drive 1 or 2
         numVal = convertBufToLParam();
         setVelocity(buf[1],numVal);
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break;
       case 's': // set steps for drive 1 or 2
         numVal = convertBufToLParam();
         setSteps(buf[1],numVal);
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break;
       case 't': // if the master wants to know whether there is a slave connected, it sends 't'
         if (showDebug == true) {
           Serial.println("Ping received");
         }
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break;
       case 'x': // stops drive 1 or 2
         stopDrive(buf[1]);
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break;
       case 'o': 
         startDrive(buf[1]);
-        raStepper.run();
-        deStepper.run();        
+        aux1Stepper.run();
+        aux2Stepper.run();        
         break; 
        case 'd':
          // report whether drive is at rest
@@ -132,19 +126,19 @@ short bCounter;
       buf[bCounter]='#';
     }
   }  
-  if ((raDriveParams.isActive == true) &&  (raStepper.isRunning() == false)) {
-    raDriveParams.isActive = false;
+  if ((aux1DriveParams.isActive == true) &&  (aux1Stepper.isRunning() == false)) {
+    aux1DriveParams.isActive = false;
     enableDrive('0','0');
   }
-  if ((deDriveParams.isActive == true) &&  (deStepper.isRunning() == false)) {
-    deDriveParams.isActive = false;
+  if ((aux1DriveParams.isActive == true) &&  (aux1Stepper.isRunning() == false)) {
+    aux2DriveParams.isActive = false;
     enableDrive('1','0');
   }
 } // end of loop
 
 //--------------------------------------------------------------
 
-ISR (SPI_STC_vect) { // SPI interrupt routine
+ISR(SPI_STC_vect) { // SPI interrupt routine
 byte c = SPDR;  // grab byte from SPI Data Register
 
   SPDR=whatDriver;
@@ -185,33 +179,17 @@ void enableDrive(char whatDrive, char setEnabled) { // reacts to "exy" where x i
     Serial.println(setEnabled);
     Serial.println ("--------");
   }
-  if (whatDriver == 'R') {
-    if (whatDrive == '0') {
-      if (setEnabled == '1') {
-        digitalWrite(A0,HIGH);
-      } else {
-        digitalWrite(A0,LOW);
-      }
-    } else { 
-      if (setEnabled == '1') {
-        digitalWrite(A1,HIGH);
-      } else {
-        digitalWrite(A1,LOW);
-      }
+  if (whatDrive == '0') {
+    if (setEnabled == '1') {
+      digitalWrite(A0,LOW);
+    } else {
+      digitalWrite(A0,HIGH);
     }
-  } else { // the raps driver has an inverted logic for enabling and diabling the drive ....
-    if (whatDrive == '0') {
-      if (setEnabled == '1') {
-        digitalWrite(A0,LOW);
-      } else {
-        digitalWrite(A0,HIGH);
-      }
-    } else { 
-      if (setEnabled == '1') {
-        digitalWrite(A1,LOW);
-      } else {
-        digitalWrite(A1,HIGH);
-      }
+  } else { 
+    if (setEnabled == '1') {
+      digitalWrite(A1,LOW);
+    } else {
+      digitalWrite(A1,HIGH);
     }
   }  
 }
@@ -227,11 +205,11 @@ void setAcc(char whatDrive, long value) { // reacts to axy, where x is 0/1 - the
     Serial.println ("--------");
   }
   if (whatDrive == '0') {
-    raDriveParams.acceleration = value;  
-    raStepper.setAcceleration(raDriveParams.acceleration); 
+    aux1DriveParams.acceleration = value;  
+    aux1Stepper.setAcceleration(aux1DriveParams.acceleration); 
   } else {
-    deDriveParams.acceleration = value;
-    deStepper.setAcceleration(deDriveParams.acceleration); 
+    aux2DriveParams.acceleration = value;
+    aux2Stepper.setAcceleration(aux2DriveParams.acceleration); 
   }
 }
 
@@ -246,11 +224,11 @@ void setVelocity(char whatDrive, long value) {
     Serial.println ("--------"); 
   }
   if (whatDrive == '0') {
-    raDriveParams.maxSpeed = value;  
-    raStepper.setMaxSpeed(raDriveParams.maxSpeed); 
+    aux1DriveParams.maxSpeed = value;  
+    aux1Stepper.setMaxSpeed(aux1DriveParams.maxSpeed); 
   } else {
-    deDriveParams.maxSpeed = value;
-    deStepper.setMaxSpeed(deDriveParams.maxSpeed); 
+    aux2DriveParams.maxSpeed = value;
+    aux2Stepper.setMaxSpeed(aux2DriveParams.maxSpeed); 
   } 
 }
 
@@ -265,9 +243,9 @@ void setSteps(char whatDrive, long value) {
     Serial.println ("--------"); 
   }
   if (whatDrive == '0') {
-    raDriveParams.steps = value;  
+    aux1DriveParams.steps = value;  
   } else {
-    deDriveParams.steps = value;  
+    aux2DriveParams.steps = value;  
   } 
 }
 
@@ -328,11 +306,11 @@ void stopDrive(char whatDrive) { // stops drive 1/2 immediately; reacts on 'x'
     Serial.println ("--------");
   }
   if (whatDrive == '0') {
-    raStepper.stop();
-    raDriveParams.isActive = false;    
+    aux1Stepper.stop();
+    aux1DriveParams.isActive = false;    
   } else {
-    deStepper.stop();
-    deDriveParams.isActive = false;
+    aux2Stepper.stop();
+    aux2DriveParams.isActive = false;
   }
 }
 
@@ -345,12 +323,12 @@ void startDrive(char whatDrive) { // sets drive in motion; reacts on 'o'. distan
     Serial.println ("--------");
   }
   if (whatDrive == '0') {
-    raStepper.setCurrentPosition(0);
-    raStepper.moveTo(raDriveParams.steps);
-    raDriveParams.isActive = true;
+    aux1Stepper.setCurrentPosition(0);
+    aux1Stepper.moveTo(aux1DriveParams.steps);
+    aux1DriveParams.isActive = true;
   } else {
-    deStepper.setCurrentPosition(0);
-    deStepper.moveTo(deDriveParams.steps);
-    deDriveParams.isActive = true;
+    aux2Stepper.setCurrentPosition(0);
+    aux2Stepper.moveTo(aux2DriveParams.steps);
+    aux2DriveParams.isActive = true;
   }
 }
