@@ -26,7 +26,8 @@ SOURCES += \
     ccd_client.cpp \
     QtKineticStepper.cpp \
     QtContinuousStepper.cpp \
-    tsc_bt_serialcomm.cpp
+    tsc_bt_serialcomm.cpp \
+    spi_drive.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -38,12 +39,14 @@ HEADERS  += \
     ccd_client.h \
     QtKineticStepper.h \
     QtContinuousStepper.h \
-    tsc_bt_serialcomm.h
+    tsc_bt_serialcomm.h \
+    spi_drive.h
 
 INCLUDEPATH += /home/pi
 INCLUDEPATH += /home/pi/libindi/libs/
 INCLUDEPATH += /home/pi/libindi/
 INCLUDEPATH += /usr/local/include/opencv2
+INCLUDEPATH += /usr/include/libindi
 
 FORMS    += mainwindow.ui
 

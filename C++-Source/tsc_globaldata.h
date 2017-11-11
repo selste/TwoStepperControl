@@ -58,6 +58,16 @@ public:
     double getLocalSTime(void);
     void setCelestialSpeed(short);
     double getCelestialSpeed(void);
+    void setAuxName(short, QString);
+    QString getAuxName(short);
+    void setStepsToBeDone(short, long);
+    long getStepsToBeDone(short);
+    void setAuxAcc(long);
+    long getAuxAcc(void);
+    void setAuxSpeed(long);
+    long getAuxSpeed(void);
+    void setAuxMSteps(long);
+    long getAuxMSteps(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -130,6 +140,16 @@ private:
         double UTCOffset;
     };
 
+    struct auxDriveStruct {
+        QString nameAux1;
+        QString nameAux2;
+        long stepsAux1;
+        long stepsAux2;
+        long auxAcc;
+        long auxSpeed;
+        short mSteps;
+    };
+
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
     struct cameraParametersStruct cameraParameters;
@@ -138,6 +158,7 @@ private:
     struct driveDataStruct driveData;
     struct actualScopePositionStruct actualScopePosition;
     struct siteParamsStruct siteParams;
+    struct auxDriveStruct auxDriveParams;
 };
 
 #endif // TSC_GLOBALDATA_H

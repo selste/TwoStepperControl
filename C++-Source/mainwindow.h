@@ -18,6 +18,7 @@
 #include "wiringPi.h"
 #include "ocv_guiding.h"
 #include "tsc_bt_serialcomm.h"
+#include "spi_drive.h"
 
 using namespace QtConcurrent;
 
@@ -132,6 +133,10 @@ private slots:
     void terminateDSLRSeries(void);
     void transferCoordinates(void);
     void terminateDSLRSingleShot(void);
+    void emergencyStopAuxDrives(void);
+    void storeAuxBoardParams(void);
+    void moveAuxDrive(short,bool);
+    void stopAuxDrive(short);
 
 private:
     struct mountMotionStruct {
@@ -195,12 +200,19 @@ private:
         int noOfExposuresLeft;
     };
 
+    struct currentCommunicationParameters {
+        bool chan0IsOpen;
+        bool chan1IsOpen;
+        int selectedChannel;
+        QString *guiData;
+    };
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;
     struct ST4stateDurationsStruct ST4stateDurations;
     struct DSLRStateStruct dslrStates;
+    struct currentCommunicationParameters commSPIParams;
     QtContinuousStepper *StepperDriveRA;
     QtKineticStepper *StepperDriveDecl;
     QTimer *timer;
@@ -231,10 +243,12 @@ private:
     QByteArray *tcpLXdata;
     QSerialPort *lx200SerialPort;
     QByteArray *lx200SerialData;
+    SPI_Drive *spiDrOnChan1;
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
     bool ccdCameraIsAcquiring;
+    bool auxBoardIsAvailable = 0;
     float ra; // right ascension of a current object
     float decl;// declination of a current object
     double gotoETA; // estimated time of arrival for goto
@@ -276,6 +290,14 @@ private:
     void shutDownPort(void);
     void openPort(void);
     void updateDSLRGUIAndCountdown(void);
+    void waitForNMSecs(int);
+    void checkDrivesForActivity(void);
+    bool checkForController(void);
+    void sendStepsToAuxController(short);
+    void sendAccToAuxController(void);
+    void sendSpeedToAuxController(void);
+    void sendMicrostepsToController(void);
+    void enableAuxDrives(short, bool);
 
 signals:
     void dslrExposureDone(void);

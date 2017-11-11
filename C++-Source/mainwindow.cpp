@@ -19,6 +19,7 @@
 #include "tsc_globaldata.h"
 #include "tsc_bt_serialcomm.h"
 
+
 TSC_GlobalData *g_AllData; // a global class that holds system specific parameters on drive, current mount position, gears and so on ...
 
 //------------------------------------------------------------------
@@ -34,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QString *catfName; // name of a .tsc catalog
     QList<QHostAddress> ipAddressList;
     int listIter;
+    short auxMicrostepDenom;
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
@@ -134,7 +136,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pullUpDnControl(2,PUD_UP);
     pullUpDnControl(3,PUD_UP);
     pullUpDnControl(4,PUD_UP);
-    pullUpDnControl(5,PUD_UP); // setting internal pull-ip resistors of the BCM
+    pullUpDnControl(5,PUD_UP); // setting internal pull-up resistors of the BCM
     ui->pbStopST4->setEnabled(false);
     pinMode (1, OUTPUT);
     pinMode (27, OUTPUT); // settin BCM-pins 18 and 27 to output mode for dslr-control
@@ -267,6 +269,42 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.btMoveSouth=0;
     this->mountMotion.btMoveWest=0;
 
+        // start SPI communication via SPI channel #1 for auxiliary drives
+    this->spiDrOnChan1 = new SPI_Drive(1);
+    if (this->spiDrOnChan1->spidrGetFD() != -1) {
+        this->commSPIParams.chan1IsOpen = true;
+        ui->cbSPI1Open->setChecked(true);
+    } else {
+       this->commSPIParams.chan1IsOpen = false;
+    }
+    this->commSPIParams.guiData = new QString();
+    this->auxBoardIsAvailable = this->checkForController();
+    if (this->auxBoardIsAvailable == true) {
+        this->commSPIParams.selectedChannel = 1;
+        ui->fauxDrives->setEnabled(true);
+        ui->leNameAux1->setText(g_AllData->getAuxName(0).toLatin1());
+        ui->leNameAux2->setText(g_AllData->getAuxName(1).toLatin1());
+        ui->leStepsAux1->setText(QString::number(g_AllData->getStepsToBeDone(0)));
+        this->sendStepsToAuxController(0);
+        ui->leStepsAux2->setText(QString::number(g_AllData->getStepsToBeDone(1)));
+        this->sendStepsToAuxController(1);
+        ui->leAuxAcc->setText(QString::number(g_AllData->getAuxAcc()));
+        this->sendAccToAuxController();
+        ui->leAuxSpeed->setText(QString::number(g_AllData->getAuxSpeed()));
+        this->sendSpeedToAuxController();
+        auxMicrostepDenom=g_AllData->getAuxMSteps();
+        switch (auxMicrostepDenom) {
+            case 1: ui->rbAuxMs1->setChecked(true); break;
+            case 2: ui->rbAuxMs2->setChecked(true); break;
+            case 4: ui->rbAuxMs4->setChecked(true); break;
+            case 8: ui->rbAuxMs8->setChecked(true); break;
+            case 16: ui->rbAuxMs16->setChecked(true); break;
+            case 32: ui->rbAuxMs32->setChecked(true); break;
+        }
+        this->sendMicrostepsToController();
+    }
+
+
         // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
@@ -345,6 +383,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbDSLRStopSeries, SIGNAL(clicked()), this, SLOT(terminateDSLRSeries())); // terminate a dslr series exposure early
     connect(ui->pbConveyCoordinates, SIGNAL(clicked()), this, SLOT(transferCoordinates())); // slot that transfers coordinates to the controller
     connect(ui->pbDSLRTerminateExposure, SIGNAL(clicked()), this, SLOT(terminateDSLRSingleShot())); // stop a single DSLR exposure
+    connect(ui->pbStoreAuxData, SIGNAL(clicked()), this, SLOT(storeAuxBoardParams())); // stores parameters for the auxiliary drive
+    connect(ui->pbStopAuxDrives, SIGNAL(clicked()), this, SLOT(emergencyStopAuxDrives()));
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -606,6 +646,8 @@ void MainWindow::startGoToObject(void) {
     bool RARideIsDone; // a flag set to true when slew in RA is done
     QElapsedTimer *waitState;
 
+    g_AllData->setCelestialSpeed(0); // make sure that the drive speed is sidereal
+    ui->rbSiderealSpeed->setChecked(true);
     waitState = new QElapsedTimer(); // a timer to give the muproc a little time to breathe ...
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
     this->setControlsForGoto(false); // set some controls on disabled
@@ -2768,10 +2810,13 @@ void MainWindow::handleST4State(void) {
     short dp, rm, dm, rp;
 
     if (this->guidingState.st4IsActive==true) {
-        dp=abs(1-digitalRead(2));
-        rm=abs(1-digitalRead(3));
-        dm=abs(1-digitalRead(4));
-        rp=abs(1-digitalRead(5)); // reading the GPIO pins
+        dp=abs(digitalRead(4));
+        rm=abs(digitalRead(3));
+        dm=abs(digitalRead(5));
+        rp=abs(digitalRead(2)); // reading the GPIO pins
+
+        qDebug() << "st4 iostates:" << dp << dm << rp << rm;
+
         if (dp > 0) {
             if (ui->cbST4North->isChecked()==false) { // if pin goes UP ...
                 ui->cbST4North->setChecked(true); // ... check the checkbox ...
@@ -2824,7 +2869,7 @@ void MainWindow::handleST4State(void) {
                 this->ST4stateDurations.rmDuration=this->ST4stateDurations.rElapsed.elapsed();
             }
         }
-        if (this->ST4stateDurations.declTimeMeasurementActive == false) {
+     /*   if (this->ST4stateDurations.declTimeMeasurementActive == false) {
             if (this->ST4stateDurations.dpDuration > 1) {
                 ui->lcdPulseDecl->display((int)this->ST4stateDurations.dpDuration);
                 ui->cbST4North->setChecked(true);
@@ -2855,7 +2900,7 @@ void MainWindow::handleST4State(void) {
                 ui->cbST4East->setChecked(false);
                 this->ST4stateDurations.rmDuration = 0;
             }
-        }
+        }*/
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     }
 }
@@ -3753,4 +3798,234 @@ void MainWindow::terminateDSLRSingleShot(void) {
     usleep(10);
     digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
 
+}
+
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// code for controlling the secondary motorbaord via SPI
+
+//---------------------------------------------------------------------
+// a few slots for storing parameters
+void MainWindow::storeAuxBoardParams(void) {
+    QString *leTxt;
+    long denom;
+
+    leTxt = new QString(ui->leNameAux1->text());
+    g_AllData->setAuxName(0,*leTxt);
+    leTxt->clear();
+    leTxt->append(ui->leNameAux2->text());
+    g_AllData->setAuxName(1,*leTxt);
+    leTxt->clear();
+    leTxt->append(ui->leStepsAux1->text());
+    g_AllData->setStepsToBeDone(0,leTxt->toLong());
+    leTxt->clear();
+    leTxt->append(ui->leStepsAux2->text());
+    g_AllData->setStepsToBeDone(1,leTxt->toLong());
+    leTxt->clear();
+    leTxt->append(ui->leAuxAcc->text());
+    g_AllData->setAuxAcc(leTxt->toLong());
+    leTxt->clear();
+    leTxt->append(ui->leAuxSpeed->text());
+    g_AllData->setAuxSpeed(leTxt->toLong());
+    delete leTxt;
+    if (ui->rbAuxMs1->isChecked() == true) {
+        denom = 1;
+    }
+    if (ui->rbAuxMs2->isChecked() == true) {
+        denom = 2;
+    }
+    if (ui->rbAuxMs4->isChecked() == true) {
+        denom = 4;
+    }
+    if (ui->rbAuxMs8->isChecked() == true) {
+        denom = 8;
+    }
+    if (ui->rbAuxMs16->isChecked() == true) {
+        denom = 16;
+    }
+    if (ui->rbAuxMs32->isChecked() == true) {
+        denom = 32;
+    }
+    g_AllData->setAuxMSteps(denom);
+    g_AllData->storeGlobalData();
+}
+
+
+//---------------------------------------------------------------------
+// just a little helper to wait for a bunch of milliseconds
+void MainWindow::waitForNMSecs(int msecs) {
+    QElapsedTimer *qelap;
+
+    qelap = new QElapsedTimer();
+    qelap->start();
+    do {
+      QCoreApplication::processEvents(QEventLoop::AllEvents, msecs);
+    } while (qelap->elapsed() < msecs);
+    delete qelap;
+}
+//----------------------------------------------------------------------
+// send a frequent request whether drives are up ...
+// not yet implemented on arduino side. it should receive '0' or '1'
+// if one of the drives is up, or 'x' otherwise ...
+// STILL TO BE IMPLEMENTED
+
+void MainWindow::checkDrivesForActivity(void) {
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("d");
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(10);
+}
+
+//----------------------------------------------------------------------
+// just checks whether an arduino is connected
+bool MainWindow::checkForController(void) {
+    char reply;
+
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("ttt");
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(50);
+    reply = this->spiDrOnChan1->getResponse();
+    if (reply=='D'){
+        ui->cbAuxBoardIsConnected->setChecked(true);
+        this->auxBoardIsAvailable = true;
+    }
+    return this->auxBoardIsAvailable;
+}
+
+//-----------------------------------------------------------------------
+// sends the number of steps to the controller
+
+void MainWindow::sendStepsToAuxController(short driveAddressed) {
+    if ((driveAddressed == 0) || (driveAddressed == 1)) {
+        this->commSPIParams.guiData->clear();
+        this->commSPIParams.guiData->append("s");
+        this->commSPIParams.guiData->append(QString::number(driveAddressed));
+        this->commSPIParams.guiData->append(QString::number(g_AllData->getStepsToBeDone(driveAddressed)));
+        this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+        this->waitForNMSecs(150);
+    }
+}
+
+//-----------------------------------------------------------------------
+// send acceleration to controller
+
+void MainWindow::sendAccToAuxController(void) {
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("a");
+    this->commSPIParams.guiData->append(QString::number(0));
+    this->commSPIParams.guiData->append(QString::number(g_AllData->getAuxAcc()));
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(150);
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("a");
+    this->commSPIParams.guiData->append(QString::number(1));
+    this->commSPIParams.guiData->append(QString::number(g_AllData->getAuxAcc()));
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(150);
+}
+
+//-------------------------------------------------------------------------
+// send speed to controller
+
+void MainWindow::sendSpeedToAuxController(void) {
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("v");
+    this->commSPIParams.guiData->append(QString::number(0));
+    this->commSPIParams.guiData->append(QString::number(g_AllData->getAuxSpeed()));
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(150);
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("v");
+    this->commSPIParams.guiData->append(QString::number(1));
+    this->commSPIParams.guiData->append(QString::number(g_AllData->getAuxSpeed()));
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(150);
+}
+
+//--------------------------------------------------------------------------
+// send microsteps to controller
+
+void MainWindow::sendMicrostepsToController(void) {
+    QString *val;
+
+    val = new QString("m ");
+    if (ui->rbAuxMs1->isChecked()) {
+        val->append("001");
+    }
+    if (ui->rbAuxMs2->isChecked()) {
+        val->append("002");
+    }
+    if (ui->rbAuxMs4->isChecked()) {
+        val->append("004");
+    }
+    if (ui->rbAuxMs8->isChecked()) {
+        val->append("008");
+    }
+    if (ui->rbAuxMs16->isChecked()) {
+        val->append("016");
+    }
+    if (ui->rbAuxMs32->isChecked()) {
+        val->append("032");
+    }
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append(val);
+    delete val;
+    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(150);
+}
+
+//---------------------------------------------
+// enable or disable drives
+
+void MainWindow::enableAuxDrives(short driveAddressed, bool isEnabled) {
+    if ((driveAddressed == 0) || (driveAddressed == 1)) {
+        this->commSPIParams.guiData->clear();
+        this->commSPIParams.guiData->append("e");
+        this->commSPIParams.guiData->append(QString::number(driveAddressed));
+        if (isEnabled == true) {
+            this->commSPIParams.guiData->append('1');
+        } else {
+            this->commSPIParams.guiData->append('0');
+        }
+        this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+        this->waitForNMSecs(150);
+    }
+}
+
+//----------------------------------------------
+// start an aux drive
+
+void MainWindow::moveAuxDrive(short driveAddressed, bool directionInverted) {
+    if ((driveAddressed == 0) || (driveAddressed == 1)) {
+        // something needs to be done for inversion!!!
+        this->commSPIParams.guiData->clear();
+        this->commSPIParams.guiData->append("o");
+        this->commSPIParams.guiData->append(QString::number(driveAddressed));
+        this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+        this->waitForNMSecs(150);
+    }
+}
+
+//----------------------------------------------
+// stop an aux drive
+
+void MainWindow::stopAuxDrive(short driveAddressed) {
+    if ((driveAddressed == 0) || (driveAddressed == 1)) {
+        // something needs to be done for inversion!!!
+        this->commSPIParams.guiData->clear();
+        this->commSPIParams.guiData->append("x");
+        this->commSPIParams.guiData->append(QString::number(driveAddressed));
+        this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+        this->waitForNMSecs(150);
+        this->enableAuxDrives(driveAddressed, false);
+    }
+}
+
+//-----------------------------------------------
+// slot for an emergency stop
+void MainWindow::emergencyStopAuxDrives(void) {
+    stopAuxDrive(0);
+    stopAuxDrive(1);
 }

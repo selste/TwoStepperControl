@@ -54,7 +54,14 @@ TSC_GlobalData::TSC_GlobalData() {
         this->siteParams.latitude=48.0;
         this->siteParams.longitude=15.0;
         this->siteParams.UTCOffset=1.0;
-        this->siteParams.siteName=QString("TSC");
+        this->siteParams.siteName = QString("TSC");
+        this->auxDriveParams.nameAux1 = QString("Auxiliary Drive 1");;
+        this->auxDriveParams.nameAux2 = QString("Auxiliary Drive 2");
+        this->auxDriveParams.stepsAux1 = 500;
+        this->auxDriveParams.stepsAux2 = 500;
+        this->auxDriveParams.auxAcc = 500;
+        this->auxDriveParams.auxSpeed = 500;
+        this->auxDriveParams.mSteps = 32;
     }
 }
 
@@ -64,6 +71,74 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete monotonicGlobalTimer;
     delete BTMACAddress;
     delete LX200IPAddress;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setAuxName(short which, QString name) {
+    if (which == 0) {
+        this->auxDriveParams.nameAux1.clear();
+        this->auxDriveParams.nameAux1.append(name);
+    } else {
+        this->auxDriveParams.nameAux2.clear();
+        this->auxDriveParams.nameAux2.append(name);
+    }
+}
+
+//-----------------------------------------------
+QString TSC_GlobalData::getAuxName(short which) {
+    if (which == 0) {
+        return this->auxDriveParams.nameAux1;
+    } else {
+        return this->auxDriveParams.nameAux2;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setStepsToBeDone(short which, long steps) {
+    if (which == 0) {
+        this->auxDriveParams.stepsAux1=steps;
+    } else {
+        this->auxDriveParams.stepsAux2=steps;
+    }
+}
+
+//-----------------------------------------------
+long TSC_GlobalData::getStepsToBeDone(short which) {
+    if (which == 0) {
+        return this->auxDriveParams.stepsAux1;
+    } else {
+        return this->auxDriveParams.stepsAux2;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setAuxAcc(long acc) {
+    this->auxDriveParams.auxAcc=acc;
+}
+
+//-----------------------------------------------
+long TSC_GlobalData::getAuxAcc(void) {
+    return this->auxDriveParams.auxAcc;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setAuxSpeed(long spd) {
+    this->auxDriveParams.auxSpeed=spd;
+}
+
+//-----------------------------------------------
+long TSC_GlobalData::getAuxSpeed(void) {
+    return this->auxDriveParams.auxSpeed;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setAuxMSteps(long ms) {
+    this->auxDriveParams.mSteps=ms;
+}
+
+//-----------------------------------------------
+long TSC_GlobalData::getAuxMSteps(void) {
+    return this->auxDriveParams.mSteps;
 }
 
 //-----------------------------------------------
@@ -596,6 +671,33 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Name of observation site.\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr.append(this->auxDriveParams.nameAux1.toLatin1());
+    ostr.append("// Name of first auxiliary stepper.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(this->auxDriveParams.nameAux2.toLatin1());
+    ostr.append("// Name of second auxiliary stepper.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->auxDriveParams.stepsAux1));
+    ostr.append("// Standard number of microsteps for first auxiliary drive.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->auxDriveParams.stepsAux2));
+    ostr.append("// Standard number of microsteps for second auxiliary drive.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->auxDriveParams.auxAcc));
+    ostr.append("// Acceleration for both auxiliary drives.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->auxDriveParams.auxSpeed));
+    ostr.append("// Speed for both auxiliary drives.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->auxDriveParams.mSteps));
+    ostr.append("// Denominator for microstepping ratio.\n");
+    outfile << ostr.data();
     outfile.close();
 }
 
@@ -704,6 +806,34 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, '\n');
     std::getline(infile, line, delimiter);
     this->siteParams.siteName.append(line.data());
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    this->auxDriveParams.nameAux1.clear();
+    this->auxDriveParams.nameAux1.append(line.data());
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    this->auxDriveParams.nameAux2.clear();
+    this->auxDriveParams.nameAux2.append(line.data());
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isStepsAux1(line);
+    isStepsAux1 >> this->auxDriveParams.stepsAux1;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isStepsAux2(line);
+    isStepsAux2 >> this->auxDriveParams.stepsAux2;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isAuxAcc(line);
+    isAuxAcc >> this->auxDriveParams.auxAcc;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isAuxSpeed(line);
+    isAuxSpeed >> this->auxDriveParams.auxSpeed;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isMSteps(line);
+    isMSteps >> this->auxDriveParams.mSteps;
     infile.close(); // close the reading file for preferences
     return true;
 }
