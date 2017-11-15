@@ -280,17 +280,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->commSPIParams.guiData = new QString();
     this->auxBoardIsAvailable = this->checkForController();
     if (this->auxBoardIsAvailable == true) {
+        ui->gbFocuserInGuide->setEnabled(true);
         this->commSPIParams.selectedChannel = 1;
         ui->fauxDrives->setEnabled(true);
         ui->leNameAux1->setText(g_AllData->getAuxName(0).toLatin1());
         ui->leNameAux2->setText(g_AllData->getAuxName(1).toLatin1());
-        ui->leStepsAux1->setText(QString::number(g_AllData->getStepsToBeDone(0)));
-        this->sendStepsToAuxController(0);
-        ui->leStepsAux2->setText(QString::number(g_AllData->getStepsToBeDone(1)));
-        this->sendStepsToAuxController(1);
-        ui->leAuxAcc->setText(QString::number(g_AllData->getAuxAcc()));
+        ui->sbStepsAux1->setValue(g_AllData->getStepsToBeDone(0));
+        this->sendStepsToAuxController(0,false,0);
+        ui->sbStepsAux2->setValue(g_AllData->getStepsToBeDone(1));
+        this->sendStepsToAuxController(1,false,0);
+        ui->sbAuxAcc->setValue(g_AllData->getAuxAcc());
         this->sendAccToAuxController();
-        ui->leAuxSpeed->setText(QString::number(g_AllData->getAuxSpeed()));
+        ui->sbAuxSpeed->setValue(g_AllData->getAuxSpeed());
         this->sendSpeedToAuxController();
         auxMicrostepDenom=g_AllData->getAuxMSteps();
         switch (auxMicrostepDenom) {
@@ -384,7 +385,25 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbConveyCoordinates, SIGNAL(clicked()), this, SLOT(transferCoordinates())); // slot that transfers coordinates to the controller
     connect(ui->pbDSLRTerminateExposure, SIGNAL(clicked()), this, SLOT(terminateDSLRSingleShot())); // stop a single DSLR exposure
     connect(ui->pbStoreAuxData, SIGNAL(clicked()), this, SLOT(storeAuxBoardParams())); // stores parameters for the auxiliary drive
-    connect(ui->pbStopAuxDrives, SIGNAL(clicked()), this, SLOT(emergencyStopAuxDrives()));
+    connect(ui->pbStopAuxDrives, SIGNAL(clicked()), this, SLOT(emergencyStopAuxDrives())); // stop all auxiliary drives
+    connect(ui->pbFwdMovAux1, SIGNAL(clicked()), this, SLOT(mvAux1FwdFull())); // move aux drive 1 forward
+    connect(ui->pbBwdMovAux1, SIGNAL(clicked()), this, SLOT(mvAux1BwdFull())); // move aux drive 1 bward
+    connect(ui->pbFwdMovAux2, SIGNAL(clicked()), this, SLOT(mvAux2FwdFull())); // move aux drive 2 forward
+    connect(ui->pbBwdMovAux2, SIGNAL(clicked()), this, SLOT(mvAux2BwdFull())); // move aux drive 2 bward
+    connect(ui->pbFwdMovAux1_Tenth, SIGNAL(clicked()), this, SLOT(mvAux1FwdSmall())); // move aux drive 1 forward
+    connect(ui->pbBwdMovAux1_Tenth, SIGNAL(clicked()), this, SLOT(mvAux1BwdSmall())); // move aux drive 1 bward
+    connect(ui->pbFwdMovAux2_Tenth, SIGNAL(clicked()), this, SLOT(mvAux2FwdSmall())); // move aux drive 2 forward
+    connect(ui->pbBwdMovAux2_Tenth, SIGNAL(clicked()), this, SLOT(mvAux2BwdSmall())); // move aux drive 2 bward
+    connect(ui->pbFwdMovAux1_Thirth, SIGNAL(clicked()), this, SLOT(mvAux1FwdTiny())); // move aux drive 1 forward
+    connect(ui->pbBwdMovAux1_Thirth, SIGNAL(clicked()), this, SLOT(mvAux1BwdTiny())); // move aux drive 1 bward
+    connect(ui->pbFwdMovAux2_Thirth, SIGNAL(clicked()), this, SLOT(mvAux2FwdTiny())); // move aux drive 2 forward
+    connect(ui->pbBwdMovAux2_Thirth, SIGNAL(clicked()), this, SLOT(mvAux2BwdTiny())); // move aux drive 2 bward 
+    connect(ui->pbGdFocBigFwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxFwdFull())); // move guide focuser drive 1 forward
+    connect(ui->pbGdFocBigBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdFull())); // move guide focuser drive 1 bward
+    connect(ui->pbGdFocMedFwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxFwdSmall())); // move guide focuser drive 1 forward
+    connect(ui->pbGdFocMedBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdSmall())); // move guide focuser drive 1 bward
+    connect(ui->pbGdFocSmallFwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxFwdTiny())); // move guide focuser drive 1 forward
+    connect(ui->pbGdFocSmallBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdTiny())); // move guide focuser drive 1 bward
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -3803,7 +3822,7 @@ void MainWindow::terminateDSLRSingleShot(void) {
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
-// code for controlling the secondary motorbaord via SPI
+// code for controlling the secondary motorboard via SPI
 
 //---------------------------------------------------------------------
 // a few slots for storing parameters
@@ -3816,18 +3835,10 @@ void MainWindow::storeAuxBoardParams(void) {
     leTxt->clear();
     leTxt->append(ui->leNameAux2->text());
     g_AllData->setAuxName(1,*leTxt);
-    leTxt->clear();
-    leTxt->append(ui->leStepsAux1->text());
-    g_AllData->setStepsToBeDone(0,leTxt->toLong());
-    leTxt->clear();
-    leTxt->append(ui->leStepsAux2->text());
-    g_AllData->setStepsToBeDone(1,leTxt->toLong());
-    leTxt->clear();
-    leTxt->append(ui->leAuxAcc->text());
-    g_AllData->setAuxAcc(leTxt->toLong());
-    leTxt->clear();
-    leTxt->append(ui->leAuxSpeed->text());
-    g_AllData->setAuxSpeed(leTxt->toLong());
+    g_AllData->setStepsToBeDone(0,ui->sbStepsAux1->value());
+    g_AllData->setStepsToBeDone(1,ui->sbStepsAux2->value());
+    g_AllData->setAuxAcc((ui->sbAuxAcc->value()));
+    g_AllData->setAuxSpeed(ui->sbAuxSpeed->value());
     delete leTxt;
     if (ui->rbAuxMs1->isChecked() == true) {
         denom = 1;
@@ -3849,6 +3860,9 @@ void MainWindow::storeAuxBoardParams(void) {
     }
     g_AllData->setAuxMSteps(denom);
     g_AllData->storeGlobalData();
+    this->sendAccToAuxController();
+    this->sendSpeedToAuxController();
+    this->sendMicrostepsToController();
 }
 
 
@@ -3896,13 +3910,28 @@ bool MainWindow::checkForController(void) {
 
 //-----------------------------------------------------------------------
 // sends the number of steps to the controller
+// "driveAddressed" is 0 or 1, , "isInverted" inverts the direction of travel,
+// and "whatTravel" is 0,1 or 2 in dependence of the of the fraction of travel one wants to do ...
 
-void MainWindow::sendStepsToAuxController(short driveAddressed) {
+void MainWindow::sendStepsToAuxController(short driveAddressed, bool isInverted, short whatTravel) {
+    short sign = 1;
+    float fractionOfTravel = 1;
+
     if ((driveAddressed == 0) || (driveAddressed == 1)) {
         this->commSPIParams.guiData->clear();
         this->commSPIParams.guiData->append("s");
         this->commSPIParams.guiData->append(QString::number(driveAddressed));
-        this->commSPIParams.guiData->append(QString::number(g_AllData->getStepsToBeDone(driveAddressed)));
+        if (isInverted == true) {
+            sign = -1;
+        }
+        switch (whatTravel) {
+            case 0: fractionOfTravel = 1; break;
+            case 1: fractionOfTravel = 1/5.0; break;
+            case 2: fractionOfTravel = 1/20.0; break;
+            default: fractionOfTravel = 1; break;
+        }
+
+        this->commSPIParams.guiData->append(QString::number(sign*round(g_AllData->getStepsToBeDone(driveAddressed)*fractionOfTravel)));
         this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
         this->waitForNMSecs(150);
     }
@@ -3997,9 +4026,8 @@ void MainWindow::enableAuxDrives(short driveAddressed, bool isEnabled) {
 //----------------------------------------------
 // start an aux drive
 
-void MainWindow::moveAuxDrive(short driveAddressed, bool directionInverted) {
+void MainWindow::moveAuxDrive(short driveAddressed) {
     if ((driveAddressed == 0) || (driveAddressed == 1)) {
-        // something needs to be done for inversion!!!
         this->commSPIParams.guiData->clear();
         this->commSPIParams.guiData->append("o");
         this->commSPIParams.guiData->append(QString::number(driveAddressed));
@@ -4029,3 +4057,146 @@ void MainWindow::emergencyStopAuxDrives(void) {
     stopAuxDrive(0);
     stopAuxDrive(1);
 }
+
+//-----------------------------------------------
+// slots for motion control. dist is 0,1, or 2 for full travel, small travel or tiny travel
+void MainWindow::moveAuxPBSlot(short whichDrive, bool isInverted, short dist) {
+
+    this->sendStepsToAuxController(whichDrive, isInverted, dist);
+    this->enableAuxDrives(whichDrive,true);
+    this->moveAuxDrive(whichDrive);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1FwdFull(void) {
+    moveAuxPBSlot(0,false,0);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1BwdFull(void) {
+    moveAuxPBSlot(0,true,0);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2FwdFull(void) {
+    moveAuxPBSlot(1,false,0);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2BwdFull(void) {
+    moveAuxPBSlot(1,true,0);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1FwdSmall(void) {
+    moveAuxPBSlot(0,false,1);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1BwdSmall(void) {
+    moveAuxPBSlot(0,true,1);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2FwdSmall(void) {
+    moveAuxPBSlot(1,false,1);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2BwdSmall(void) {
+    moveAuxPBSlot(1,true,1);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1FwdTiny(void) {
+    moveAuxPBSlot(0,false,2);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1BwdTiny(void) {
+    moveAuxPBSlot(0,true,2);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2FwdTiny(void) {
+    moveAuxPBSlot(1,false,2);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2BwdTiny(void) {
+    moveAuxPBSlot(1,true,2);
+}
+
+//-----------------------------------------------
+void MainWindow::mvGuideAuxFwdFull(void) {
+    if (this->auxBoardIsAvailable = true) {
+        if (ui->rbNo1FinderFocuser->isChecked()) {
+            moveAuxPBSlot(0,false,0);
+        }
+        if (ui->rbNo2FinderFocuser->isChecked()) {
+            moveAuxPBSlot(1,false,0);
+        }
+    }
+}
+
+//-----------------------------------------------
+void MainWindow::mvGuideAuxBwdFull(void) {
+    if (this->auxBoardIsAvailable = true) {
+        if (ui->rbNo1FinderFocuser->isChecked()) {
+            moveAuxPBSlot(0,true,0);
+        }
+        if (ui->rbNo2FinderFocuser->isChecked()) {
+            moveAuxPBSlot(1,true,0);
+        }
+    }
+}
+
+//-----------------------------------------------
+void MainWindow::mvGuideAuxFwdSmall(void) {
+    if (this->auxBoardIsAvailable = true) {
+        if (ui->rbNo1FinderFocuser->isChecked()) {
+            moveAuxPBSlot(0,false,1);
+        }
+        if (ui->rbNo2FinderFocuser->isChecked()) {
+            moveAuxPBSlot(1,false,1);
+        }
+    }
+}
+
+//-----------------------------------------------
+void MainWindow::mvGuideAuxBwdSmall(void) {
+    if (this->auxBoardIsAvailable = true) {
+        if (ui->rbNo1FinderFocuser->isChecked()) {
+            moveAuxPBSlot(0,true,1);
+        }
+        if (ui->rbNo2FinderFocuser->isChecked()) {
+            moveAuxPBSlot(1,true,1);
+        }
+    }
+}
+
+//-----------------------------------------------
+void MainWindow::mvGuideAuxFwdTiny(void) {
+    if (this->auxBoardIsAvailable = true) {
+        if (ui->rbNo1FinderFocuser->isChecked()) {
+            moveAuxPBSlot(0,false,2);
+        }
+        if (ui->rbNo2FinderFocuser->isChecked()) {
+            moveAuxPBSlot(1,false,2);
+        }
+    }
+}
+
+//-----------------------------------------------
+void MainWindow::mvGuideAuxBwdTiny(void) {
+    if (this->auxBoardIsAvailable = true) {
+        if (ui->rbNo1FinderFocuser->isChecked()) {
+            moveAuxPBSlot(0,true,2);
+        }
+        if (ui->rbNo2FinderFocuser->isChecked()) {
+            moveAuxPBSlot(1,true,2);
+        }
+    }
+}
+
+

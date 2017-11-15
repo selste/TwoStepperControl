@@ -135,8 +135,24 @@ private slots:
     void terminateDSLRSingleShot(void);
     void emergencyStopAuxDrives(void);
     void storeAuxBoardParams(void);
-    void moveAuxDrive(short,bool);
-    void stopAuxDrive(short);
+    void mvAux1FwdFull(void);
+    void mvAux1BwdFull(void);
+    void mvAux2FwdFull(void);
+    void mvAux2BwdFull(void);
+    void mvAux1FwdSmall(void);
+    void mvAux1BwdSmall(void);
+    void mvAux2FwdSmall(void);
+    void mvAux2BwdSmall(void);
+    void mvAux1FwdTiny(void);
+    void mvAux1BwdTiny(void);
+    void mvAux2FwdTiny(void);
+    void mvAux2BwdTiny(void);
+    void mvGuideAuxFwdFull(void);
+    void mvGuideAuxBwdFull(void);
+    void mvGuideAuxFwdSmall(void);
+    void mvGuideAuxBwdSmall(void);
+    void mvGuideAuxFwdTiny(void);
+    void mvGuideAuxBwdTiny(void);
 
 private:
     struct mountMotionStruct {
@@ -293,11 +309,14 @@ private:
     void waitForNMSecs(int);
     void checkDrivesForActivity(void);
     bool checkForController(void);
-    void sendStepsToAuxController(short);
+    void sendStepsToAuxController(short, bool, short);
     void sendAccToAuxController(void);
     void sendSpeedToAuxController(void);
     void sendMicrostepsToController(void);
     void enableAuxDrives(short, bool);
+    void moveAuxDrive(short);
+    void stopAuxDrive(short);
+    void moveAuxPBSlot(short, bool, short);
 
 signals:
     void dslrExposureDone(void);
