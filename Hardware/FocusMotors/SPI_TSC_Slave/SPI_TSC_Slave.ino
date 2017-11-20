@@ -27,7 +27,7 @@ const char whatDriver = 'D';
 
 void setup (void) {
   if (showDebug == true) {
-    Serial.begin (115200); 
+    Serial.begin (9600); 
   }
   pinMode(8,OUTPUT); // connected to M0
   pinMode(7,OUTPUT); // connected to M1 
@@ -58,6 +58,9 @@ void setup (void) {
   pos = 0;   // buffer empty
   process_it = false;
   SPI.attachInterrupt();   // now turn on interrupts
+  if (showDebug == true) { 
+    Serial.println("TSC Focus Board is active...");
+  }
 }  
 
 //--------------------------------------------------------------
