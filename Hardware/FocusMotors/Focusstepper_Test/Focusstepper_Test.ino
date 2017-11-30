@@ -14,7 +14,6 @@ struct kinematicParametersStruct deDriveParams;
 //--------------------------------------------------------
 
 void setup() {  
-   Serial.begin(9600); // set up Serial library at 9600 bps
    pinMode(8,OUTPUT); // connected to M0
    pinMode(7,OUTPUT); // connected to M1 
    pinMode(6,OUTPUT); // connected to M2 of the drv 8825 - sets microstepping for both drives

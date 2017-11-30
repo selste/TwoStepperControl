@@ -1,0 +1,61 @@
+Communications protocol for the motorboards
+W. Birkfellner, Nov. 2017, V. 0.1
+
+The stepperboards for TSC communicate via SPI or USB betwwen the Raspberry and 
+the microcontrollers running the steppers with the AccelStepper library.
+so far the commands are transmitted as characters, following the convention:
+xyzzzzzz...
+where x is a character denoting the action to be taken, y is a number between
+0 and 4, where therse are literals, and zzzzzz... is a string of bytes that 
+is converted to a long integer. 
+
+An example:
+"a1200" sets the acceleration (denoted by 'a') of the second drive ('1' instead 
+of '0') to 200 microsteps per second. 
+
+Commands that apply to all drives (such as the number of microsteps, 
+which can only be set for both drivers) are issued 
+without the second byte. 
+
+In general, parameters have to be set, then the drive is enabled, and then ist sshould start. 
+Once a motion is finished, the drive is being automatically disabled.
+
+Command set:
+To enable or disable drives:
+'exy' ... where x is the number of the drive ('0' or '1' for the focus-driver board) 
+and y is a boolean - 1 means enable the drive (that is, power the coils up), and
+0 means "disable".
+
+Setting the acceleration:
+axyyyyy ... where x is the number of the drive and yyyy is a long integer for the 
+acceleration in microsteps/^2.
+
+Setting microsteps:
+Microsteps can only be set for groups of two drives, the command is
+m xxx ... xxx is either 001, 002, 004, 008, 016, 032, 064 or 128. This is the 
+nominator of the ratio of microstepping. For instance "m 008" sets both drivers 
+to 1/8 microstepping.
+
+Setting final velocity:
+vxyyyy ... where x is the drive as usual and yyyy is a long integer for microsteps/s, 
+which is the end velocity.
+
+Setting the number of steps:
+sxyyy ... again, x is the driver and yyy is the number of microsteps
+
+Checking whether a board is connected:
+t ... this command only gives one response - 'D', which is short for the 
+DRV 8825. If 'D' is returned when 't' was sent, a board is connected.
+
+Stop a drive:
+xy ... y is the address of the drive.
+
+Start a drive:
+oy ... y is the drive. Steps, acceleration, microstepping and velocity have to 
+be defined, and the drives have to be enabled. 
+
+
+ 
+
+
+

@@ -133,10 +133,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pinMode (3, INPUT);
     pinMode (4, INPUT);
     pinMode (5, INPUT); // setting up BCM-pins 22, 23, 24 and 27 as inputs for ST4
-    pullUpDnControl(2,PUD_UP);
-    pullUpDnControl(3,PUD_UP);
-    pullUpDnControl(4,PUD_UP);
-    pullUpDnControl(5,PUD_UP); // setting internal pull-up resistors of the BCM
+    pullUpDnControl(2,PUD_OFF);
+    pullUpDnControl(3,PUD_OFF);
+    pullUpDnControl(4,PUD_OFF);
+    pullUpDnControl(5,PUD_OFF); // setting internal pull-up resistors of the BCM
     ui->pbStopST4->setEnabled(false);
     pinMode (1, OUTPUT);
     pinMode (27, OUTPUT); // settin BCM-pins 18 and 27 to output mode for dslr-control
@@ -2829,12 +2829,10 @@ void MainWindow::handleST4State(void) {
     short dp, rm, dm, rp;
 
     if (this->guidingState.st4IsActive==true) {
-        dp=abs(digitalRead(4));
-        rm=abs(digitalRead(3));
-        dm=abs(digitalRead(5));
-        rp=abs(digitalRead(2)); // reading the GPIO pins
-
-        qDebug() << "st4 iostates:" << dp << dm << rp << rm;
+        dp=abs(1-digitalRead(4));
+        rm=abs(1-digitalRead(3));
+        dm=abs(1-digitalRead(5));
+        rp=abs(1-digitalRead(2)); // reading the GPIO pins
 
         if (dp > 0) {
             if (ui->cbST4North->isChecked()==false) { // if pin goes UP ...
@@ -3822,7 +3820,7 @@ void MainWindow::terminateDSLRSingleShot(void) {
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
-// code for controlling the secondary motorboard via SPI
+// code for controlling the secondary focus-motorboard via SPI
 
 //---------------------------------------------------------------------
 // a few slots for storing parameters
