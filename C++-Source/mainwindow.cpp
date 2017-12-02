@@ -3306,8 +3306,13 @@ void MainWindow::setINDIrbuttons(bool isEnabled) {
 
 //------------------------------------------------------------------
 void MainWindow::setAuxDriveControls(bool isEnabled) {
-    ui->fauxDrives->setEnabled(isEnabled);
-    ui->gbFocuserInGuide->setEnabled(isEnabled);
+    if (this->auxDriveIsStartingUp == false) {
+        ui->fAuxDrGUI->setEnabled(isEnabled);
+        ui->gbFocuserInGuide->setEnabled(isEnabled);
+        ui->pbStoreAuxData->setEnabled(isEnabled);
+        ui->sbAuxAcc->setEnabled(isEnabled);
+        ui->sbAuxSpeed->setEnabled(isEnabled);
+    }
 }
 
 //------------------------------------------------------------------
@@ -3886,10 +3891,6 @@ void MainWindow::waitForNMSecs(int msecs) {
 }
 //----------------------------------------------------------------------
 // send a frequent request whether drives are up ...
-// not yet implemented on arduino side. it should receive '0' or '1'
-// if one of the drives is up, or 'x' otherwise ...
-// STILL TO BE IMPLEMENTED
-
 void MainWindow::checkDrivesForActivity(void) {
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("d");
@@ -4072,9 +4073,14 @@ void MainWindow::emergencyStopAuxDrives(void) {
 // slots for motion control. dist is 0,1, or 2 for full travel, small travel or tiny travel
 void MainWindow::moveAuxPBSlot(short whichDrive, bool isInverted, short dist) {
 
-    this->sendStepsToAuxController(whichDrive, isInverted, dist);
+    this->setAuxDriveControls(false);
+    this->auxDriveIsStartingUp=true;  // a flag that suppresses GUI updates in the respective method
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     this->enableAuxDrives(whichDrive,true);
+    this->storeAuxBoardParams();
+    this->sendStepsToAuxController(whichDrive, isInverted, dist);
     this->moveAuxDrive(whichDrive);
+    this->auxDriveIsStartingUp=false;
 }
 
 //-----------------------------------------------
@@ -4218,9 +4224,9 @@ void MainWindow::updateAuxDriveStatus(void) {
         this->spiDrOnChan1->spidrReceiveCommand("ttt");
         focusMotorReply1 = this->spiDrOnChan1->getResponse();
         this->spiDrOnChan1->spidrReceiveCommand("ttt");
-        focusMotorReply2 = this->spiDrOnChan1->getResponse();
-        if (focusMotorReply1 == focusMotorReply2) { // SPI is flaky ... just to make sure that all we received is true, the status is called twice
-            switch (focusMotorReply1) {
+        focusMotorReply2 = this->spiDrOnChan1->getResponse(); // SPI is flaky - in order to make sure that the response is correct, it is called twice ...
+        if (focusMotorReply1 == focusMotorReply2) {
+            switch (focusMotorReply2) {
                 case 'D':
                 case 'A':
                     ui->cbAuxDr1Active->setChecked(false);

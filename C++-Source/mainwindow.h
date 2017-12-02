@@ -267,6 +267,7 @@ private:
     bool lx200IsOn;
     bool ccdCameraIsAcquiring;
     bool auxBoardIsAvailable = 0;
+    bool auxDriveIsStartingUp = false; // a flag that suppresses GUI updates when one of the focus motors comes up
     float ra; // right ascension of a current object
     float decl;// declination of a current object
     double gotoETA; // estimated time of arrival for goto
