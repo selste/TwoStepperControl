@@ -46,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
     this->LX200Timer = new QTimer();
     this->LX200Timer->start(300);
+    this->auxDriveUpdateTimer = new QTimer();
+    this->auxDriveUpdateTimer->start(500);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -305,11 +307,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         this->sendMicrostepsToController();
     }
 
-
-        // connecting signals and slots
+    // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
+    connect(this->auxDriveUpdateTimer, SIGNAL(timeout()),this, SLOT(updateAuxDriveStatus())); // event for checking focusmotors and updating the GUI information
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
     connect(ui->listWidgetIPAddresses,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressChosen())); // selection of IP address for LX 200
@@ -3303,6 +3305,12 @@ void MainWindow::setINDIrbuttons(bool isEnabled) {
 }
 
 //------------------------------------------------------------------
+void MainWindow::setAuxDriveControls(bool isEnabled) {
+    ui->fauxDrives->setEnabled(isEnabled);
+    ui->gbFocuserInGuide->setEnabled(isEnabled);
+}
+
+//------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 // routines for handling the .tsc catalogs
@@ -3899,10 +3907,14 @@ bool MainWindow::checkForController(void) {
     this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
     this->waitForNMSecs(50);
     reply = this->spiDrOnChan1->getResponse();
-    if (reply=='D'){
+    if ((reply=='D') || (reply=='A')) {
         ui->cbAuxBoardIsConnected->setChecked(true);
         this->auxBoardIsAvailable = true;
+        if (reply == 'A') {
+            ui->rbAuxMs32->setEnabled(false);
+        }
     }
+
     return this->auxBoardIsAvailable;
 }
 
@@ -4127,7 +4139,7 @@ void MainWindow::mvAux2BwdTiny(void) {
 
 //-----------------------------------------------
 void MainWindow::mvGuideAuxFwdFull(void) {
-    if (this->auxBoardIsAvailable = true) {
+    if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
             moveAuxPBSlot(0,false,0);
         }
@@ -4138,8 +4150,9 @@ void MainWindow::mvGuideAuxFwdFull(void) {
 }
 
 //-----------------------------------------------
+// a slot that updates information on the aux drives
 void MainWindow::mvGuideAuxBwdFull(void) {
-    if (this->auxBoardIsAvailable = true) {
+    if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
             moveAuxPBSlot(0,true,0);
         }
@@ -4151,7 +4164,7 @@ void MainWindow::mvGuideAuxBwdFull(void) {
 
 //-----------------------------------------------
 void MainWindow::mvGuideAuxFwdSmall(void) {
-    if (this->auxBoardIsAvailable = true) {
+    if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
             moveAuxPBSlot(0,false,1);
         }
@@ -4163,7 +4176,7 @@ void MainWindow::mvGuideAuxFwdSmall(void) {
 
 //-----------------------------------------------
 void MainWindow::mvGuideAuxBwdSmall(void) {
-    if (this->auxBoardIsAvailable = true) {
+    if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
             moveAuxPBSlot(0,true,1);
         }
@@ -4175,7 +4188,7 @@ void MainWindow::mvGuideAuxBwdSmall(void) {
 
 //-----------------------------------------------
 void MainWindow::mvGuideAuxFwdTiny(void) {
-    if (this->auxBoardIsAvailable = true) {
+    if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
             moveAuxPBSlot(0,false,2);
         }
@@ -4187,7 +4200,7 @@ void MainWindow::mvGuideAuxFwdTiny(void) {
 
 //-----------------------------------------------
 void MainWindow::mvGuideAuxBwdTiny(void) {
-    if (this->auxBoardIsAvailable = true) {
+    if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
             moveAuxPBSlot(0,true,2);
         }
@@ -4197,4 +4210,39 @@ void MainWindow::mvGuideAuxBwdTiny(void) {
     }
 }
 
+//------------------------------------------------
+void MainWindow::updateAuxDriveStatus(void) {
+    char focusMotorReply1, focusMotorReply2;
 
+    if (this->auxBoardIsAvailable == true) { // if the motorboard is connected - display the motorstatus
+        this->spiDrOnChan1->spidrReceiveCommand("ttt");
+        focusMotorReply1 = this->spiDrOnChan1->getResponse();
+        this->spiDrOnChan1->spidrReceiveCommand("ttt");
+        focusMotorReply2 = this->spiDrOnChan1->getResponse();
+        if (focusMotorReply1 == focusMotorReply2) { // SPI is flaky ... just to make sure that all we received is true, the status is called twice
+            switch (focusMotorReply1) {
+                case 'D':
+                case 'A':
+                    ui->cbAuxDr1Active->setChecked(false);
+                    ui->cbAuxDr2Active->setChecked(false);
+                    setAuxDriveControls(true);
+                    break;
+                case '0':
+                    ui->cbAuxDr1Active->setChecked(true);
+                    ui->cbAuxDr2Active->setChecked(false);
+                    setAuxDriveControls(false);
+                    break;
+                case '1':
+                    ui->cbAuxDr1Active->setChecked(false);
+                    ui->cbAuxDr2Active->setChecked(true);
+                    setAuxDriveControls(false);
+                    break;
+                case 'B':
+                    ui->cbAuxDr1Active->setChecked(true);
+                    ui->cbAuxDr2Active->setChecked(true);
+                    setAuxDriveControls(false);
+                    break;
+            }
+        }
+    }
+}

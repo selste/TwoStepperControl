@@ -2090,9 +2090,6 @@
         <height>181</height>
        </rect>
       </property>
-      <property name="autoFillBackground">
-       <bool>true</bool>
-      </property>
       <property name="title">
        <string>Log LX 200 Data</string>
       </property>
@@ -6297,7 +6294,7 @@
         <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
-           <x>220</x>
+           <x>210</x>
            <y>160</y>
            <width>110</width>
            <height>23</height>
@@ -6305,7 +6302,7 @@
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_22">
           <item>
-           <widget class="QCheckBox" name="cbAuxDr1Active_2">
+           <widget class="QCheckBox" name="cbAuxDr2Active">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -6346,7 +6343,7 @@
           <rect>
            <x>10</x>
            <y>10</y>
-           <width>201</width>
+           <width>191</width>
            <height>72</height>
           </rect>
          </property>
@@ -6359,7 +6356,20 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="leNameAux1"/>
+           <widget class="QLineEdit" name="leNameAux1">
+            <property name="minimumSize">
+             <size>
+              <width>130</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>130</width>
+              <height>30</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="lAuxSteps1">
@@ -6383,9 +6393,9 @@
         <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
-           <x>220</x>
+           <x>210</x>
            <y>12</y>
-           <width>202</width>
+           <width>191</width>
            <height>72</height>
           </rect>
          </property>
@@ -6398,7 +6408,20 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="leNameAux2"/>
+           <widget class="QLineEdit" name="leNameAux2">
+            <property name="minimumSize">
+             <size>
+              <width>130</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>130</width>
+              <height>30</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="lAuxSteps2">
@@ -6422,7 +6445,7 @@
         <widget class="Line" name="line_8">
          <property name="geometry">
           <rect>
-           <x>420</x>
+           <x>400</x>
            <y>20</y>
            <width>20</width>
            <height>161</height>
@@ -6432,17 +6455,17 @@
           <enum>Qt::Vertical</enum>
          </property>
         </widget>
-        <widget class="QGroupBox" name="groupBox_4">
+        <widget class="QGroupBox" name="gbSelectGuiderFocusMotor">
          <property name="geometry">
           <rect>
-           <x>440</x>
+           <x>420</x>
            <y>10</y>
-           <width>81</width>
+           <width>91</width>
            <height>171</height>
           </rect>
          </property>
          <property name="title">
-          <string>Guider</string>
+          <string>Guider Drive</string>
          </property>
          <widget class="QRadioButton" name="rbNoFinderFocuser">
           <property name="geometry">
@@ -6493,99 +6516,9 @@
         <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
-           <x>10</x>
+           <x>210</x>
            <y>90</y>
-           <width>201</width>
-           <height>61</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_24">
-          <item row="0" column="0">
-           <widget class="QPushButton" name="pbFwdMovAux1">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>+</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="pbFwdMovAux1_Tenth">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>1/5 +</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="pbFwdMovAux1_Thirth">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>1/20 +</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="pbBwdMovAux1">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>-</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="pbBwdMovAux1_Tenth">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>1/5 -</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pbBwdMovAux1_Thirth">
-            <property name="minimumSize">
-             <size>
-              <width>60</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>1/20 -</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>220</x>
-           <y>90</y>
-           <width>201</width>
+           <width>194</width>
            <height>61</height>
           </rect>
          </property>
@@ -6682,11 +6615,101 @@
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="layoutWidget_15">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>90</y>
+           <width>194</width>
+           <height>60</height>
+          </rect>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_24">
+          <item row="0" column="0">
+           <widget class="QPushButton" name="pbFwdMovAux1">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>+</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="pbFwdMovAux1_Tenth">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>1/5 +</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="pbFwdMovAux1_Thirth">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>1/20 +</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPushButton" name="pbBwdMovAux1">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>-</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QPushButton" name="pbBwdMovAux1_Tenth">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>1/5 -</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pbBwdMovAux1_Thirth">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>1/20 -</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>120</x>
+          <x>140</x>
           <y>10</y>
           <width>181</width>
           <height>23</height>

@@ -21,7 +21,9 @@ char buf[32];
 volatile byte pos;
 volatile boolean process_it;
 const bool showDebug = false; // if set to false, serial output is supressed ... good for performance
-const char whatDriver = 'D'; 
+const char whatDriver = 'A'; // this is just a constant that states which driver is connected. it is also sent as a reply when drives are inactive 
+// possible values are 'D' for the DRV 8825 or 'A' for the a4988
+char reply;
 
 //--------------------------------------------------------------
 
@@ -34,7 +36,8 @@ void setup (void) {
   pinMode(6,OUTPUT); // connected to M2 of the drv 8825 - sets microstepping for both drives
   digitalWrite(8,HIGH);
   digitalWrite(7,HIGH);    
-  digitalWrite(6,HIGH); // LLL=full, HLL=half,LHL=1/4,HHL=1/8,LLH=1/16,HLH=LHH=HHH=1/32 for the DRV8825
+  digitalWrite(6,LOW); // LLL=full, HLL=half,LHL=1/4,HHL=1/8,LLH=1/16,HLH=LHH=HHH=1/32 for the DRV8825
+                       // LLL=full, HLL=half,LHL=1/4,HHL=1/8,HHH=1/16 for the A4998
   pinMode(A0,OUTPUT); // connected to ENABLE pin of drive 1
   pinMode(A1,OUTPUT); // connected to ENABLE pin of drive 2
   digitalWrite(A0,HIGH);
@@ -68,7 +71,7 @@ short bCounter;
 
   aux1Stepper.run();
   aux2Stepper.run();
-  if (process_it) { // got a string via SPI 
+  if (process_it) { // got a string via SPI - process it accordingly
     pos = 0;
     readCommand=buf[0];
     process_it = false;
@@ -103,14 +106,13 @@ short bCounter;
       case 'o': 
         startDrive(buf[1]);      
         break; 
-       case 'd':
-         // report whether drive is at rest
-        break;
     }
     for (bCounter = 0; bCounter < 32; bCounter++) {
       buf[bCounter]='#';
     }
-  }  
+  }
+  
+  // check if drives are moving - if they just stopped, disable them ...
   if ((aux1DriveParams.isActive == true) &&  (aux1Stepper.isRunning() == false)) {
     aux1DriveParams.isActive = false;
     enableDrive('0','0');
@@ -119,6 +121,23 @@ short bCounter;
     aux2DriveParams.isActive = false;
     enableDrive('1','0');
   }
+  
+  // set the reply via SPI in dependence of the drives active; if both are inactive, the "whatDriver" constant is returned
+  reply = whatDriver;
+  if ((aux1DriveParams.isActive == true) && (aux2DriveParams.isActive == true)) {
+    reply = 'B';
+  } else {
+    if (aux1DriveParams.isActive == true) {
+      reply = '0';
+    }
+    if (aux2DriveParams.isActive == true) {
+      reply = '1';
+    }
+  }
+  if (showDebug == true) {
+    Serial.print("Current reply: ");
+    Serial.println(reply);
+  }  
 } // end of loop
 
 //--------------------------------------------------------------
@@ -126,7 +145,7 @@ short bCounter;
 ISR(SPI_STC_vect) { // SPI interrupt routine
 byte c = SPDR;  // grab byte from SPI Data Register
 
-  SPDR=whatDriver;
+  SPDR=reply;
   if (pos < sizeof buf) {
     if (c != 0x00) {     
       buf [pos++] = c;
@@ -259,21 +278,45 @@ void setMicrosteps(long value) { // reacts to m xxx where xxx is either 001, 002
             digitalWrite(7,HIGH);    
             digitalWrite(6,LOW);
             break;            
-    case 16: digitalWrite(8,LOW);
-            digitalWrite(7,LOW);    
-            digitalWrite(6,HIGH);
+    case 16: if (whatDriver == 'D') { 
+              digitalWrite(8,LOW);
+              digitalWrite(7,LOW);    
+              digitalWrite(6,HIGH);
+            } else { // in that case, the a4998 is connected
+              digitalWrite(8,HIGH);
+              digitalWrite(7,HIGH);    
+              digitalWrite(6,HIGH);
+            }
             break;            
-    case 32: digitalWrite(8,HIGH);
-            digitalWrite(7,LOW);    
-            digitalWrite(6,HIGH);
-            break;            
-    case 64: digitalWrite(8,LOW);
-            digitalWrite(7,HIGH);    
-            digitalWrite(6,HIGH);
-            break;
-    case 128: digitalWrite(8,HIGH);
-            digitalWrite(7,HIGH);    
-            digitalWrite(6,HIGH);
+    case 32: if (whatDriver == 'D') { 
+              digitalWrite(8,HIGH);
+              digitalWrite(7,LOW);    
+              digitalWrite(6,HIGH);
+            } else { // in that case, the a4998 is connected
+              digitalWrite(8,HIGH);
+              digitalWrite(7,HIGH);    
+              digitalWrite(6,HIGH);
+            }
+            break;        
+    case 64: if (whatDriver == 'D') { 
+              digitalWrite(8,HIGH);
+              digitalWrite(7,LOW);    
+              digitalWrite(6,HIGH);
+            } else { // in that case, the a4998 is connected
+              digitalWrite(8,HIGH);
+              digitalWrite(7,HIGH);    
+              digitalWrite(6,HIGH);
+            }
+            break;        
+    case 128: if (whatDriver == 'D') { 
+              digitalWrite(8,HIGH);
+              digitalWrite(7,LOW);    
+              digitalWrite(6,HIGH);
+            } else { // in that case, the a4998 is connected
+              digitalWrite(8,HIGH);
+              digitalWrite(7,HIGH);    
+              digitalWrite(6,HIGH);
+            }
             break;        
     default: digitalWrite(8,LOW);
             digitalWrite(7,LOW);    

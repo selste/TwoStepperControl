@@ -153,6 +153,7 @@ private slots:
     void mvGuideAuxBwdSmall(void);
     void mvGuideAuxFwdTiny(void);
     void mvGuideAuxBwdTiny(void);
+    void updateAuxDriveStatus(void);
 
 private:
     struct mountMotionStruct {
@@ -234,6 +235,7 @@ private:
     QTimer *timer;
     QTimer *st4Timer;
     QTimer *LX200Timer;
+    QTimer *auxDriveUpdateTimer;
     QDate *UTDate;
     QTime *UTTime;
     double julianDay;
@@ -286,6 +288,7 @@ private:
     void setControlsForGoto(bool);
     void setControlsForGuiding(bool);
     void setControlsForAutoguiderCalibration(bool);
+    void setAuxDriveControls(bool);
     void terminateAllMotion(void);
     void takeSingleCamShot(void);
     double correctGuideStarPosition(float, float);
