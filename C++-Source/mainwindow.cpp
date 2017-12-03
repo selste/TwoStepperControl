@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QList<QHostAddress> ipAddressList;
     int listIter;
     short auxMicrostepDenom;
+    short din1, din2, rin1, rin2; // a few helpers to determine whether the ST4 port is operational
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
@@ -140,8 +141,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pullUpDnControl(4,PUD_OFF);
     pullUpDnControl(5,PUD_OFF); // setting internal pull-up resistors of the BCM
     ui->pbStopST4->setEnabled(false);
+    din1=abs(1-digitalRead(4));
+    rin1=abs(1-digitalRead(3));
+    din2=abs(1-digitalRead(5));
+    rin2=abs(1-digitalRead(2)); // reading the GPIO pins; if the optocouplers for ST4 are not powered up,
+                                // all of those read 1, and ST4 is not operational. the GUI is disabled in this case.
+    if ((rin1 == 1) && (rin2 == 1) && (din1 == 1) && (din2 == 1)) {
+        ui->pbStartST4->setEnabled(false);
+    } else {
+        ui->cbSTFourIsWorking->setChecked(true);
+    }
     pinMode (1, OUTPUT);
-    pinMode (27, OUTPUT); // settin BCM-pins 18 and 27 to output mode for dslr-control
+    pinMode (27, OUTPUT); // setting BCM-pins 18 and 27 to output mode for dslr-control
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -331,9 +342,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
     connect(ui->rbFOVHalf, SIGNAL(released()), this, SLOT(setHalfFOV())); // guidestar window set to 90x90 pixels
     connect(ui->rbFOVDbl, SIGNAL(released()), this, SLOT(setDoubleFOV())); // guidestar window set to 360x360 pixels
-    connect(ui->rbSiderealSpeed, SIGNAL(released()), SLOT(setTrackingRate())); // set sidereal tracking rate
-    connect(ui->rbLunarSpeed, SIGNAL(released()), SLOT(setTrackingRate())); // set lunar tracking rate
-    connect(ui->rbSolarSpeed, SIGNAL(released()), SLOT(setTrackingRate())); // set solar tracking rate
+    connect(ui->rbSiderealSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set sidereal tracking rate
+    connect(ui->rbLunarSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set lunar tracking rate
+    connect(ui->rbSolarSpeed, SIGNAL(released()),this, SLOT(setTrackingRate())); // set solar tracking rate
+    connect(ui->rbNoFinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
+    connect(ui->rbNo1FinderFocuser , SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
+    connect(ui->rbNo2FinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams())); // store the auxiliary drive which is used for the guider when the drive no. is changed
     connect(ui->hsThreshold,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change threshold for selecting a guidestar
     connect(ui->hsIContrast ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change contrast for selecting a guidestar
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
@@ -937,6 +951,10 @@ void MainWindow::shutDownProgram() {
     delete StepperDriveRA;
     this->StepperDriveDecl->stopDrive();
     delete StepperDriveDecl;
+    if (this->auxBoardIsAvailable == true) {
+        emergencyStopAuxDrives();
+    }
+    delete spiDrOnChan1;
     delete textEntry;
     delete lx200Comm;
     delete camImg;
@@ -4070,7 +4088,9 @@ void MainWindow::emergencyStopAuxDrives(void) {
 }
 
 //-----------------------------------------------
-// slots for motion control. dist is 0,1, or 2 for full travel, small travel or tiny travel
+// slots for motion control. dist is 0,1, or 2 for full
+// travel, small travel or tiny travel called from the
+// configuration menu
 void MainWindow::moveAuxPBSlot(short whichDrive, bool isInverted, short dist) {
 
     this->setAuxDriveControls(false);
@@ -4083,6 +4103,19 @@ void MainWindow::moveAuxPBSlot(short whichDrive, bool isInverted, short dist) {
     this->auxDriveIsStartingUp=false;
 }
 
+//-----------------------------------------------
+// same as above, but without saving of parameters - to be called from the guider menu.
+// here, teh settings are not saved...
+void MainWindow::moveGuiderAuxPBSlot(short whichDrive, bool isInverted, short dist) {
+
+    this->setAuxDriveControls(false);
+    this->auxDriveIsStartingUp=true;  // a flag that suppresses GUI updates in the respective method
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    this->enableAuxDrives(whichDrive,true);
+    this->sendStepsToAuxController(whichDrive, isInverted, dist);
+    this->moveAuxDrive(whichDrive);
+    this->auxDriveIsStartingUp=false;
+}
 //-----------------------------------------------
 void MainWindow::mvAux1FwdFull(void) {
     moveAuxPBSlot(0,false,0);
@@ -4147,10 +4180,10 @@ void MainWindow::mvAux2BwdTiny(void) {
 void MainWindow::mvGuideAuxFwdFull(void) {
     if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
-            moveAuxPBSlot(0,false,0);
+            moveGuiderAuxPBSlot(0,false,0);
         }
         if (ui->rbNo2FinderFocuser->isChecked()) {
-            moveAuxPBSlot(1,false,0);
+            moveGuiderAuxPBSlot(1,false,0);
         }
     }
 }
@@ -4160,10 +4193,10 @@ void MainWindow::mvGuideAuxFwdFull(void) {
 void MainWindow::mvGuideAuxBwdFull(void) {
     if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
-            moveAuxPBSlot(0,true,0);
+            moveGuiderAuxPBSlot(0,true,0);
         }
         if (ui->rbNo2FinderFocuser->isChecked()) {
-            moveAuxPBSlot(1,true,0);
+            moveGuiderAuxPBSlot(1,true,0);
         }
     }
 }
@@ -4172,10 +4205,10 @@ void MainWindow::mvGuideAuxBwdFull(void) {
 void MainWindow::mvGuideAuxFwdSmall(void) {
     if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
-            moveAuxPBSlot(0,false,1);
+            moveGuiderAuxPBSlot(0,false,1);
         }
         if (ui->rbNo2FinderFocuser->isChecked()) {
-            moveAuxPBSlot(1,false,1);
+            moveGuiderAuxPBSlot(1,false,1);
         }
     }
 }
@@ -4184,10 +4217,10 @@ void MainWindow::mvGuideAuxFwdSmall(void) {
 void MainWindow::mvGuideAuxBwdSmall(void) {
     if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
-            moveAuxPBSlot(0,true,1);
+            moveGuiderAuxPBSlot(0,true,1);
         }
         if (ui->rbNo2FinderFocuser->isChecked()) {
-            moveAuxPBSlot(1,true,1);
+            moveGuiderAuxPBSlot(1,true,1);
         }
     }
 }
@@ -4196,10 +4229,10 @@ void MainWindow::mvGuideAuxBwdSmall(void) {
 void MainWindow::mvGuideAuxFwdTiny(void) {
     if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
-            moveAuxPBSlot(0,false,2);
+            moveGuiderAuxPBSlot(0,false,2);
         }
         if (ui->rbNo2FinderFocuser->isChecked()) {
-            moveAuxPBSlot(1,false,2);
+            moveGuiderAuxPBSlot(1,false,2);
         }
     }
 }
@@ -4208,10 +4241,10 @@ void MainWindow::mvGuideAuxFwdTiny(void) {
 void MainWindow::mvGuideAuxBwdTiny(void) {
     if (this->auxBoardIsAvailable == true) {
         if (ui->rbNo1FinderFocuser->isChecked()) {
-            moveAuxPBSlot(0,true,2);
+            moveGuiderAuxPBSlot(0,true,2);
         }
         if (ui->rbNo2FinderFocuser->isChecked()) {
-            moveAuxPBSlot(1,true,2);
+            moveGuiderAuxPBSlot(1,true,2);
         }
     }
 }

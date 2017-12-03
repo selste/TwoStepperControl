@@ -321,6 +321,7 @@ private:
     void moveAuxDrive(short);
     void stopAuxDrive(short);
     void moveAuxPBSlot(short, bool, short);
+    void moveGuiderAuxPBSlot(short, bool, short);
 
 signals:
     void dslrExposureDone(void);
