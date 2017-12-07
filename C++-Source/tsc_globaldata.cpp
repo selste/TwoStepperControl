@@ -61,7 +61,8 @@ TSC_GlobalData::TSC_GlobalData() {
         this->auxDriveParams.stepsAux2 = 500;
         this->auxDriveParams.auxAcc = 500;
         this->auxDriveParams.auxSpeed = 500;
-        this->auxDriveParams.mSteps = 32;
+        this->auxDriveParams.mSteps = 16;
+        this->auxDriveParams.guideScopeFocuserDrive=0;
     }
 }
 
@@ -139,6 +140,20 @@ void TSC_GlobalData::setAuxMSteps(long ms) {
 //-----------------------------------------------
 long TSC_GlobalData::getAuxMSteps(void) {
     return this->auxDriveParams.mSteps;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setGuiderFocusDrive(short which) {
+    if ((which == 0) || (which == 1) || (which == 2)) {
+        this->auxDriveParams.guideScopeFocuserDrive = which;
+    } else {
+        this->auxDriveParams.guideScopeFocuserDrive = 0;
+    }
+}
+
+//-----------------------------------------------
+short TSC_GlobalData::getGuiderFocusDrive(void) {
+    return this->auxDriveParams.guideScopeFocuserDrive;
 }
 
 //-----------------------------------------------
@@ -698,6 +713,10 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append(std::to_string(this->auxDriveParams.mSteps));
     ostr.append("// Denominator for microstepping ratio.\n");
     outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->auxDriveParams.guideScopeFocuserDrive));
+    ostr.append("// auxDrive connected to the focuser of the guider.\n");
+    outfile << ostr.data();
     outfile.close();
 }
 
@@ -834,6 +853,10 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isMSteps(line);
     isMSteps >> this->auxDriveParams.mSteps;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isGuiderFocus(line);
+    isGuiderFocus >> this->auxDriveParams.guideScopeFocuserDrive;
     infile.close(); // close the reading file for preferences
     return true;
 }

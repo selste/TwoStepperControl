@@ -68,6 +68,8 @@ public:
     long getAuxSpeed(void);
     void setAuxMSteps(long);
     long getAuxMSteps(void);
+    void setGuiderFocusDrive(short);
+    short getGuiderFocusDrive(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -148,6 +150,7 @@ private:
         long auxAcc;
         long auxSpeed;
         short mSteps;
+        short guideScopeFocuserDrive; // 0 is no guider, 1 is auxDrive1, 2 is auxDrive2
     };
 
     struct initialStarPosStruct initialStarPos;

@@ -19,7 +19,6 @@
 #include "tsc_globaldata.h"
 #include "tsc_bt_serialcomm.h"
 
-
 TSC_GlobalData *g_AllData; // a global class that holds system specific parameters on drive, current mount position, gears and so on ...
 
 //------------------------------------------------------------------
@@ -35,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QString *catfName; // name of a .tsc catalog
     QList<QHostAddress> ipAddressList;
     int listIter;
-    short auxMicrostepDenom;
+    short auxMicrostepDenom, guiderFocusDrive;
     short din1, din2, rin1, rin2; // a few helpers to determine whether the ST4 port is operational
 
     ui->setupUi(this); // making the widget
@@ -314,6 +313,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
             case 8: ui->rbAuxMs8->setChecked(true); break;
             case 16: ui->rbAuxMs16->setChecked(true); break;
             case 32: ui->rbAuxMs32->setChecked(true); break;
+        }
+        guiderFocusDrive = g_AllData->getGuiderFocusDrive();
+        switch (guiderFocusDrive) {
+            case 0: ui->rbNoFinderFocuser->setChecked(true); break;
+            case 1: ui->rbNo1FinderFocuser->setChecked(true); break;
+            case 2: ui->rbNo2FinderFocuser->setChecked(true); break;
         }
         this->sendMicrostepsToController();
     }
@@ -3857,7 +3862,8 @@ void MainWindow::terminateDSLRSingleShot(void) {
 // a few slots for storing parameters
 void MainWindow::storeAuxBoardParams(void) {
     QString *leTxt;
-    long denom;
+    long denom=16;
+    short whichIsGuiderDrive=0;
 
     leTxt = new QString(ui->leNameAux1->text());
     g_AllData->setAuxName(0,*leTxt);
@@ -3888,6 +3894,16 @@ void MainWindow::storeAuxBoardParams(void) {
         denom = 32;
     }
     g_AllData->setAuxMSteps(denom);
+    if (ui->rbNoFinderFocuser->isChecked() == true) {
+        whichIsGuiderDrive = 0;
+    }
+    if (ui->rbNo1FinderFocuser->isChecked() == true) {
+        whichIsGuiderDrive = 1;
+    }
+    if (ui->rbNo2FinderFocuser->isChecked() == true) {
+        whichIsGuiderDrive = 2;
+    }
+    g_AllData->setGuiderFocusDrive(whichIsGuiderDrive);
     g_AllData->storeGlobalData();
     this->sendAccToAuxController();
     this->sendSpeedToAuxController();
