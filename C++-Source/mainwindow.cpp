@@ -1462,6 +1462,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     QString logString;
 
     if (this->guidingState.noOfGuidingSteps == 1) {
+        ui->leDevRaPix->setText("0");
+        ui->leDevDeclPix->setText("0");
         this->guideStarPosition.centrX = cx;
         this->guideStarPosition.centrY = cy;
         if (ui->cbLogGuidingData->isChecked()==true) {
@@ -1579,6 +1581,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                 logString.clear();
             }
         }
+    } else {
+        ui->lePulseRAMS->setText("0");
     }
     this->waitForDriveStop(true,false); // just to make sure that drive has stopped moving, should not be an issue as guiding is unthreaded
 
@@ -1639,6 +1643,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                 logString.clear();
             }
         }
+    } else {
+        ui->lePulseDeclMS->setText("0");
     }
     this->waitForDriveStop(false,false);
     this->takeSingleCamShot(); // poll a new image
@@ -1646,12 +1652,16 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
 }
 
 //------------------------------------------------------------------
-// a rotuine that resets the maximum guiding error
+// a routine that resets the maximum guiding error
 void MainWindow::resetGuidingError(void) {
 
-    if (this->guidingState.guidingIsOn==true) {
+    if (this->guidingState.guidingIsOn==false) {
         this->guidingState.maxDevInArcSec=0.0;
         ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
+        ui->leDevRaPix->setText("0");
+        ui->leDevDeclPix->setText("0");
+        ui->lePulseDeclMS->setText("0");
+        ui->lePulseRAMS->setText("0");
     }
 }
 
@@ -1772,9 +1782,10 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
         // rotation angle determined
 
+
     //-----------------------------------------
     // debugging code
-    //  avrgAngle=2.13;
+    //  avrgAngle=0;
     //  travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
@@ -1859,7 +1870,8 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
 
     //  debug code follows
-    // this->guidingState.backlashCompensationInMS=800;
+    // this->guidingState.backlashCompensationInMS=0;
+    //------------- end of debug code
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
@@ -1936,8 +1948,7 @@ void MainWindow::displayCalibrationStatus(QString str1) {
 //------------------------------------------------------------------
 // resets all calibration parameters
 void MainWindow::resetGuidingCalibration(void) {
-    if ((this->guidingState.systemIsCalibrated==true) &&
-        (this->guidingState.guidingIsOn==false)) {
+    if ((this->guidingState.systemIsCalibrated==true) && (this->guidingState.guidingIsOn==false)) {
         this->abortCCDAcquisition();
         ui->teCalibrationStatus->clear();
         this->guidingState.guideStarSelected=false;
@@ -1952,6 +1963,8 @@ void MainWindow::resetGuidingCalibration(void) {
         this->guidingState.backlashCompensationInMS=0.0;
         this->guidingState.noOfGuidingSteps = 0;
         this->guidingState.st4IsActive=false;
+        ui->pbGuiding->setEnabled(false);
+        this->resetGuidingError();
     }
 }
 
@@ -1960,7 +1973,7 @@ void MainWindow::resetGuidingCalibration(void) {
 // in "displayGuideCamImage" and "correctGuideStarPosition" ...
 void MainWindow::doAutoGuiding(void) {
 
-    if (this->guidingState.guidingIsOn ==false) {
+    if (this->guidingState.guidingIsOn == false) {
         ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
         this->setTrackingRate();
         this->guidingState.maxDevInArcSec=0.0;
@@ -3187,6 +3200,14 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->ctrlTab->setEnabled(isEnabled);
     ui->hsThreshold->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);
+    ui->sbDevRA->setEnabled(isEnabled);
+    ui->sbDevDecl->setEnabled(isEnabled);
+    ui->cbDeclBacklashComp->setEnabled(isEnabled);
+    ui->cbLogGuidingData->setEnabled(isEnabled);
+    ui->pbResetGdErr->setEnabled(isEnabled);
+    ui->pbResetGuiding->setEnabled(isEnabled);
+    ui->gbCoordinates->setEnabled(isEnabled);
+    ui->gbDateAndTime->setEnabled(isEnabled);
     if (isEnabled == true) {
         if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
             ui->pbLX200Active->setEnabled(false);
@@ -3235,6 +3256,8 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->sbDeclMin->setEnabled(isEnabled);
     ui->sbDeclSec->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);
+    ui->gbCoordinates->setEnabled(isEnabled);
+    ui->gbDateAndTime->setEnabled(isEnabled);
     if (isEnabled == true) {
         if ((this->lx200IsOn) && (this->LXSocket->isOpen())) {
             ui->pbLX200Active->setEnabled(false);
@@ -3316,6 +3339,8 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
             ui->pbLX200Active->setEnabled(false);
         }
     }
+    ui->gbCoordinates->setEnabled(isEnabled);
+    ui->gbDateAndTime->setEnabled(isEnabled);
 }
 
 //------------------------------------------------------------------
@@ -3671,8 +3696,8 @@ void MainWindow::handleBTHandbox(void) {
             this->repaint();
             wait->start();
             do {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-            } while (wait->elapsed() < 250);
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
+            } while (wait->elapsed() < 500);
             if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
                 this->mountMotion.btMoveNorth = 1;
                 this->declinationMoveHandboxUp();
