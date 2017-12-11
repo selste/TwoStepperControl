@@ -1559,7 +1559,7 @@
           <number>2525</number>
          </property>
          <property name="value">
-          <number>2017</number>
+          <number>2018</number>
          </property>
         </widget>
        </item>
@@ -4315,7 +4315,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>1</x>
@@ -4374,7 +4374,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>2</x>
@@ -4462,8 +4462,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>201</width>
-        <height>401</height>
+        <width>211</width>
+        <height>411</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -4472,201 +4472,41 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="gbDSLR">
        <property name="geometry">
         <rect>
          <x>10</x>
          <y>0</y>
          <width>201</width>
-         <height>391</height>
+         <height>401</height>
         </rect>
        </property>
        <property name="title">
         <string>DSLR-Timer</string>
        </property>
-       <widget class="QWidget" name="layoutWidget_12">
+       <widget class="Line" name="line_2">
         <property name="geometry">
          <rect>
-          <x>0</x>
-          <y>220</y>
-          <width>180</width>
-          <height>150</height>
+          <x>10</x>
+          <y>170</y>
+          <width>181</width>
+          <height>20</height>
          </rect>
         </property>
-        <layout class="QGridLayout" name="gridLayout_15">
-         <item row="0" column="0" colspan="2">
-          <layout class="QHBoxLayout" name="horizontalLayout_36">
-           <item>
-            <widget class="QLabel" name="lDSLRRep">
-             <property name="text">
-              <string>Repetitions:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="sbDSLRRepeat"/>
-           </item>
-          </layout>
-         </item>
-         <item row="0" column="2">
-          <spacer name="horizontalSpacer_6">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>18</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="1" column="0" colspan="2">
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
-           <item>
-            <widget class="QLabel" name="ldslrExpNo">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Exp. #:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLCDNumber" name="lcdDSLRExpsTaken">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>30</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="1" column="2">
-          <spacer name="horizontalSpacer_5">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>13</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item row="2" column="0" colspan="3">
-          <layout class="QHBoxLayout" name="horizontalLayout_42">
-           <item>
-            <widget class="QPushButton" name="pbDSLRStartSeries">
-             <property name="text">
-              <string>Start</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pbDSLRStopSeries">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string>Stop</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="3" column="0">
-          <layout class="QHBoxLayout" name="horizontalLayout_37">
-           <item>
-            <widget class="QCheckBox" name="cbExpSeriesDone">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>20</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lExpSeriesDone">
-             <property name="minimumSize">
-              <size>
-               <width>90</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>90</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Series done</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item row="3" column="1" colspan="2">
-          <spacer name="horizontalSpacer_3">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
        </widget>
-       <widget class="QWidget" name="layoutWidget_13">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>2</x>
-          <y>31</y>
+          <x>3</x>
+          <y>30</y>
           <width>180</width>
-          <height>143</height>
+          <height>137</height>
          </rect>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_14">
+        <layout class="QVBoxLayout" name="verticalLayout_12">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_27">
            <item>
@@ -4705,13 +4545,13 @@
              <property name="minimumSize">
               <size>
                <width>90</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>90</width>
-               <height>16777215</height>
+               <height>25</height>
               </size>
              </property>
              <property name="text">
@@ -4727,13 +4567,13 @@
              <property name="minimumSize">
               <size>
                <width>80</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>80</width>
-               <height>16777215</height>
+               <height>25</height>
               </size>
              </property>
              <property name="text">
@@ -4813,28 +4653,255 @@
          </item>
         </layout>
        </widget>
-       <widget class="Line" name="line_2">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>10</x>
+          <x>0</x>
           <y>190</y>
-          <width>161</width>
-          <height>16</height>
+          <width>196</width>
+          <height>216</height>
          </rect>
         </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_13">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_35">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_36">
+             <item>
+              <widget class="QLabel" name="lDSLRRep">
+               <property name="text">
+                <string>Repetitions:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="sbDSLRRepeat"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_6">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>18</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_37">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <item>
+              <widget class="QLabel" name="ldslrExpNo">
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Exp. #:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLCDNumber" name="lcdDSLRExpsTaken">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>30</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_5">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>13</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_42">
+           <item>
+            <widget class="QPushButton" name="pbDSLRStartSeries">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pbDSLRStopSeries">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Stop</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cbDither">
+           <property name="text">
+            <string>Dither in Guiding</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_41">
+           <item>
+            <widget class="QLabel" name="lDitherRange">
+             <property name="text">
+              <string>Dither range [ms]: </string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="sbDitherRange">
+             <property name="maximum">
+              <number>250</number>
+             </property>
+             <property name="singleStep">
+              <number>10</number>
+             </property>
+             <property name="value">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_43">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_34">
+             <item>
+              <widget class="QCheckBox" name="cbExpSeriesDone">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>20</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>20</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="lExpSeriesDone">
+               <property name="minimumSize">
+                <size>
+                 <width>90</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>90</width>
+                 <height>25</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Series done</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </widget>
      </widget>
      <widget class="QFrame" name="frame_5">
       <property name="geometry">
        <rect>
-        <x>220</x>
+        <x>230</x>
         <y>10</y>
         <width>541</width>
-        <height>401</height>
+        <height>411</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -4848,8 +4915,8 @@
         <rect>
          <x>10</x>
          <y>0</y>
-         <width>521</width>
-         <height>391</height>
+         <width>531</width>
+         <height>401</height>
         </rect>
        </property>
        <property name="title">
@@ -4864,7 +4931,7 @@
           <x>0</x>
           <y>40</y>
           <width>521</width>
-          <height>351</height>
+          <height>361</height>
          </rect>
         </property>
         <property name="frameShape">
@@ -5131,7 +5198,7 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>521</width>
+           <width>531</width>
            <height>201</height>
           </rect>
          </property>

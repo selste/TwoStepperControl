@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QFileInfo catFileInfo; // a helper on the file list of catalogs
     QStringList filter; // needed for isolating the .tsc files
     QString *catfName; // name of a .tsc catalog
+    QString *currentYear; // sets the actual equinox
     QList<QHostAddress> ipAddressList;
     int listIter;
     short auxMicrostepDenom, guiderFocusDrive;
@@ -53,6 +54,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->UTTime = new QTime(QTime::currentTime());
     this->UTTime->start();
     this->findOutAboutINDIServerPID(); // check running processes and store the ID of an INDIserver in a hidden file
+    currentYear = new QString(this->UTDate->currentDate().toString("yyyy"));
+    ui->sbEpoch->setValue(currentYear->toInt());
+    delete currentYear;
 
     draccRA= g_AllData->getDriveParams(0,1);
     draccDecl= g_AllData->getDriveParams(1,1);
@@ -1700,7 +1704,7 @@ void MainWindow::calibrateAutoGuider(void) {
         (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
     travelTimeInMSForOnePix=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
     this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
-
+/*
     // now determine the direction of RA+ Travel as a unit vector; travel for "imgProcWindowSize" pix and
     // determine the relative angle between ccd x/y and ra/decl. first, a run is carried out with the
     // pulse guide duration as computed from guide scope fl and camera pixels; the time and travel in pixels
@@ -1782,11 +1786,11 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
         // rotation angle determined
 
-
+*/
     //-----------------------------------------
     // debugging code
-    //  avrgAngle=0;
-    //  travelTimeInMSForOnePix=71.5;
+      avrgAngle=0;
+      travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
     // now determine the rotation matrix from ccd x/y to ra/decl
@@ -1803,7 +1807,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->waitForDriveStop(false,true);
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
     this->waitForDriveStop(false,true);
-
+/*
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Backlash calibration run: ", (float)(slewCounter+1), "/4 ...");
         ui->pbPGDecMinus->setEnabled(false);
@@ -1868,9 +1872,9 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.backlashCompensationInMS=avrgDeclBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
     this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
-
+*/
     //  debug code follows
-    // this->guidingState.backlashCompensationInMS=0;
+     this->guidingState.backlashCompensationInMS=0;
     //------------- end of debug code
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
@@ -1972,6 +1976,9 @@ void MainWindow::resetGuidingCalibration(void) {
 // prepare the GUI and the flags for autoguiding; the actual work is done
 // in "displayGuideCamImage" and "correctGuideStarPosition" ...
 void MainWindow::doAutoGuiding(void) {
+    float alpha;
+    int thrshld,beta;
+    bool medianOn;
 
     if (this->guidingState.guidingIsOn == false) {
         ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
@@ -1986,6 +1993,14 @@ void MainWindow::doAutoGuiding(void) {
         this->setControlsForGuiding(false);
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
+        // now get a starting position and store it in the global data struct
+        thrshld = ui->hsThreshold->value();
+        alpha = ui->hsIContrast->value()/100.0;
+        beta = ui->hsIBrightness->value();
+        medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
+        this->guidingState.noOfGuidingSteps = 0; // guiding starts from ground zero, so the steps are reset ...
+        this->waitForCalibrationImage(); // wait to get a stable image
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     } else {
         this->guidingState.guidingIsOn = false;
         if (ui->cbLogGuidingData->isChecked()==true) {
@@ -2972,14 +2987,12 @@ void MainWindow::declPGPlus(void) {
 void MainWindow::declPGMinusGd(long duration) {
 
     declinationPulseGuide(duration, -1,false);
-    qDebug() << "Duration" << duration;
 }
 
 //--------------------------------------------------------------
 void MainWindow::declPGPlusGd(long duration) {
 
     declinationPulseGuide(duration, 1,false);
-    qDebug() << "Duration" << duration;
 }
 
 //--------------------------------------------------------------
@@ -3068,14 +3081,12 @@ void MainWindow::raPGBwd(void) {
 void MainWindow::raPGFwdGd(long duration) {
 
     raPulseGuide(duration,1,false);
-    qDebug() << "Duration" << duration;
 }
 
 //---------------------------------------------------------------------
 void MainWindow::raPGBwdGd(long duration) {
 
     raPulseGuide(duration,-1,false);
-    qDebug() << "Duration" << duration;
 }
 //---------------------------------------------------------------------
 void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isThreaded) {
@@ -3199,7 +3210,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->catTab->setEnabled(isEnabled);
     ui->ctrlTab->setEnabled(isEnabled);
     ui->hsThreshold->setEnabled(isEnabled);
-    ui->photoTab->setEnabled(isEnabled);
+    ui->gbAuxdrives->setEnabled(isEnabled);
     ui->sbDevRA->setEnabled(isEnabled);
     ui->sbDevDecl->setEnabled(isEnabled);
     ui->cbDeclBacklashComp->setEnabled(isEnabled);
@@ -3213,6 +3224,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
             ui->pbLX200Active->setEnabled(false);
         }
     }
+    ui->gbDSLR->setEnabled(true); // DSLR needs to be controlled during autoguiding
 }
 
 //---------------------------------------------------------------------
