@@ -1,4 +1,4 @@
-Communications protocol for the motorboards
+Communications protocol for the Focusmotorboards
 W. Birkfellner, Nov. 2017, V. 0.1
 
 The stepperboards for TSC communicate via SPI or USB betwwen the Raspberry and 
