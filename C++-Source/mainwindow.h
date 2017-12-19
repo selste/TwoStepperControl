@@ -154,6 +154,7 @@ private slots:
     void mvGuideAuxFwdTiny(void);
     void mvGuideAuxBwdTiny(void);
     void updateAuxDriveStatus(void);
+    void storeDSLRSettingsForDithering(void);
 
 private:
     struct mountMotionStruct {

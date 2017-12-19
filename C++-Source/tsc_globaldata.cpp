@@ -63,6 +63,10 @@ TSC_GlobalData::TSC_GlobalData() {
         this->auxDriveParams.auxSpeed = 500;
         this->auxDriveParams.mSteps = 16;
         this->auxDriveParams.guideScopeFocuserDrive=0;
+        this->dslrPixelDiagSize=7;
+        this->mainScopeFocalLength=1000;
+        this->ditherRangeMin=3;
+        this->ditherRangeMax=15;
     }
 }
 
@@ -72,6 +76,44 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete monotonicGlobalTimer;
     delete BTMACAddress;
     delete LX200IPAddress;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setDitherRange(int value, bool isMinimum) {
+    if (isMinimum == true) {
+        this->ditherRangeMin = value;
+    } else {
+        this->ditherRangeMax = value;
+    }
+}
+
+//-----------------------------------------------
+int TSC_GlobalData::getDitherRange(bool isMinimum) {
+    if (isMinimum == true) {
+        return this->ditherRangeMin;
+    } else {
+        return this->ditherRangeMax;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setDSLRDiagPixSize(float diagsize) {
+    this->dslrPixelDiagSize = diagsize;
+}
+
+//-----------------------------------------------
+float TSC_GlobalData::getDSLRDiagPixSize(void) {
+    return this->dslrPixelDiagSize;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setMainScopeFocalLength(int mainFL) {
+    this->mainScopeFocalLength = mainFL;
+}
+
+//-----------------------------------------------
+int TSC_GlobalData::getMainScopeFocalLength(void) {
+    return this->mainScopeFocalLength;
 }
 
 //-----------------------------------------------
@@ -717,6 +759,22 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append(std::to_string(this->auxDriveParams.guideScopeFocuserDrive));
     ostr.append("// auxDrive connected to the focuser of the guider.\n");
     outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->dslrPixelDiagSize));
+    ostr.append("// Pixel diagonal size of the DSLR in micron.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->mainScopeFocalLength));
+    ostr.append("// Focal length of the main telescope in mm.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->ditherRangeMin));
+    ostr.append("// Minimum range for dithering of DSLR exposures.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->ditherRangeMax));
+    ostr.append("// Maximum range for dithering of DSLR exposures.\n");
+    outfile << ostr.data();
     outfile.close();
 }
 
@@ -857,6 +915,22 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isGuiderFocus(line);
     isGuiderFocus >> this->auxDriveParams.guideScopeFocuserDrive;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isDSLRDiag(line);
+    isDSLRDiag >> this->dslrPixelDiagSize;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isMainScopeFL(line);
+    isMainScopeFL >> this->mainScopeFocalLength;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isDitherMin(line);
+    isDitherMin >> this->ditherRangeMin;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isDitherMax(line);
+    isDitherMax >> this->ditherRangeMax;
     infile.close(); // close the reading file for preferences
     return true;
 }

@@ -327,6 +327,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         this->sendMicrostepsToController();
     }
 
+        // set the values for diagonal pixel size and main scope focal length in the DSLR settings
+    ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
+    ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
+    ui->sbDitherMax->setValue(g_AllData->getDitherRange(false));
+    ui->sbDitherMin->setValue(g_AllData->getDitherRange(true));
+
     // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
@@ -429,6 +435,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGdFocMedBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdSmall())); // move guide focuser drive 1 bward
     connect(ui->pbGdFocSmallFwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxFwdTiny())); // move guide focuser drive 1 forward
     connect(ui->pbGdFocSmallBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdTiny())); // move guide focuser drive 1 bward
+    connect(ui->pbStoreDSLRSettings, SIGNAL(clicked()), this, SLOT(storeDSLRSettingsForDithering())); // store DSLR pixel size and main scope focal length for dithering
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -1704,7 +1711,7 @@ void MainWindow::calibrateAutoGuider(void) {
         (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
     travelTimeInMSForOnePix=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
     this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
-/*
+
     // now determine the direction of RA+ Travel as a unit vector; travel for "imgProcWindowSize" pix and
     // determine the relative angle between ccd x/y and ra/decl. first, a run is carried out with the
     // pulse guide duration as computed from guide scope fl and camera pixels; the time and travel in pixels
@@ -1786,11 +1793,11 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
         // rotation angle determined
 
-*/
+
     //-----------------------------------------
     // debugging code
-      avrgAngle=0;
-      travelTimeInMSForOnePix=71.5;
+    //  avrgAngle=0;
+    //  travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
     // now determine the rotation matrix from ccd x/y to ra/decl
@@ -1807,7 +1814,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->waitForDriveStop(false,true);
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
     this->waitForDriveStop(false,true);
-/*
+
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Backlash calibration run: ", (float)(slewCounter+1), "/4 ...");
         ui->pbPGDecMinus->setEnabled(false);
@@ -1872,9 +1879,9 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.backlashCompensationInMS=avrgDeclBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
     this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
-*/
+
     //  debug code follows
-     this->guidingState.backlashCompensationInMS=0;
+    // this->guidingState.backlashCompensationInMS=0;
     //------------- end of debug code
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
@@ -3559,6 +3566,28 @@ void MainWindow::storeDriveData(void) {
 }
 
 //------------------------------------------------------------------
+// store DSLR pixel size and main scope focal length for dithering
+void MainWindow::storeDSLRSettingsForDithering(void) {
+    int ditherMinVal, ditherMaxVal;
+
+    g_AllData->setDSLRDiagPixSize((float)(ui->sbDSLRPixSize->value()));
+    g_AllData->setMainScopeFocalLength(ui->sbScopeFL->value());
+    ditherMaxVal=ui->sbDitherMax->value();
+    g_AllData->setDitherRange(ditherMaxVal, false);
+    ditherMinVal=ui->sbDitherMin->value();
+    if (ditherMinVal >= ditherMaxVal) {
+        if (ditherMaxVal > 0) {
+            ditherMinVal = ditherMaxVal - 1;
+        } else {
+            ditherMinVal = 0;
+        }
+        ui->sbDitherMin->setValue(ditherMinVal);
+    } // just to avoid any shit
+    g_AllData->setDitherRange(ditherMinVal, true);
+    g_AllData->storeGlobalData();
+}
+
+//------------------------------------------------------------------
 // store data site from the GUI to the global data and to the .tsp file ...
 void MainWindow::storeSiteData(void)  {
     double guilat, guilong, guiUTCOffs;
@@ -3813,11 +3842,13 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
 void MainWindow::startDSLRSeries(void) {
 
     if (ui->sbDSLRRepeat->value() > 0) {
+        qsrand((uint)(UTTime->currentTime().second())); // initialize the random number generator
         ui->cbExpSeriesDone->setChecked(false);
         ui->sbDSLRRepeat->setEnabled(false);
         ui->pbDSLRStartSeries->setEnabled(false);
         ui->pbDSLRStopSeries->setEnabled(true);
         ui->pbDSLRTerminateExposure->setEnabled(false);
+        ui->cbDither->setEnabled(false);
         this->dslrStates.dslrSeriesRunning = true;
         this->dslrStates.noOfExposures = ui->sbDSLRRepeat->value();
         this->dslrStates.noOfExposuresLeft=this->dslrStates.noOfExposures;
@@ -3828,24 +3859,79 @@ void MainWindow::startDSLRSeries(void) {
 }
 
 //-------------------------------------------------------------------
-// slot that is called once an exposure was taken
+// slot that is called once an exposure was taken; also takes care of dithering if checkbox is set
 void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
     int expsTaken;
+    float arcSecsPerDSLRPix;
+    int randDeclPixStep, randRAPixStep, pixDisplacement,raDitherStepInMS, declDitherStepInMS, timeRemaining;
+    float invRandMax = 1/(float)RAND_MAX;
+    short sign;
 
     ui->pbDSLRSingleShot->setEnabled(false);
     ui->sbDSLRDuration->setEnabled(false);
     ui->pbDSLRStartSeries->setEnabled(false);
+    ui->cbDither->setEnabled(false);
     this->dslrStates.noOfExposuresLeft--;
     expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
     ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
+    if (ui->cbDither->isChecked()==true) {
+        if (this->guidingState.guidingIsOn == true) {
+            this->doAutoGuiding();
+        } // stop autoguiding
+        do {
+            randRAPixStep = qrand()*invRandMax*g_AllData->getDitherRange(false);
+            randDeclPixStep = qrand()*invRandMax*g_AllData->getDitherRange(false);
+            pixDisplacement = round(sqrt(randRAPixStep*randRAPixStep+randDeclPixStep*randDeclPixStep));
+        } while ((pixDisplacement < g_AllData->getDitherRange(true)) || (pixDisplacement > g_AllData->getDitherRange(false)));
+        ui->lcdDitherStep->display(pixDisplacement);
+        arcSecsPerDSLRPix = 206.3*g_AllData->getDSLRDiagPixSize()/((float)g_AllData->getMainScopeFocalLength());
+        sign = 1;
+        if (qrand()%2 == 0) {
+            sign = -1;
+        } // compute a random sign for the first displacement
+        raDitherStepInMS = arcSecsPerDSLRPix*randRAPixStep*1000;
+        timeRemaining = raDitherStepInMS;
+        if (raDitherStepInMS > 1000) {
+            do {
+       //         this->raPulseGuide(1000, sign, false);
+                timeRemaining -= 1000;
+                qDebug() << "raDithering";
+            } while (timeRemaining > 1000);
+        //    this->raPulseGuide(timeRemaining, sign, false);
+        } else {
+       //     this->raPulseGuide(timeRemaining, sign, false);
+        } /// do the dither step in 1 s steps
+        if (qrand()%2 == 0) {
+            sign *= -1;
+        } // compute a random sign for the second displacement
+        declDitherStepInMS = arcSecsPerDSLRPix*randDeclPixStep*1000;
+        timeRemaining = declDitherStepInMS;
+        if (declDitherStepInMS > 1000) {
+            do {
+       //         this->declinationPulseGuide(1000, sign, false);
+                timeRemaining -= 1000;
+                qDebug() << "declDithering";
+            } while (timeRemaining > 1000);
+      //      this->declinationPulseGuide(timeRemaining, sign, false);
+
+        } else {
+      //      this->declinationPulseGuide(timeRemaining, sign, false); // turned off for debugging
+        } /// do the dither step in 1 s steps
+
+
+        if (this->guidingState.systemIsCalibrated == true) {
+            this->doAutoGuiding();
+            // start autoguiding - what to do if guide star is lost?
+        }
+    }
     if (this->dslrStates.noOfExposuresLeft > 0) {
-    wait = new QElapsedTimer();
-    wait->start();
-    do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-    } while (wait->elapsed() < 5000); // just wait for 5 seconds until next exposure is taken
-    delete wait;
+        wait = new QElapsedTimer();
+        wait->start();
+        do {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        } while (wait->elapsed() < 5000); // just wait for 5 seconds until next exposure is taken
+        delete wait;
         this->handleDSLRSingleExposure();
     } else {
         this->stopDSLRExposureSeries();
@@ -3860,6 +3946,7 @@ void MainWindow::stopDSLRExposureSeries(void) {
     ui->cbExpSeriesDone->setChecked(true);
     ui->sbDSLRRepeat->setEnabled(true);
     ui->pbDSLRStartSeries->setEnabled(true);
+    ui->cbDither->setEnabled(true);
     ui->pbDSLRStopSeries->setEnabled(false);
     ui->sbDSLRRepeat->setValue(0);
     this->dslrStates.dslrSeriesRunning = false;

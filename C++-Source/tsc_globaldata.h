@@ -54,22 +54,28 @@ public:
     QString* getBTMACAddress(void); // get the MAC address of the BT-adapter
     void setLX200IPAddress(QString); // store the IP address for LX200
     QString* getLX200IPAddress(void); // get IP address for LX200
-    void setLocalSTime(double);
-    double getLocalSTime(void);
-    void setCelestialSpeed(short);
+    void setLocalSTime(double); // set the local sidereal time
+    double getLocalSTime(void); // get the local sidereal time
+    void setCelestialSpeed(short); // speed is sidereal, lunar or solar
     double getCelestialSpeed(void);
-    void setAuxName(short, QString);
+    void setAuxName(short, QString); // store the name of an auxiliary drive; there are 2 of them
     QString getAuxName(short);
-    void setStepsToBeDone(short, long);
+    void setStepsToBeDone(short, long); // store the steps carried out by default by one of the aux drives
     long getStepsToBeDone(short);
-    void setAuxAcc(long);
+    void setAuxAcc(long); // acceleration for auxiliary drives
     long getAuxAcc(void);
-    void setAuxSpeed(long);
+    void setAuxSpeed(long); // speed for auxiliary drives
     long getAuxSpeed(void);
-    void setAuxMSteps(long);
+    void setAuxMSteps(long); // set microstepping ratio for auxiliary drives
     long getAuxMSteps(void);
-    void setGuiderFocusDrive(short);
+    void setGuiderFocusDrive(short); // define which auxiliry motor focuses the guider
     short getGuiderFocusDrive(void);
+    void setDSLRDiagPixSize(float); // diagonal size of the DSLR chip in microns. needed for dithering
+    float getDSLRDiagPixSize(void);
+    void setMainScopeFocalLength(int); // store the focal length of the main scope; needed for dithering
+    int getMainScopeFocalLength(void);
+    void setDitherRange(int, bool); // set dither range; first argument is the number, second is the flag "isMinimum"
+    int getDitherRange(bool); // the boolean indicates whether the number requested "isMinimum"
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -79,6 +85,10 @@ private:
     bool isInTrackingMode;
     QImage *currentCameraImage;
     int guideScopeFocalLength;
+    float dslrPixelDiagSize;
+    int mainScopeFocalLength;
+    int ditherRangeMin;
+    int ditherRangeMax;
     QString *BTMACAddress;
     QString *LX200IPAddress;
     double celestialSpeed;

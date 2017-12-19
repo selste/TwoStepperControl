@@ -3442,7 +3442,7 @@
            <item>
             <widget class="QLabel" name="lFocalLength">
              <property name="text">
-              <string>Focal length [mm]:</string>
+              <string>Guider FL [mm]:</string>
              </property>
             </widget>
            </item>
@@ -4488,7 +4488,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>170</y>
+          <y>160</y>
           <width>181</width>
           <height>20</height>
          </rect>
@@ -4657,9 +4657,9 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>190</y>
+          <y>180</y>
           <width>196</width>
-          <height>216</height>
+          <height>218</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -4807,20 +4807,26 @@
            <item>
             <widget class="QLabel" name="lDitherRange">
              <property name="text">
-              <string>Dither range [ms]: </string>
+              <string>Dither step [pix]: </string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="sbDitherRange">
-             <property name="maximum">
-              <number>250</number>
+            <widget class="QLCDNumber" name="lcdDitherStep">
+             <property name="minimumSize">
+              <size>
+               <width>50</width>
+               <height>30</height>
+              </size>
              </property>
-             <property name="singleStep">
-              <number>10</number>
+             <property name="maximumSize">
+              <size>
+               <width>50</width>
+               <height>30</height>
+              </size>
              </property>
-             <property name="value">
-              <number>100</number>
+             <property name="digitCount">
+              <number>2</number>
              </property>
             </widget>
            </item>
@@ -5720,7 +5726,7 @@
     </widget>
     <widget class="QWidget" name="gearTab">
      <attribute name="title">
-      <string> Drive settings</string>
+      <string>Settings</string>
      </attribute>
      <widget class="QFrame" name="frameKinetics">
       <property name="geometry">
@@ -5728,7 +5734,7 @@
         <x>0</x>
         <y>10</y>
         <width>531</width>
-        <height>191</height>
+        <height>181</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -6055,7 +6061,7 @@
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>150</y>
+         <y>140</y>
          <width>500</width>
          <height>30</height>
         </rect>
@@ -6081,9 +6087,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>210</y>
-        <width>761</width>
-        <height>201</height>
+        <y>200</y>
+        <width>501</width>
+        <height>221</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -6096,7 +6102,7 @@
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>10</y>
+         <y>0</y>
          <width>201</width>
          <height>181</height>
         </rect>
@@ -6336,7 +6342,7 @@
        <property name="geometry">
         <rect>
          <x>210</x>
-         <y>10</y>
+         <y>0</y>
          <width>201</width>
          <height>181</height>
         </rect>
@@ -6542,56 +6548,56 @@
       <widget class="QPushButton" name="pbStoreGears">
        <property name="geometry">
         <rect>
-         <x>560</x>
-         <y>10</y>
-         <width>191</width>
-         <height>181</height>
+         <x>10</x>
+         <y>180</y>
+         <width>391</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="text">
         <string>Store gear settings</string>
        </property>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QGroupBox" name="groupBox">
        <property name="geometry">
         <rect>
-         <x>412</x>
-         <y>42</y>
-         <width>137</width>
-         <height>27</height>
+         <x>410</x>
+         <y>0</y>
+         <width>81</width>
+         <height>201</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
-        <item>
-         <widget class="QLineEdit" name="leMicrosteps">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>50</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>1</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lmsteps">
-          <property name="text">
-           <string>Microsteps</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <property name="title">
+        <string>Microsteps</string>
+       </property>
+       <widget class="QLineEdit" name="leMicrosteps">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>30</y>
+          <width>50</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>1</string>
+        </property>
+       </widget>
       </widget>
      </widget>
      <widget class="QFrame" name="frame_4">
@@ -6600,7 +6606,7 @@
         <x>540</x>
         <y>10</y>
         <width>221</width>
-        <height>191</height>
+        <height>181</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -6670,6 +6676,174 @@
             <string>Solar Speed</string>
            </property>
           </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+     <widget class="QFrame" name="frame_6">
+      <property name="geometry">
+       <rect>
+        <x>510</x>
+        <y>200</y>
+        <width>251</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <widget class="QGroupBox" name="gbDSLRSettings">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>0</y>
+         <width>241</width>
+         <height>211</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>DSLR Settings</string>
+       </property>
+       <widget class="QPushButton" name="pbStoreDSLRSettings">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>180</y>
+          <width>231</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Store DSLR settings</string>
+        </property>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>20</y>
+          <width>236</width>
+          <height>152</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_14">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_15">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QLabel" name="lDSLRPixSize">
+               <property name="text">
+                <string>Pixel diag. size [mu]:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="sbDSLRPixSize">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <double>7.340000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>25.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_44">
+             <item>
+              <widget class="QLabel" name="lScopeFL">
+               <property name="text">
+                <string>Telescope FL [mm]:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="sbScopeFL">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>50</number>
+               </property>
+               <property name="maximum">
+                <number>99000</number>
+               </property>
+               <property name="value">
+                <number>1300</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QFormLayout" name="formLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="lDitherRangeMin">
+             <property name="text">
+              <string>Dither range min [pix]:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QSpinBox" name="sbDitherMin">
+             <property name="minimum">
+              <number>3</number>
+             </property>
+             <property name="maximum">
+              <number>25</number>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="lDitherRangeMax">
+             <property name="text">
+              <string>Dither range max [pix]:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="sbDitherMax">
+             <property name="minimum">
+              <number>4</number>
+             </property>
+             <property name="maximum">
+              <number>30</number>
+             </property>
+             <property name="value">
+              <number>15</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>
