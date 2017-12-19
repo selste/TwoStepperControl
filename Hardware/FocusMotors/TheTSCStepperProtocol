@@ -44,10 +44,8 @@ Setting the number of steps:
 sxyyy ... again, x is the driver and yyy is the number of microsteps
 
 Checking whether a board is connected:
-t ... this command responds with 'D', '0', '1' or 'B'. 'D' is short for the 
-DRV 8825 and both drives are inactive. If both are running, one gets a 'B', otherwise
-the numeral for the active drive is sent. If 'D' is returned when 't' was sent, 
-a board is connected.
+t ... this command responds with a for character string xxxx. x is either 0 or 1 in dependence
+of the active drive. An example: drives 0 and 3 are running, the others are at rest - 't' results in 1001.
 
 Stop a drive:
 xy ... y is the address of the drive.
