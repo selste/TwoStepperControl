@@ -4,7 +4,7 @@
 
 AccelStepper raStepper(AccelStepper::DRIVER,A7,A8); // pin A4 connected to STEP, pin A5 connected to DIR
 AccelStepper deStepper(AccelStepper::DRIVER,A4,A5); 
-AccelStepper aux1Stepper(AccelStepper::DRIVER,A21,A22); 
+AccelStepper aux1Stepper(AccelStepper::DRIVER,A18,A19); 
 AccelStepper aux2Stepper(AccelStepper::DRIVER,A13,A12);
 char readCommand;
 short sign;
