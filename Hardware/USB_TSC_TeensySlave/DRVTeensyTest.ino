@@ -2,7 +2,7 @@
 
 AccelStepper deStepper(AccelStepper::DRIVER,A4,A5);
 AccelStepper raStepper(AccelStepper::DRIVER,A7,A8);
-AccelStepper aux1Stepper(AccelStepper::DRIVER,A21,A22);
+AccelStepper aux1Stepper(AccelStepper::DRIVER,A18,A19);
 AccelStepper aux2Stepper(AccelStepper::DRIVER,A13,A12);
 
 
@@ -33,13 +33,13 @@ void setup() {
    digitalWrite(A17,LOW); // LLL=full, HLL=half,LHL=1/4,HHL=1/8,LLH=1/16,HLH=LHH=HHH=1/32 for the DRV8825    
 
    deStepper.setMaxSpeed(2000); 
-   deStepper.setAcceleration(2000); 
+   deStepper.setAcceleration(3000); 
    deStepper.setCurrentPosition(0);
    digitalWrite(A0,LOW);
    deStepper.moveTo(50000);
    
    raStepper.setMaxSpeed(2000); 
-   raStepper.setAcceleration(2000); 
+   raStepper.setAcceleration(3000); 
    raStepper.setCurrentPosition(0);
    digitalWrite(A6,LOW);
    raStepper.moveTo(50000);
