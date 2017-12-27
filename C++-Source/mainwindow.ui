@@ -3170,7 +3170,7 @@
      <attribute name="title">
       <string>Guiding</string>
      </attribute>
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="tabGdPrev">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -3657,6 +3657,9 @@
        <zorder>cbStoreGuideCamImgs</zorder>
       </widget>
       <widget class="QWidget" name="tabImageProc">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <attribute name="title">
         <string>IP</string>
        </attribute>
@@ -3860,7 +3863,10 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="ccdTab">
+      <widget class="QWidget" name="tabCCDCal">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <attribute name="title">
         <string>CCD</string>
        </attribute>
@@ -3916,7 +3922,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QPushButton" name="pbStop5">
+       <widget class="QPushButton" name="pbTerminateCal">
         <property name="geometry">
          <rect>
           <x>20</x>
@@ -3941,7 +3947,7 @@
          <number>1</number>
         </property>
         <property name="text">
-         <string>Emergency Stop</string>
+         <string>Terminate Calibration</string>
         </property>
        </widget>
        <widget class="QSplitter" name="splitter_2">
@@ -4063,7 +4069,10 @@
         </property>
        </widget>
       </widget>
-      <widget class="QWidget" name="tabGuideParams">
+      <widget class="QWidget" name="tabGuide">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <attribute name="title">
         <string>Gde</string>
        </attribute>
@@ -5761,7 +5770,7 @@
           <x>14</x>
           <y>35</y>
           <width>243</width>
-          <height>104</height>
+          <height>106</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_17">
@@ -5837,28 +5846,6 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="leAMaxRA">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="0">
           <widget class="QLabel" name="labelContr4">
            <property name="minimumSize">
@@ -5879,24 +5866,37 @@
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QLineEdit" name="leCurrMaxRA">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="QDoubleSpinBox" name="sbCurrMaxRA">
+           <property name="decimals">
+            <number>1</number>
            </property>
-           <property name="minimumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
+           <property name="minimum">
+            <double>0.100000000000000</double>
            </property>
-           <property name="maximumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
+           <property name="maximum">
+            <double>4.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="value">
+            <double>1.500000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="sbAMaxRA">
+           <property name="minimum">
+            <number>100</number>
+           </property>
+           <property name="maximum">
+            <number>10000</number>
+           </property>
+           <property name="singleStep">
+            <number>50</number>
+           </property>
+           <property name="value">
+            <number>5000</number>
            </property>
           </widget>
          </item>
@@ -5921,7 +5921,7 @@
           <x>6</x>
           <y>34</y>
           <width>243</width>
-          <height>104</height>
+          <height>106</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_18">
@@ -5991,28 +5991,6 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="leAMaxDecl">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="0">
           <widget class="QLabel" name="labelContr4_2">
            <property name="minimumSize">
@@ -6033,24 +6011,37 @@
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QLineEdit" name="leCurrMaxDecl">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="QDoubleSpinBox" name="sbCurrMaxDecl">
+           <property name="decimals">
+            <number>1</number>
            </property>
-           <property name="minimumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
+           <property name="minimum">
+            <double>0.100000000000000</double>
            </property>
-           <property name="maximumSize">
-            <size>
-             <width>150</width>
-             <height>30</height>
-            </size>
+           <property name="maximum">
+            <double>4.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="value">
+            <double>1.500000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="sbAMaxDecl">
+           <property name="minimum">
+            <number>100</number>
+           </property>
+           <property name="maximum">
+            <number>10000</number>
+           </property>
+           <property name="singleStep">
+            <number>50</number>
+           </property>
+           <property name="value">
+            <number>5000</number>
            </property>
           </widget>
          </item>
@@ -6721,7 +6712,7 @@
          <string>Store DSLR settings</string>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>

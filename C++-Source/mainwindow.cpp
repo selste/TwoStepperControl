@@ -143,7 +143,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pullUpDnControl(3,PUD_OFF);
     pullUpDnControl(4,PUD_OFF);
     pullUpDnControl(5,PUD_OFF); // setting internal pull-up resistors of the BCM
-    ui->pbStopST4->setEnabled(false);
+    //ui->pbStopST4->setEnabled(false);
     din1=abs(1-digitalRead(4));
     rin1=abs(1-digitalRead(3));
     din2=abs(1-digitalRead(5));
@@ -169,16 +169,16 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     val=(this->StepperDriveRA->getKineticsFromController(3));
     ui->leVMaxRA->setText(textEntry->number(val,'f',2));
     textEntry->clear();
-    ui->leAMaxRA->setText(textEntry->number(this->StepperDriveRA->getKineticsFromController(2)));
+    ui->sbAMaxRA->setValue((this->StepperDriveRA->getKineticsFromController(2)));
     textEntry->clear();
-    ui->leCurrMaxRA->setText(textEntry->number(this->StepperDriveRA->getKineticsFromController(1)));
+    ui->sbCurrMaxRA->setValue((this->StepperDriveRA->getKineticsFromController(1)));
     textEntry->clear();
     val=(this->StepperDriveDecl->getKineticsFromController(3));
     ui->leVMaxDecl->setText(textEntry->number(val,'f',2));
     textEntry->clear();
-    ui->leAMaxDecl->setText(textEntry->number(this->StepperDriveDecl->getKineticsFromController(2)));
+    ui->sbAMaxDecl->setValue((this->StepperDriveDecl->getKineticsFromController(2)));
     textEntry->clear();
-    ui->leCurrMaxDecl->setText(textEntry->number(this->StepperDriveDecl->getKineticsFromController(1)));
+    ui->sbCurrMaxDecl->setValue((this->StepperDriveDecl->getKineticsFromController(1)));
     textEntry->clear();
     ui->leRAPlanetary->setText(textEntry->number(g_AllData->getGearData(0)));
     textEntry->clear();
@@ -348,10 +348,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
-    connect(ui->leAMaxRA, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
-    connect(ui->leCurrMaxRA, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
-    connect(ui->leAMaxDecl, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
-    connect(ui->leCurrMaxDecl, SIGNAL(textChanged(QString)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
+    connect(ui->sbAMaxRA, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
+    connect(ui->sbCurrMaxRA, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
+    connect(ui->sbAMaxDecl, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
+    connect(ui->sbCurrMaxDecl, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
     connect(ui->rbCorrSpeed,SIGNAL(released()), this, SLOT(setCorrectionSpeed())); // set speed for slow manual motion
     connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed())); // set speed for faster manual motion
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
@@ -389,7 +389,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStartINDIServer, SIGNAL(clicked()), this, SLOT(deployINDICommand())); // call a system command to start an INDI server with given driver parameters
     connect(ui->pbStop1, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
     connect(ui->pbStop2, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
-    connect(ui->pbStop5, SIGNAL(clicked()), this, SLOT(emergencyStop())); // kill all motion immediately
+    connect(ui->pbTerminateCal, SIGNAL(clicked()), this, SLOT(terminateGuiderCalibration())); // kill all motion immediately
     connect(ui->pbEnableTCP, SIGNAL(clicked()), this, SLOT(connectToIPSocket())); // connect to a LX 200 socket
     connect(ui->pbDisableTCP, SIGNAL(clicked()), this, SLOT(disconnectFromIPSocket())); // disconnect from LX 200 socket
     connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus())); // pulse guide for a given amount of time defined in a spinbox
@@ -1088,67 +1088,55 @@ void MainWindow::invertRADirection(void) {
 // convey acceleration to the stepper class from the GUI
 void MainWindow::setMaxStepperAccRA(void) {
     double val;
-    QString *leEntry;
     bool trackingWasOn;
 
     trackingWasOn = this->mountMotion.RATrackingIsOn;
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }
-    leEntry = new QString(ui->leAMaxRA->text());
-    val = (double)(leEntry->toFloat());
+    val = (double)(ui->sbAMaxRA->value());
     this->StepperDriveRA->setStepperParams(val, 1);
     if (trackingWasOn == true) {
         this->startRATracking();
     }
     g_AllData->setDriveParams(0,1,val);
-    delete leEntry;
 }
 
 //------------------------------------------------------------------
 // convey acceleration to the stepper class from the GUI
 void MainWindow::setMaxStepperAccDecl(void) {
     double val;
-    QString *leEntry;
 
-    leEntry = new QString(ui->leAMaxDecl->text());
-    val = (double)(leEntry->toFloat());
+    val = (double)(ui->sbAMaxDecl->value());
     this->StepperDriveDecl->setStepperParams(val, 1);
     g_AllData->setDriveParams(1,1,val);
-    delete leEntry;
 }
 
 //------------------------------------------------------------------
 // convey current to the stepper class from the GUI
 void MainWindow::setMaxStepperCurrentRA(void) {
     double val;
-    QString *leEntry;
     bool trackingWasOn;
 
     trackingWasOn = this->mountMotion.RATrackingIsOn;
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }
-    leEntry = new QString(ui->leCurrMaxRA->text());
-    val = (double)(leEntry->toFloat());
+    val = ui->sbCurrMaxRA->value();
     this->StepperDriveRA->setStepperParams(val, 3);
     if (trackingWasOn == true) {
         this->startRATracking();
     }
     g_AllData->setDriveParams(0,2,val);
-    delete leEntry;
 }
 //------------------------------------------------------------------
 // convey current to the stepper class from the GUI
 void MainWindow::setMaxStepperCurrentDecl(void) {
     double val;
-    QString *leEntry;
 
-    leEntry = new QString(ui->leCurrMaxDecl->text());
-    val = (double)(leEntry->toFloat());
+    val = ui->sbCurrMaxDecl->value();
     this->StepperDriveDecl->setStepperParams(val, 3);
     g_AllData->setDriveParams(1,2,val);
-    delete leEntry;
 }
 
 //------------------------------------------------------------------
@@ -1310,6 +1298,9 @@ void MainWindow::startCCDAcquisition(void) {
     takeSingleCamShot();
     ui->pbSelectGuideStar->setEnabled(true);
     ui->pbDisconnectFromServer->setEnabled(false);
+    ui->tabImageProc->setEnabled(true);
+    ui->tabCCDCal->setEnabled(true);
+    ui->tabGuide->setEnabled(true);
 }
 
 //------------------------------------------------------------------
@@ -1319,6 +1310,9 @@ void MainWindow::stopCCDAcquisition(void) {
     ui->pbStopExposure->setEnabled(false);
     ui->pbDisconnectFromServer->setEnabled(true);
     this->camImageWasReceived=false;
+    ui->tabImageProc->setEnabled(false);
+    ui->tabCCDCal->setEnabled(false);
+    ui->tabGuide->setEnabled(false);
 }
 
 //------------------------------------------------------------------
@@ -1677,6 +1671,14 @@ void MainWindow::resetGuidingError(void) {
 }
 
 //------------------------------------------------------------------
+// a slot that is called during calibration if the calibration process is to be stopped.
+// if this variable is true, the calibration routine exits, and the value is reset
+void MainWindow::terminateGuiderCalibration(void) {
+    this->emergencyStop();
+    this->calibrationToBeTerminated = true;
+}
+
+//------------------------------------------------------------------
 // calibrate the system. the selected star is located and three
 // pulse guide commands in each direction and back are carried out.
 // the pixel/ms is then evaluated for each direction. 8 slews from the
@@ -1694,6 +1696,9 @@ void MainWindow::calibrateAutoGuider(void) {
     bool medianOn;
     short slewCounter;
 
+    ui->teCalibrationStatus->clear();
+    this->calibrationToBeTerminated = false;
+    ui->pbTerminateCal->setEnabled(true);
     this->displayCalibrationStatus("Entering calibration...");
     if (this->abortCCDAcquisition() == true) {
         this->displayCalibrationStatus("CCD acquisition stopped...");
@@ -1710,7 +1715,26 @@ void MainWindow::calibrateAutoGuider(void) {
     travelPerMSInRACorr=0.001*(3600.0)*g_AllData->getDriveParams(0,0)*(g_AllData->getGearData(3)/g_AllData->getGearData(8))/
         (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
     travelTimeInMSForOnePix=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
+    if ((travelPerMSInRACorr == 0) || (travelTimeInMSForOnePix > 1000)) {
+        travelTimeInMSForOnePix = 1000;
+    }
+
     this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
+
+    if (this->calibrationToBeTerminated == true) {
+        this->displayCalibrationStatus("Termination in process...");
+        this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+        this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+        setControlsForAutoguiderCalibration(true);
+        this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+        this->guidingState.rotationAngle=0.0;
+        this->displayCalibrationStatus("Calibration was terminated...");
+        this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+        ui->pbTerminateCal->setEnabled(true);
+        this->calibrationToBeTerminated = false;
+        this->startRATracking();
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
 
     // now determine the direction of RA+ Travel as a unit vector; travel for "imgProcWindowSize" pix and
     // determine the relative angle between ccd x/y and ra/decl. first, a run is carried out with the
@@ -1748,6 +1772,21 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->pbPGRAMinus->setEnabled(false);
     ui->pbPGRAPlus->setEnabled(false);
 
+    if (this->calibrationToBeTerminated == true) {
+        this->displayCalibrationStatus("Termination in process...");
+        this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+        this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+        setControlsForAutoguiderCalibration(true);
+        this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+        this->guidingState.rotationAngle=0.0;
+        this->displayCalibrationStatus("Calibration was terminated...");
+        this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+        ui->pbTerminateCal->setEnabled(true);
+        this->calibrationToBeTerminated = false;
+        this->startRATracking();
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
+
     // now repeat this procedure 4 times to get a better estimate of "travelTimeInMSForOnePix" and the relative angle of the ccd and telescope coordinate system
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Calibration run: ", (float)(slewCounter+1), "/4 ...");
@@ -1757,6 +1796,21 @@ void MainWindow::calibrateAutoGuider(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
+        if (this->calibrationToBeTerminated == true) {
+            this->displayCalibrationStatus("Termination in process...");
+            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+            setControlsForAutoguiderCalibration(true);
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            this->guidingState.rotationAngle=0.0;
+            this->displayCalibrationStatus("Calibration was terminated...");
+            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+            ui->pbTerminateCal->setEnabled(true);
+            this->calibrationToBeTerminated = false;
+            this->startRATracking();
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
         this->raPGFwd(); // carry out travel
         this->waitForDriveStop(true,true);
@@ -1773,6 +1827,20 @@ void MainWindow::calibrateAutoGuider(void) {
         relativeAngle[slewCounter]=acos((slewVector[0])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
         this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
         tTimeOnePix[slewCounter]=pulseDuration/lengthOfTravel;
+        if (this->calibrationToBeTerminated == true) {
+            this->displayCalibrationStatus("Termination in process...");
+            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+            setControlsForAutoguiderCalibration(true);
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            this->guidingState.rotationAngle=0.0;
+            this->displayCalibrationStatus("Calibration was terminated...");
+            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+            ui->pbTerminateCal->setEnabled(true);
+            this->calibrationToBeTerminated = false;
+            this->startRATracking();
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Slewing back...");
         this->raPGBwd(); // going back to initial position
         this->waitForDriveStop(true,true);
@@ -1826,6 +1894,20 @@ void MainWindow::calibrateAutoGuider(void) {
             // now get a position
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew
+        if (this->calibrationToBeTerminated == true) {
+            this->displayCalibrationStatus("Termination in process...");
+            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+            setControlsForAutoguiderCalibration(true);
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            this->guidingState.rotationAngle=0.0;
+            this->displayCalibrationStatus("Calibration was terminated...");
+            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+            ui->pbTerminateCal->setEnabled(true);
+            this->calibrationToBeTerminated = false;
+            this->startRATracking();
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
         if (slewCounter%2==0) {
             this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
@@ -1848,6 +1930,20 @@ void MainWindow::calibrateAutoGuider(void) {
         lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
         initialCentroid[0]=currentCentroid[0];
         initialCentroid[1]=currentCentroid[1]; // now go back, therefore the endpoint is the new beginning ...
+        if (this->calibrationToBeTerminated == true) {
+            this->displayCalibrationStatus("Termination in process...");
+            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+            setControlsForAutoguiderCalibration(true);
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            this->guidingState.rotationAngle=0.0;
+            this->displayCalibrationStatus("Calibration was terminated...");
+            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+            ui->pbTerminateCal->setEnabled(true);
+            this->calibrationToBeTerminated = false;
+            this->startRATracking();
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Travel back ...");
         if (slewCounter%2==0) {
             this->guidingState.declinationDriveDirection=-1;
@@ -1891,6 +1987,9 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.rotationAngle=avrgAngle;
     this->displayCalibrationStatus("Calibration is finished...");
     this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+
+    ui->pbTerminateCal->setEnabled(false);
+    this->calibrationToBeTerminated = false;
 }
 
 //------------------------------------------------------------------
@@ -1933,6 +2032,9 @@ void MainWindow::waitForCalibrationImage(void) {
     this->takeSingleCamShot();
     while (this->guidingState.calibrationImageReceived == false) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        if (this->calibrationToBeTerminated == true) { // if the "Terminate calibration" button is pressed, this one is set to true ...
+            return;
+        }
     }
 }
 
@@ -3232,6 +3334,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
         }
     }
     ui->gbDSLR->setEnabled(true); // DSLR needs to be controlled during autoguiding
+    ui->pbTerminateCal->setEnabled(false); // this one is only active when the system calibrates the autoguider
 }
 
 //---------------------------------------------------------------------
@@ -3275,6 +3378,9 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->sbDeclMin->setEnabled(isEnabled);
     ui->sbDeclSec->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);
+    if ((isEnabled == true) && (this->auxBoardIsAvailable == false)) {
+        ui->gbAuxdrives->setEnabled(false);
+    }
     ui->gbCoordinates->setEnabled(isEnabled);
     ui->gbDateAndTime->setEnabled(isEnabled);
     if (isEnabled == true) {
@@ -3282,11 +3388,12 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
             ui->pbLX200Active->setEnabled(false);
         }
     }
+    ui->pbTerminateCal->setEnabled(false); // this one is only active when the system calibrates the autoguider
 }
 //---------------------------------------------------------------------
 void MainWindow::setControlsForRATracking(bool isEnabled) {
-    ui->leAMaxRA->setEnabled(isEnabled);
-    ui->leCurrMaxRA->setEnabled(isEnabled);
+    ui->sbAMaxRA->setEnabled(isEnabled);
+    ui->sbCurrMaxRA->setEnabled(isEnabled);
     ui->leRAPlanetary->setEnabled(isEnabled);
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);
@@ -3297,8 +3404,8 @@ void MainWindow::setControlsForRATracking(bool isEnabled) {
 
 //---------------------------------------------------------------------
 void MainWindow::setControlsForRATravel(bool isEnabled) {
-    ui->leAMaxRA->setEnabled(isEnabled);
-    ui->leCurrMaxRA->setEnabled(isEnabled);
+    ui->sbAMaxRA->setEnabled(isEnabled);
+    ui->sbCurrMaxRA->setEnabled(isEnabled);
     ui->leRAPlanetary->setEnabled(isEnabled);
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);
@@ -3316,8 +3423,8 @@ void MainWindow::setControlsForRATravel(bool isEnabled) {
 
 //---------------------------------------------------------------------
 void MainWindow::setControlsForDeclTravel(bool isEnabled) {
-    ui->leAMaxDecl->setEnabled(isEnabled);
-    ui->leCurrMaxDecl->setEnabled(isEnabled);
+    ui->sbAMaxDecl->setEnabled(isEnabled);
+    ui->sbCurrMaxDecl->setEnabled(isEnabled);
     ui->rbCorrSpeed->setEnabled(isEnabled);
     ui->rbMoveSpeed->setEnabled(isEnabled);
     ui->sbMoveSpeed->setEnabled(isEnabled);
@@ -3340,10 +3447,13 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->ctrlTab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);
+    if ((isEnabled == true) && (this->auxBoardIsAvailable == false)) {
+        ui->gbAuxdrives->setEnabled(false);
+    }
     ui->LX200Tab->setEnabled(isEnabled);
     this->camView->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
-    ui->tabGuideParams->setEnabled(isEnabled);
+    ui->tabGuide->setEnabled(isEnabled);
     ui->tabImageProc->setEnabled(isEnabled);
     ui->pbTrainAxes->setEnabled(isEnabled);
     ui->sbPulseGuideDuration->setEnabled(isEnabled);
@@ -3360,6 +3470,7 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     }
     ui->gbCoordinates->setEnabled(isEnabled);
     ui->gbDateAndTime->setEnabled(isEnabled);
+    ui->pbTerminateCal->setEnabled(true); // this one is only active when the system calibrates the autoguider
 }
 
 //------------------------------------------------------------------
@@ -3369,6 +3480,7 @@ void MainWindow::setINDIrbuttons(bool isEnabled) {
     ui->rbV4L2INDI->setEnabled(isEnabled);
     ui->rbZWOINDI->setEnabled(isEnabled);
     ui->rbSLXPress->setEnabled(isEnabled);
+    ui->pbTerminateCal->setEnabled(false); // this one is only active when the system calibrates the autoguider
 }
 
 //------------------------------------------------------------------
