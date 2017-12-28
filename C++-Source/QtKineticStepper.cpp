@@ -62,7 +62,15 @@ void QtKineticStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double l
         CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
         CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
         this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
-        this->speedMax=stepsPerSecond;
+        if (this->stepsPerSecond < 10) {
+            this->speedMax = 10; // a speed of less than 10 microsteps is not achievable - it is physics, baby ...
+            this->stepsPerSecond = this->speedMax;
+        }
+        if (this->stepsPerSecond > 50000) {
+            this->speedMax = 50000; // a speed of more than 50000 microsteps is not achievable - it is physics, baby ...
+            this->stepsPerSecond = this->speedMax;
+        }
+        this->speedMax=this->stepsPerSecond;
         CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     }
 }
@@ -195,6 +203,14 @@ void QtKineticStepper::engageDrive(void) {
 void QtKineticStepper::changeSpeedForGearChange(void) {
 
     this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
+    if (this->stepsPerSecond < 10) {
+        this->speedMax = 10; // a speed of less than 10 microsteps is not achievable - it is physics, baby ...
+        this->stepsPerSecond = this->speedMax;
+    }
+    if (this->stepsPerSecond > 5000) {
+        this->speedMax = 50000; // a speed of more than 50000 microsteps is not achievable - it is physics, baby ...
+        this->stepsPerSecond = this->speedMax;
+    }
     this->speedMax=stepsPerSecond;
     CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
     // 360°/sidereal day in seconds*gear ratios*microsteps/steps

@@ -132,6 +132,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
     this->setTrackingRate();
 
+
+
+
+
+
+
         // now instantiate the GPIO - ports on the raspberry for ST4 guiding and DSLR control
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
     wiringPiSetup();
@@ -154,6 +160,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     } else {
         ui->cbSTFourIsWorking->setChecked(true);
     }
+
+
+
+
     pinMode (1, OUTPUT);
     pinMode (27, OUTPUT); // setting BCM-pins 18 and 27 to output mode for dslr-control
 
@@ -487,6 +497,11 @@ void MainWindow::updateReadings() {
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
 
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    if (this->guidingState.systemIsCalibrated == true) {
+        ui->cbAutoguiderIsCalibrated->setChecked(true);
+    } else {
+        ui->cbAutoguiderIsCalibrated->setChecked(false);
+    }
     this->updateTimeAndDate();
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
@@ -625,6 +640,18 @@ void MainWindow::updateTimeAndDate(void) {
     g_AllData->setLocalSTime(lst); // store the sidereal time also in the global data class ...
 }
 
+//---------------------------------------------------------------------
+// just a little helper to wait for a bunch of milliseconds
+void MainWindow::waitForNMSecs(int msecs) {
+    QElapsedTimer *qelap;
+
+    qelap = new QElapsedTimer();
+    qelap->start();
+    do {
+      QCoreApplication::processEvents(QEventLoop::AllEvents, msecs);
+    } while (qelap->elapsed() < msecs);
+    delete qelap;
+}
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
@@ -1158,11 +1185,12 @@ void MainWindow::setINDISAddrAndPort(void) {
     g_AllData->setINDIState(isServerUp);
     // set a global flag on the server state
     if (isServerUp==true) {
+        this->waitForNMSecs(500);
         ui->gbStartINDI->setEnabled(false);
         ui->pbExpose->setEnabled(true);
         ui->cbIndiIsUp->setChecked(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);   // process events before sleeping for a second
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);   // process events before sleeping for a second
         sleep(1);
         this->getCCDParameters();
         storeCCDData();
@@ -1296,11 +1324,10 @@ void MainWindow::startCCDAcquisition(void) {
     ui->pbExpose->setEnabled(false);
     ui->pbStopExposure->setEnabled(true);
     takeSingleCamShot();
+    this->waitForNMSecs(50);
     ui->pbSelectGuideStar->setEnabled(true);
     ui->pbDisconnectFromServer->setEnabled(false);
     ui->tabImageProc->setEnabled(true);
-    ui->tabCCDCal->setEnabled(true);
-    ui->tabGuide->setEnabled(true);
 }
 
 //------------------------------------------------------------------
@@ -1390,13 +1417,14 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         } // we only take a single shot here
         if ((this->ccdCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
             this->takeSingleCamShot(); // ... request another one from INDI
+            this->waitForNMSecs(50);
         } else {
             ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
         }
         if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
             this->guidingState.noOfGuidingSteps++; // every odd one, corrections are applied ...
             this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
             newX = g_AllData->getInitialStarPosition(2);
             newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
             correctGuideStarPosition(newX,newY); // ... and is used to correct the position
@@ -1472,7 +1500,6 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         this->guideStarPosition.centrX = cx;
         this->guideStarPosition.centrY = cy;
         if (ui->cbLogGuidingData->isChecked()==true) {
-            qDebug() << "Initial guidestar-position is " << cx << cy;
             logString.append("Travel time per Pixel in ms:\t");
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
@@ -1512,6 +1539,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             logString.clear();
         }
         this->takeSingleCamShot(); // poll a new image
+        this->waitForNMSecs(250);
         return 0.0;
     } // when called for the first time, make the current centroid the reference ...
     if (ui->cbLogGuidingData->isChecked()==true) {
@@ -1557,9 +1585,15 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             logString.clear();
     }
 
+
+
+
     // carry out the correction in RA
     if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
         pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
+        if (pgduration > 2000) {
+            pgduration = 2000;
+        }
         if (ui->cbLogGuidingData->isChecked()==true) {
             logString.append("RA correction duration:\t");
             logString.append(QString::number((double)pgduration,'g',3));
@@ -1590,23 +1624,31 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         ui->lePulseRAMS->setText("0");
     }
     this->waitForDriveStop(true,false); // just to make sure that drive has stopped moving, should not be an issue as guiding is unthreaded
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+
+
 
     // carry out the correction in decl
     if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
         pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
+        if (pgduration > 2000) {
+            pgduration = 2000;
+        }
         if (ui->cbLogGuidingData->isChecked()==true) {
                 logString.append("Decl correction duration:\t");
                 logString.append(QString::number((double)pgduration,'g',3));
                 logString.append("\n");
                 this->guidingLog->write(logString.toLatin1(),logString.length());
                 logString.clear();
-            }
+        }
         if (devVectorRotated[1]>0) {
             ui->cbDeclinationInverted->setChecked(false); // indicate that decl-direction indicator to false
             if (this->guidingState.declinationDriveDirection < 0) {
                 this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
                 ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
+                qDebug() << "check comp";
                 if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
+                     qDebug() << "comp";
                     this->compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
                     if (ui->cbLogGuidingData->isChecked()==true) {
                             logString.append("Decl backlash activated.\n");
@@ -1652,7 +1694,9 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         ui->lePulseDeclMS->setText("0");
     }
     this->waitForDriveStop(false,false);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
     this->takeSingleCamShot(); // poll a new image
+
     return 0.0;
 }
 
@@ -1676,6 +1720,8 @@ void MainWindow::resetGuidingError(void) {
 void MainWindow::terminateGuiderCalibration(void) {
     this->emergencyStop();
     this->calibrationToBeTerminated = true;
+    this->displayCalibrationStatus("Termination in process...");
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
 }
 
 //------------------------------------------------------------------
@@ -1703,7 +1749,7 @@ void MainWindow::calibrateAutoGuider(void) {
     if (this->abortCCDAcquisition() == true) {
         this->displayCalibrationStatus("CCD acquisition stopped...");
     } else {
-        this->displayCalibrationStatus("CCD acquisition timeout...");
+        this->displayCalibrationStatus("CCD acquisition timeout - image acquired ...");
     } // stopping the stream of images from the ccd ...
     setControlsForAutoguiderCalibration(false);
     thrshld = ui->hsThreshold->value();
@@ -1718,21 +1764,11 @@ void MainWindow::calibrateAutoGuider(void) {
     if ((travelPerMSInRACorr == 0) || (travelTimeInMSForOnePix > 1000)) {
         travelTimeInMSForOnePix = 1000;
     }
-
     this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
 
     if (this->calibrationToBeTerminated == true) {
-        this->displayCalibrationStatus("Termination in process...");
-        this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-        this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
-        setControlsForAutoguiderCalibration(true);
         this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
-        this->guidingState.rotationAngle=0.0;
-        this->displayCalibrationStatus("Calibration was terminated...");
-        this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-        ui->pbTerminateCal->setEnabled(true);
-        this->calibrationToBeTerminated = false;
-        this->startRATracking();
+        this->calibrationTerminationStuffToBeDone();
         return;
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
 
@@ -1744,18 +1780,35 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("0/4 ...");
     imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
+
+    // calibration starts here
     this->waitForCalibrationImage(); // small subroutine - waits for 2 images
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    if (this->calibrationToBeTerminated == true) {
+        this->calibrationTerminationStuffToBeDone();
+        this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize, "");
     this->raPGFwd(); // carry out travel
+    if (this->calibrationToBeTerminated == true) {
+        this->calibrationTerminationStuffToBeDone();
+        this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     this->waitForDriveStop(true, true);
     ui->pbPGRAMinus->setEnabled(false);
     ui->pbPGRAPlus->setEnabled(false);
     this->waitForCalibrationImage();
+    if (this->calibrationToBeTerminated == true) {
+        this->calibrationTerminationStuffToBeDone();
+        this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100); // try to force screen updates as "doGuideStarImageProcesing" emits a signal ...
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1766,6 +1819,11 @@ void MainWindow::calibrateAutoGuider(void) {
     travelTimeInMSForOnePix=pulseDuration/lengthOfTravel; // replace estimated "travelTimeInMSForOnePix" by a measured value
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePix; // that gives the pulse duration
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    if (this->calibrationToBeTerminated == true) {
+        this->calibrationTerminationStuffToBeDone();
+        this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     this->displayCalibrationStatus("Slewing back...");
     this->raPGBwd(); // going back to initial position
     this->waitForDriveStop(true, true);
@@ -1773,17 +1831,8 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->pbPGRAPlus->setEnabled(false);
 
     if (this->calibrationToBeTerminated == true) {
-        this->displayCalibrationStatus("Termination in process...");
-        this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-        this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
-        setControlsForAutoguiderCalibration(true);
+        this->calibrationTerminationStuffToBeDone();
         this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
-        this->guidingState.rotationAngle=0.0;
-        this->displayCalibrationStatus("Calibration was terminated...");
-        this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-        ui->pbTerminateCal->setEnabled(true);
-        this->calibrationToBeTerminated = false;
-        this->startRATracking();
         return;
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
 
@@ -1791,24 +1840,19 @@ void MainWindow::calibrateAutoGuider(void) {
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Calibration run: ", (float)(slewCounter+1), "/4 ...");
         imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-        this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
         if (this->calibrationToBeTerminated == true) {
-            this->displayCalibrationStatus("Termination in process...");
-            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
-            setControlsForAutoguiderCalibration(true);
+            this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
-            this->guidingState.rotationAngle=0.0;
-            this->displayCalibrationStatus("Calibration was terminated...");
-            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-            ui->pbTerminateCal->setEnabled(true);
-            this->calibrationToBeTerminated = false;
-            this->startRATracking();
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
@@ -1828,17 +1872,8 @@ void MainWindow::calibrateAutoGuider(void) {
         this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
         tTimeOnePix[slewCounter]=pulseDuration/lengthOfTravel;
         if (this->calibrationToBeTerminated == true) {
-            this->displayCalibrationStatus("Termination in process...");
-            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
-            setControlsForAutoguiderCalibration(true);
+            this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
-            this->guidingState.rotationAngle=0.0;
-            this->displayCalibrationStatus("Calibration was terminated...");
-            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-            ui->pbTerminateCal->setEnabled(true);
-            this->calibrationToBeTerminated = false;
-            this->startRATracking();
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Slewing back...");
@@ -1864,7 +1899,7 @@ void MainWindow::calibrateAutoGuider(void) {
 
     //-----------------------------------------
     // debugging code
-    //  avrgAngle=0;
+  //    avrgAngle=0.9;
     //  travelTimeInMSForOnePix=71.5;
     //-----------------------------------------
 
@@ -1895,17 +1930,8 @@ void MainWindow::calibrateAutoGuider(void) {
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew
         if (this->calibrationToBeTerminated == true) {
-            this->displayCalibrationStatus("Termination in process...");
-            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
-            setControlsForAutoguiderCalibration(true);
+            this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
-            this->guidingState.rotationAngle=0.0;
-            this->displayCalibrationStatus("Calibration was terminated...");
-            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-            ui->pbTerminateCal->setEnabled(true);
-            this->calibrationToBeTerminated = false;
-            this->startRATracking();
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
@@ -1917,12 +1943,27 @@ void MainWindow::calibrateAutoGuider(void) {
             this->declPGMinus(); // carry out travel
         } // alternate declination drive direction in order to maintain tension on the worm wheel
         this->waitForDriveStop(false,true);
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         ui->pbPGDecMinus->setEnabled(false);
         ui->pbPGDecPlus->setEnabled(false);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -1931,17 +1972,8 @@ void MainWindow::calibrateAutoGuider(void) {
         initialCentroid[0]=currentCentroid[0];
         initialCentroid[1]=currentCentroid[1]; // now go back, therefore the endpoint is the new beginning ...
         if (this->calibrationToBeTerminated == true) {
-            this->displayCalibrationStatus("Termination in process...");
-            this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-            this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
-            setControlsForAutoguiderCalibration(true);
+            this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
-            this->guidingState.rotationAngle=0.0;
-            this->displayCalibrationStatus("Calibration was terminated...");
-            this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-            ui->pbTerminateCal->setEnabled(true);
-            this->calibrationToBeTerminated = false;
-            this->startRATracking();
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Travel back ...");
@@ -1953,9 +1985,19 @@ void MainWindow::calibrateAutoGuider(void) {
             this->declPGPlus(); // carry out travel
         } // again - alternate declination travel to maintain tension on the worm wheel
         this->waitForDriveStop(false,true);
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         ui->pbPGDecMinus->setEnabled(false);
         ui->pbPGDecPlus->setEnabled(false);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
@@ -1967,6 +2009,7 @@ void MainWindow::calibrateAutoGuider(void) {
         declBacklashInPixel[slewCounter]=-lengthOfTravelWithDeclBacklash+lengthOfTravel; // determine backlash in pixel
         this->displayCalibrationStatus("Decl backlash (pix): ",(float)declBacklashInPixel[slewCounter],"");
     }
+
     avrgDeclBacklashInPixel=(declBacklashInPixel[0]+declBacklashInPixel[1]+declBacklashInPixel[2]+declBacklashInPixel[3])/4.0;
     sdevBacklashPix=sqrt(1/3.0*((declBacklashInPixel[0]-avrgDeclBacklashInPixel)*(declBacklashInPixel[0]-avrgDeclBacklashInPixel)+
                                 (declBacklashInPixel[1]-avrgDeclBacklashInPixel)*(declBacklashInPixel[1]-avrgDeclBacklashInPixel)+
@@ -1977,7 +2020,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
 
     //  debug code follows
-    // this->guidingState.backlashCompensationInMS=0;
+  //  this->guidingState.backlashCompensationInMS=0;
     //------------- end of debug code
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
@@ -1987,11 +2030,29 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.rotationAngle=avrgAngle;
     this->displayCalibrationStatus("Calibration is finished...");
     this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
-
+    this->waitForNMSecs(1000);
     ui->pbTerminateCal->setEnabled(false);
     this->calibrationToBeTerminated = false;
+    ui->pbGuiding->setEnabled(true);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
+//------------------------------------------------------------------
+// a few things to be done when calibration is terminated - just to keep the code more compact
+void MainWindow::calibrationTerminationStuffToBeDone(void) {
+
+    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+    this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
+    this->guidingState.rotationAngle=0.0;
+    ui->pbTerminateCal->setEnabled(true);
+    setControlsForAutoguiderCalibration(true);
+    this->startRATracking();
+    this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+    this->calibrationToBeTerminated = false;
+    this->displayCalibrationStatus("Calibration was terminated...");
+    ui->tabGuide->setEnabled(false);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+}
 //------------------------------------------------------------------
 // wait until a drive has stopped. helper application for
 // "calibrateAutoGuider" and "correctGuideStarPosition"
@@ -2030,6 +2091,7 @@ void MainWindow::waitForCalibrationImage(void) {
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.calibrationImageReceived=false;
     this->takeSingleCamShot();
+    this->waitForNMSecs(50);
     while (this->guidingState.calibrationImageReceived == false) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         if (this->calibrationToBeTerminated == true) { // if the "Terminate calibration" button is pressed, this one is set to true ...
@@ -2078,6 +2140,10 @@ void MainWindow::resetGuidingCalibration(void) {
         this->guidingState.st4IsActive=false;
         ui->pbGuiding->setEnabled(false);
         this->resetGuidingError();
+        ui->tabCCDCal->setEnabled(false);
+        ui->tabGuide->setEnabled(false);
+        ui->tabImageProc->setEnabled(false);
+        ui->tabGdContainer->setCurrentWidget(ui->tabCCDAcq);
     }
 }
 
@@ -2150,8 +2216,9 @@ void MainWindow::selectGuideStar(void) {
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        ui->tabCCDCal->setEnabled(true);
         ui->pbTrainAxes->setEnabled(true);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     }
 }
 
@@ -4146,19 +4213,6 @@ void MainWindow::storeAuxBoardParams(void) {
     this->sendMicrostepsToController();
 }
 
-
-//---------------------------------------------------------------------
-// just a little helper to wait for a bunch of milliseconds
-void MainWindow::waitForNMSecs(int msecs) {
-    QElapsedTimer *qelap;
-
-    qelap = new QElapsedTimer();
-    qelap->start();
-    do {
-      QCoreApplication::processEvents(QEventLoop::AllEvents, msecs);
-    } while (qelap->elapsed() < msecs);
-    delete qelap;
-}
 //----------------------------------------------------------------------
 // send a frequent request whether drives are up ...
 void MainWindow::checkDrivesForActivity(void) {

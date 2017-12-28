@@ -3170,7 +3170,7 @@
      <attribute name="title">
       <string>Guiding</string>
      </attribute>
-     <widget class="QTabWidget" name="tabGdPrev">
+     <widget class="QTabWidget" name="tabGdContainer">
       <property name="enabled">
        <bool>true</bool>
       </property>
@@ -4067,6 +4067,35 @@
         <property name="centerOnScroll">
          <bool>true</bool>
         </property>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>70</x>
+          <y>120</y>
+          <width>113</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_45">
+         <item>
+          <widget class="QCheckBox" name="cbAutoguiderIsCalibrated">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>is calibrated</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QWidget" name="tabGuide">
