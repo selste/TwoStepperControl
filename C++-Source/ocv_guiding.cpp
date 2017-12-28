@@ -79,7 +79,7 @@ double ocv_guiding::getArcSecsPerPix(short what) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness,float FOVfact,bool starSelected) {
+void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness,float FOVfact,bool starSelected, bool updateCentroid) {
     int clicx,clicy;
     Point tLeft, bRight;
     float centroidX, centroidY;
@@ -126,10 +126,12 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float c
             centroidX=(cvmoms.m10/(float)cvmoms.m00);
             centroidY=(cvmoms.m01/(float)cvmoms.m00);
             scaleFact=g_AllData->getCameraImageScalingFactor();
-            g_AllData->setInitialStarPosition(((tLeft.x+centroidX)*scaleFact),((tLeft.y+centroidY)*scaleFact));
-            // this is tricky - correct the position of the manually selected guide star,
-            // store this in the global struct and send a signal to the camera view to
-            // correct the camera view QGraphicsView ...
+            if (updateCentroid == true) {
+                g_AllData->setInitialStarPosition(((tLeft.x+centroidX)*scaleFact),((tLeft.y+centroidY)*scaleFact));
+                // this is tricky - correct the position of the manually selected guide star,
+                // store this in the global struct and send a signal to the camera view to
+                // correct the camera view QGraphicsView ...
+            } // ... and that is only done if one wnats to update the centroid; this is not the case in the image-processing mode
             emit guideImagePreviewAvailable();
             emit determinedGuideStarCentroid();
         }

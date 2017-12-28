@@ -156,6 +156,8 @@ private slots:
     void updateAuxDriveStatus(void);
     void storeDSLRSettingsForDithering(void);
     void terminateGuiderCalibration(void);
+    void confirmGuideStar(void);
+    void skipCalibration(void);
 
 private:
     struct mountMotionStruct {
@@ -199,16 +201,6 @@ private:
         bool st4IsActive;
     };
 
-    struct ST4stateDurationsStruct{
-        bool declTimeMeasurementActive;
-        bool RATimeMeasurementActive;
-        long dpDuration;
-        long dmDuration;
-        long rpDuration;
-        long rmDuration;
-        QElapsedTimer dElapsed;
-        QElapsedTimer rElapsed;
-    };
 
     struct DSLRStateStruct {
         QElapsedTimer dslrExpElapsed;
@@ -229,7 +221,6 @@ private:
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;
-    struct ST4stateDurationsStruct ST4stateDurations;
     struct DSLRStateStruct dslrStates;
     struct currentCommunicationParameters commSPIParams;
     QtContinuousStepper *StepperDriveRA;

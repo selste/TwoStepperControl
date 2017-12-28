@@ -16,7 +16,7 @@ Q_OBJECT
         ocv_guiding(void);
         ~ocv_guiding();
         QPoint* getGuideStarCentroid(void);
-        void doGuideStarImgProcessing(int,bool,float,int,float,bool);
+        void doGuideStarImgProcessing(int,bool,float,int,float,bool, bool);
         QPixmap* getGuideStarPreview(void);
         double getArcSecsPerPix(short);
         void setFocalLengthOfGuidescope(int);

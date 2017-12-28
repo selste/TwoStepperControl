@@ -62,12 +62,8 @@ void QtKineticStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double l
         CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
         CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
         this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
-        if (this->stepsPerSecond < 10) {
-            this->speedMax = 10; // a speed of less than 10 microsteps is not achievable - it is physics, baby ...
-            this->stepsPerSecond = this->speedMax;
-        }
-        if (this->stepsPerSecond > 50000) {
-            this->speedMax = 50000; // a speed of more than 50000 microsteps is not achievable - it is physics, baby ...
+        if (this->stepsPerSecond < 1) {
+            this->speedMax = 1; // a speed of less than 1 microsteps is not achievable - it is physics, baby ...
             this->stepsPerSecond = this->speedMax;
         }
         this->speedMax=this->stepsPerSecond;
@@ -128,12 +124,24 @@ double QtKineticStepper::getKineticsFromController(short whichOne) {
     switch (whichOne) {
     case 1:
         CPhidgetStepper_getCurrentLimit((CPhidgetStepperHandle)SH,0,&retval);
+        if (retval < 0.1) {
+            retval = 0.1;
+        }
+        CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,0.1);
         break;
     case 2:
         CPhidgetStepper_getAcceleration((CPhidgetStepperHandle)SH,0,&retval);
+        if (retval < 100) {
+            retval = 100;
+        }
+        CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,100);
         break;
     case 3:
         CPhidgetStepper_getVelocityLimit((CPhidgetStepperHandle)SH,0,&retval);
+        if (retval < 1) {
+            retval = 1;
+        }
+        CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,10);
         break;
     case 4:
         retval = (this->speedMin);
@@ -154,10 +162,16 @@ void QtKineticStepper::setStepperParams(double val, short whichOne) {
         CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
         break;
     case 2:
+        if (val < 1) {
+            val = 1;
+        }
         this->speedMax=val;
         CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
         break;
     case 3:
+        if (val > 4) {
+            val = 4;
+        }
         this->currMax=val;
         CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,this->currMax);
     }

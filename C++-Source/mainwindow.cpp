@@ -36,7 +36,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QList<QHostAddress> ipAddressList;
     int listIter;
     short auxMicrostepDenom, guiderFocusDrive;
-    short din1, din2, rin1, rin2; // a few helpers to determine whether the ST4 port is operational
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
@@ -132,30 +131,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
     this->setTrackingRate();
 
-
-
-
-
-
-
-        // now instantiate the GPIO - ports on the raspberry for ST4 guiding and DSLR control
-    setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
-    wiringPiSetup();
-    pinMode (2, INPUT);
-    pinMode (3, INPUT);
-    pinMode (4, INPUT);
-    pinMode (5, INPUT); // setting up BCM-pins 22, 23, 24 and 27 as inputs for ST4
-    pullUpDnControl(2,PUD_OFF);
-    pullUpDnControl(3,PUD_OFF);
-    pullUpDnControl(4,PUD_OFF);
-    pullUpDnControl(5,PUD_OFF); // setting internal pull-up resistors of the BCM
-    //ui->pbStopST4->setEnabled(false);
-    din1=abs(1-digitalRead(4));
-    rin1=abs(1-digitalRead(3));
-    din2=abs(1-digitalRead(5));
-    rin2=abs(1-digitalRead(2)); // reading the GPIO pins; if the optocouplers for ST4 are not powered up,
-                                // all of those read 1, and ST4 is not operational. the GUI is disabled in this case.
-    if ((rin1 == 1) && (rin2 == 1) && (din1 == 1) && (din2 == 1)) {
+    // ST 4 code
+    if (1 == 1) {
         ui->pbStartST4->setEnabled(false);
     } else {
         ui->cbSTFourIsWorking->setChecked(true);
@@ -163,7 +140,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
 
 
-
+        // GPIO pins for DSLR control
     pinMode (1, OUTPUT);
     pinMode (27, OUTPUT); // setting BCM-pins 18 and 27 to output mode for dslr-control
 
@@ -177,14 +154,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->StepperDriveDecl->setStepperParams((g_AllData->getDriveParams(1,2)),3); // motor current in Decl
     textEntry = new QString();
     val=(this->StepperDriveRA->getKineticsFromController(3));
-    ui->leVMaxRA->setText(textEntry->number(val,'f',2));
+    ui->lcdVMaxRA->display(round(val));
     textEntry->clear();
     ui->sbAMaxRA->setValue((this->StepperDriveRA->getKineticsFromController(2)));
     textEntry->clear();
     ui->sbCurrMaxRA->setValue((this->StepperDriveRA->getKineticsFromController(1)));
     textEntry->clear();
     val=(this->StepperDriveDecl->getKineticsFromController(3));
-    ui->leVMaxDecl->setText(textEntry->number(val,'f',2));
+    ui->lcdVMaxDecl->display(round(val));
     textEntry->clear();
     ui->sbAMaxDecl->setValue((this->StepperDriveDecl->getKineticsFromController(2)));
     textEntry->clear();
@@ -206,7 +183,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
     ui->leDeclStepSize->setText(textEntry->number(g_AllData->getGearData(7)));
     textEntry->clear();
-    ui->leMicrosteps->setText(textEntry->number(g_AllData->getGearData(8)));
+    ui->lcdMicrosteps->display(round(g_AllData->getGearData(8)));
     textEntry->clear();
         // now setting all the parameters in the "Cam"-tab
     ui->lePixelSizeX->setText(textEntry->number(g_AllData->getCameraPixelSize(0)));
@@ -408,10 +385,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbPGRAMinus, SIGNAL(clicked()), this, SLOT(raPGBwd())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog())); // delete the log of LX200 commands
     connect(ui->pbSelectGuideStar, SIGNAL(clicked()), this, SLOT(selectGuideStar())); // select a guide star defined by crosshair in the QDisplay - widget
+    connect(ui->pbConfirmGuideStar, SIGNAL(clicked()), this, SLOT(confirmGuideStar())); // just disables the follwing GUI elements in the autoguiding process
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding())); // instantiate all variables for autoguiding and set a flag that takes care of correction in "displayGuideCamImage" and "correctGuideStarPosition"
     connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL())); // store focal length of guidescope to preferences
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
+    connect(ui->pbSkipCalibration, SIGNAL(clicked()), this, SLOT(skipCalibration(void))); // does a dummy calibration for autoguiding - for testing purposes
     connect(ui->pbResetGuiding, SIGNAL(clicked()), this, SLOT(resetGuidingCalibration())); // reset autoguider calibration
     connect(ui->pbResetGdErr, SIGNAL(clicked()), this, SLOT(resetGuidingError())); // reset autoguider guiding error
     connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
@@ -481,6 +460,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
+
 }
 //------------------------------------------------------------------
 // destructor - hopefully kills all local and global instances
@@ -501,6 +481,11 @@ void MainWindow::updateReadings() {
         ui->cbAutoguiderIsCalibrated->setChecked(true);
     } else {
         ui->cbAutoguiderIsCalibrated->setChecked(false);
+    }
+    if (this->guidingState.guidingIsOn == true) {
+        ui->cbDither->setEnabled(true);
+    } else {
+  //      ui->cbDither->setEnabled(false);
     }
     this->updateTimeAndDate();
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
@@ -1423,7 +1408,7 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         }
         if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
             this->guidingState.noOfGuidingSteps++; // every odd one, corrections are applied ...
-            this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+            this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
             QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
             newX = g_AllData->getInitialStarPosition(2);
             newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
@@ -1760,12 +1745,12 @@ void MainWindow::calibrateAutoGuider(void) {
     arcsecPPix[1] = this->guiding->getArcSecsPerPix(1); // get the ratio "/pixel from the guiding class
     travelPerMSInRACorr=0.001*(3600.0)*g_AllData->getDriveParams(0,0)*(g_AllData->getGearData(3)/g_AllData->getGearData(8))/
         (g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2));
-    travelTimeInMSForOnePix=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
-    if ((travelPerMSInRACorr == 0) || (travelTimeInMSForOnePix > 1000)) {
-        travelTimeInMSForOnePix = 1000;
+    if ((travelPerMSInRACorr == 0) || (travelPerMSInRACorr > 1000)) {
+        travelPerMSInRACorr = 1000;
     }
-    this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
+    travelTimeInMSForOnePix=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
 
+    this->displayCalibrationStatus("Time for 1 pix: ",travelTimeInMSForOnePix," ms");
     if (this->calibrationToBeTerminated == true) {
         this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
         this->calibrationTerminationStuffToBeDone();
@@ -1783,7 +1768,7 @@ void MainWindow::calibrateAutoGuider(void) {
 
     // calibration starts here
     this->waitForCalibrationImage(); // small subroutine - waits for 2 images
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
@@ -1809,7 +1794,7 @@ void MainWindow::calibrateAutoGuider(void) {
         this->guidingState.travelTime_ms=travelTimeInMSForOnePix;
         return;
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100); // try to force screen updates as "doGuideStarImageProcesing" emits a signal ...
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
     currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
@@ -1846,7 +1831,7 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
@@ -1861,7 +1846,7 @@ void MainWindow::calibrateAutoGuider(void) {
         ui->pbPGRAMinus->setEnabled(false);
         ui->pbPGRAPlus->setEnabled(false);
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
@@ -1894,14 +1879,7 @@ void MainWindow::calibrateAutoGuider(void) {
                           (relativeAngle[3]-avrgAngle)*(relativeAngle[3]-avrgAngle))); // compute the standard deviation
     this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
     this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
-        // rotation angle determined
-
-
-    //-----------------------------------------
-    // debugging code
-  //    avrgAngle=0.9;
-    //  travelTimeInMSForOnePix=71.5;
-    //-----------------------------------------
+    // rotation angle determined
 
     // now determine the rotation matrix from ccd x/y to ra/decl
     this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
@@ -1924,7 +1902,7 @@ void MainWindow::calibrateAutoGuider(void) {
         ui->pbPGDecPlus->setEnabled(false);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         this->waitForCalibrationImage(); // small subroutine - waits for image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             // now get a position
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -1957,7 +1935,7 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
@@ -1999,7 +1977,7 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
@@ -2018,10 +1996,6 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.backlashCompensationInMS=avrgDeclBacklashInPixel*travelTimeInMSForOnePix; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
     this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
-
-    //  debug code follows
-  //  this->guidingState.backlashCompensationInMS=0;
-    //------------- end of debug code
 
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
@@ -2053,6 +2027,44 @@ void MainWindow::calibrationTerminationStuffToBeDone(void) {
     ui->tabGuide->setEnabled(false);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
 }
+
+//------------------------------------------------------------------
+// do a fake calibration of the system for testing purposes - called when pushing the "Skip calibration" button
+void MainWindow::skipCalibration(void) {
+    int pulseDuration;
+    double avrgAngle;
+    int imgProcWindowSize;
+
+    ui->teCalibrationStatus->clear();
+    this->displayCalibrationStatus("Skipping the calibration...");
+
+    this->guidingState.travelTime_ms=75;
+    this->displayCalibrationStatus("Time for 1 pix: ",this->guidingState.travelTime_ms," ms");
+    imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
+    pulseDuration = imgProcWindowSize*this->guidingState.travelTime_ms; // that gives the pulse duration
+    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    avrgAngle=0.0;
+    this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
+    this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
+    this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
+    this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
+
+    // fake mirror check in decl is missing here ...
+
+    this->guidingState.backlashCompensationInMS=0;
+    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+    this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
+    setControlsForAutoguiderCalibration(true);
+    this->guidingState.rotationAngle=avrgAngle;
+    this->displayCalibrationStatus("Fake calibration is finished...");
+    this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
+    this->waitForNMSecs(1000);
+    ui->pbTerminateCal->setEnabled(false);
+    this->calibrationToBeTerminated = false;
+    ui->pbGuiding->setEnabled(true);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+}
+
 //------------------------------------------------------------------
 // wait until a drive has stopped. helper application for
 // "calibrateAutoGuider" and "correctGuideStarPosition"
@@ -2175,7 +2187,7 @@ void MainWindow::doAutoGuiding(void) {
         medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
         this->guidingState.noOfGuidingSteps = 0; // guiding starts from ground zero, so the steps are reset ...
         this->waitForCalibrationImage(); // wait to get a stable image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     } else {
         this->guidingState.guidingIsOn = false;
         if (ui->cbLogGuidingData->isChecked()==true) {
@@ -2202,7 +2214,6 @@ void MainWindow::selectGuideStar(void) {
         if (this->mountMotion.RATrackingIsOn==false) {
             this->startRATracking();
         } // turn on tracking if it is not running when a guide star is selected
-        ui->pbGuiding->setEnabled(true);
         ui->hsThreshold->setEnabled(true);
         ui->hsIContrast->setEnabled(true);
         ui->hsIBrightness->setEnabled(true); // enable image processing controls
@@ -2211,11 +2222,38 @@ void MainWindow::selectGuideStar(void) {
         alpha = ui->hsIContrast->value()/100.0;
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        ui->tabCCDCal->setEnabled(true);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    }
+}
+
+//------------------------------------------------------------------
+// slot activated when the guide star is found; just enables the next GUI
+// element; everything is just the same as in "selectGuideStar()"
+void MainWindow::confirmGuideStar(void) {
+    int thrshld,beta;
+    bool medianOn;
+    float alpha;
+
+    if ((this->ccdCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
+        if (this->mountMotion.RATrackingIsOn==false) {
+            this->startRATracking();
+        } // turn on tracking if it is not running when a guide star is selected
+        medianOn=ui->cbMedianFilter->isChecked();
+        thrshld = ui->hsThreshold->value();
+        alpha = ui->hsIContrast->value()/100.0;
+        beta = ui->hsIBrightness->value(); // get image processing parameters
+        this->guidingState.guideStarSelected=true;
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
+        guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         ui->tabCCDCal->setEnabled(true);
         ui->pbTrainAxes->setEnabled(true);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
@@ -2233,7 +2271,7 @@ void MainWindow::changePrevImgProc(void) {
     medianOn=ui->cbMedianFilter->isChecked();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta, this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta, this->guidingFOVFactor,this->guidingState.guideStarSelected, false);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
@@ -2274,7 +2312,7 @@ void MainWindow::setHalfFOV(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
@@ -2290,7 +2328,7 @@ void MainWindow::setDoubleFOV(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
@@ -2306,7 +2344,7 @@ void MainWindow::setRegularFOV(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
@@ -3024,12 +3062,6 @@ void MainWindow::startST4Guiding(void) {
     ui->gbINDI->setEnabled(false);
     ui->pbStartST4->setEnabled(false);
     ui->pbStopST4->setEnabled(true);
-    this->ST4stateDurations.declTimeMeasurementActive=false;
-    this->ST4stateDurations.RATimeMeasurementActive=false;
-    this->ST4stateDurations.dpDuration=0;
-    this->ST4stateDurations.dmDuration=0;
-    this->ST4stateDurations.rpDuration=0;
-    this->ST4stateDurations.rmDuration=0;
 }
 
 //--------------------------------------------------------------
@@ -3048,105 +3080,11 @@ void MainWindow::stopST4Guiding(void) {
 }
 
 //--------------------------------------------------------------
-// reads the GPIO pins with the ST4 signals; it measures the
-// duration of the signal uptime, the triggers a drive pulse for the
-// given amount of time ... kind of a workaround, but honestly speaking,
-// monitoring the gpio pins while running the drives is quite a hassle
-// while running into the same sampling problem ...
+// read the state of ST4 from the Arduino Mini
 
 void MainWindow::handleST4State(void) {
-    short dp, rm, dm, rp;
 
     if (this->guidingState.st4IsActive==true) {
-        dp=abs(1-digitalRead(4));
-        rm=abs(1-digitalRead(3));
-        dm=abs(1-digitalRead(5));
-        rp=abs(1-digitalRead(2)); // reading the GPIO pins
-
-        if (dp > 0) {
-            if (ui->cbST4North->isChecked()==false) { // if pin goes UP ...
-                ui->cbST4North->setChecked(true); // ... check the checkbox ...
-                this->ST4stateDurations.declTimeMeasurementActive = true; // ... set a flag that time is measured to TRUE ...
-                this->ST4stateDurations.dElapsed.start(); // ... and start a timer for declination
-            }
-        } else {
-            if (ui->cbST4North->isChecked()==true) { // if pin goes DOWN ...
-                ui->cbST4North->setChecked(false);
-                this->ST4stateDurations.declTimeMeasurementActive = false; // ... set the time measurement flag to FALSE ...
-                this->ST4stateDurations.dpDuration=this->ST4stateDurations.dElapsed.elapsed(); // ... and determine the time it was up.
-            }
-        }
-        if (rp > 0) {
-            if (ui->cbST4West->isChecked()==false) {
-                ui->cbST4West->setChecked(true);
-                this->ST4stateDurations.RATimeMeasurementActive = true;
-                this->ST4stateDurations.rElapsed.start();
-            }
-        } else {
-            if (ui->cbST4West->isChecked()==true) {
-                ui->cbST4West->setChecked(false);
-                this->ST4stateDurations.RATimeMeasurementActive = false;
-                this->ST4stateDurations.rpDuration=this->ST4stateDurations.rElapsed.elapsed();
-            }
-        }
-        if (dm > 0) {
-            if (ui->cbST4South->isChecked()==false) {
-                ui->cbST4South->setChecked(true);
-                this->ST4stateDurations.declTimeMeasurementActive = true;
-                this->ST4stateDurations.dElapsed.start();
-            }
-        } else {
-            if (ui->cbST4South->isChecked()==true) {
-                ui->cbST4South->setChecked(false);
-                this->ST4stateDurations.declTimeMeasurementActive = false;
-                this->ST4stateDurations.dmDuration=this->ST4stateDurations.dElapsed.elapsed();
-            }
-        }
-        if (rm > 0) {
-            if (ui->cbST4East->isChecked()==false) {
-                ui->cbST4East->setChecked(true);
-                this->ST4stateDurations.RATimeMeasurementActive = true;
-                this->ST4stateDurations.rElapsed.start();
-            }
-        } else {
-            if (ui->cbST4East->isChecked()==true) {
-                ui->cbST4East->setChecked(false);
-                this->ST4stateDurations.RATimeMeasurementActive = false;
-                this->ST4stateDurations.rmDuration=this->ST4stateDurations.rElapsed.elapsed();
-            }
-        }
-     /*   if (this->ST4stateDurations.declTimeMeasurementActive == false) {
-            if (this->ST4stateDurations.dpDuration > 1) {
-                ui->lcdPulseDecl->display((int)this->ST4stateDurations.dpDuration);
-                ui->cbST4North->setChecked(true);
-                this->declPGPlusGd(this->ST4stateDurations.dpDuration);          
-                ui->cbST4North->setChecked(false);
-                this->ST4stateDurations.dpDuration = 0;
-            }
-            if (this->ST4stateDurations.dmDuration > 1) {
-                ui->lcdPulseDecl->display((int)this->ST4stateDurations.dmDuration);
-                ui->cbST4South->setChecked(true);
-                this->declPGMinusGd(this->ST4stateDurations.dmDuration);
-                ui->cbST4South->setChecked(false);
-                this->ST4stateDurations.dmDuration = 0;
-            }
-        }
-        if (this->ST4stateDurations.RATimeMeasurementActive == false) {
-            if (this->ST4stateDurations.rpDuration > 1) {
-                ui->lcdPulseDecl->display((int)this->ST4stateDurations.rpDuration);
-                ui->cbST4West->setChecked(true);
-                this->raPGFwdGd(this->ST4stateDurations.rpDuration);
-                ui->cbST4West->setChecked(false);
-                this->ST4stateDurations.rpDuration = 0;
-            }
-            if (this->ST4stateDurations.rmDuration > 1) {
-                ui->lcdPulseDecl->display((int)this->ST4stateDurations.rmDuration);
-                ui->cbST4East->setChecked(true);
-                this->raPGBwdGd(this->ST4stateDurations.rmDuration);
-                ui->cbST4East->setChecked(false);
-                this->ST4stateDurations.rmDuration = 0;
-            }
-        }*/
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     }
 }
@@ -3465,7 +3403,7 @@ void MainWindow::setControlsForRATracking(bool isEnabled) {
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);
     ui->leRAStepsize->setEnabled(isEnabled);
-    ui->leMicrosteps->setEnabled(isEnabled);
+    ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
 }
 
@@ -3477,7 +3415,7 @@ void MainWindow::setControlsForRATravel(bool isEnabled) {
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);
     ui->leRAStepsize->setEnabled(isEnabled);
-    ui->leMicrosteps->setEnabled(isEnabled);
+    ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
     ui->pbPGRAMinus->setEnabled(isEnabled);
     ui->pbPGRAPlus->setEnabled(isEnabled);
@@ -3499,7 +3437,7 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
     ui->leDeclGear->setEnabled(isEnabled);
     ui->leDeclWorm->setEnabled(isEnabled);
     ui->leDeclStepSize->setEnabled(isEnabled);
-    ui->leMicrosteps->setEnabled(isEnabled);
+    ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->pbPGDecMinus->setEnabled(isEnabled);
     ui->pbPGDecPlus->setEnabled(isEnabled);
     ui->listWidgetCatalog->setEnabled(isEnabled);
@@ -3511,6 +3449,7 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
 
 //---------------------------------------------------------------------
 void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
+    ui->cbAutoguiderIsCalibrated->setChecked(false);
     ui->ctrlTab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);
@@ -3537,6 +3476,7 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     }
     ui->gbCoordinates->setEnabled(isEnabled);
     ui->gbDateAndTime->setEnabled(isEnabled);
+    ui->INDITab->setEnabled(isEnabled);
     ui->pbTerminateCal->setEnabled(true); // this one is only active when the system calibrates the autoguider
 }
 
@@ -3683,7 +3623,7 @@ void MainWindow::transferCoordinates(void) {
 //------------------------------------------------------------------
 void MainWindow::storeGearData(void) {
     float pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps,vra,vdecl;
-    QString *leEntry,leSpeeds;
+    QString *leEntry;
 
     leEntry = new QString(ui->leRAPlanetary->text());
     pgra=leEntry->toFloat();
@@ -3708,9 +3648,7 @@ void MainWindow::storeGearData(void) {
     leEntry->clear();
     leEntry->append(ui->leDeclStepSize->text());
     ssdec=leEntry->toFloat();
-    leEntry->clear();
-    leEntry->append(ui->leMicrosteps->text());
-    microsteps=leEntry->toFloat();
+    microsteps=ui->lcdMicrosteps->value();
     g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps);
     // store all gear data in global struct
     g_AllData->storeGlobalData();
@@ -3726,11 +3664,9 @@ void MainWindow::storeGearData(void) {
     StepperDriveDecl->changeSpeedForGearChange();
 
     vra=StepperDriveRA->getKineticsFromController(3);
-    leSpeeds= QString::number(vra, 'g', 2);
-    ui->leVMaxRA->setText(leSpeeds);
+    ui->lcdVMaxRA->display(round(vra));
     vdecl=StepperDriveDecl->getKineticsFromController(3);
-    leSpeeds= QString::number(vdecl, 'g', 2);
-    ui->leVMaxDecl->setText(leSpeeds);
+    ui->lcdVMaxDecl->display(round(vdecl));
     delete leEntry;
 }
 
@@ -4042,9 +3978,9 @@ void MainWindow::startDSLRSeries(void) {
 void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
     int expsTaken;
-    float arcSecsPerDSLRPix;
-    int randDeclPixStep, randRAPixStep, pixDisplacement,raDitherStepInMS, declDitherStepInMS, timeRemaining;
+    int randDeclPixStep, randRAPixStep, pixDisplacement;
     float invRandMax = 1/(float)RAND_MAX;
+    float travelTimeMS, raTimeMS, declTimeMS;
     short sign;
 
     ui->pbDSLRSingleShot->setEnabled(false);
@@ -4064,40 +4000,24 @@ void MainWindow::takeNextExposureInSeries(void) {
             pixDisplacement = round(sqrt(randRAPixStep*randRAPixStep+randDeclPixStep*randDeclPixStep));
         } while ((pixDisplacement < g_AllData->getDitherRange(true)) || (pixDisplacement > g_AllData->getDitherRange(false)));
         ui->lcdDitherStep->display(pixDisplacement);
-        arcSecsPerDSLRPix = 206.3*g_AllData->getDSLRDiagPixSize()/((float)g_AllData->getMainScopeFocalLength());
+
+        if (this->guidingState.travelTime_ms < 0.1) {
+            travelTimeMS = 100;
+        } else {
+            travelTimeMS = this->guidingState.travelTime_ms;
+        }
         sign = 1;
         if (qrand()%2 == 0) {
             sign = -1;
         } // compute a random sign for the first displacement
-        raDitherStepInMS = arcSecsPerDSLRPix*randRAPixStep*1000;
-        timeRemaining = raDitherStepInMS;
-        if (raDitherStepInMS > 1000) {
-            do {
-       //         this->raPulseGuide(1000, sign, false);
-                timeRemaining -= 1000;
-                qDebug() << "raDithering";
-            } while (timeRemaining > 1000);
-        //    this->raPulseGuide(timeRemaining, sign, false);
-        } else {
-       //     this->raPulseGuide(timeRemaining, sign, false);
-        } /// do the dither step in 1 s steps
+        raTimeMS = randRAPixStep*travelTimeMS;
+        qDebug() << "steps ra:" << randRAPixStep << raTimeMS;
+
         if (qrand()%2 == 0) {
             sign *= -1;
         } // compute a random sign for the second displacement
-        declDitherStepInMS = arcSecsPerDSLRPix*randDeclPixStep*1000;
-        timeRemaining = declDitherStepInMS;
-        if (declDitherStepInMS > 1000) {
-            do {
-       //         this->declinationPulseGuide(1000, sign, false);
-                timeRemaining -= 1000;
-                qDebug() << "declDithering";
-            } while (timeRemaining > 1000);
-      //      this->declinationPulseGuide(timeRemaining, sign, false);
-
-        } else {
-      //      this->declinationPulseGuide(timeRemaining, sign, false); // turned off for debugging
-        } /// do the dither step in 1 s steps
-
+        declTimeMS = randDeclPixStep*travelTimeMS;
+        qDebug() << "steps decl:" << randDeclPixStep << declTimeMS;
 
         if (this->guidingState.systemIsCalibrated == true) {
             this->doAutoGuiding();
