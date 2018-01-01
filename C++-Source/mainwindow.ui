@@ -459,19 +459,19 @@
       <x>10</x>
       <y>10</y>
       <width>780</width>
-      <height>460</height>
+      <height>470</height>
      </rect>
     </property>
     <property name="minimumSize">
      <size>
       <width>780</width>
-      <height>460</height>
+      <height>470</height>
      </size>
     </property>
     <property name="maximumSize">
      <size>
       <width>780</width>
-      <height>460</height>
+      <height>470</height>
      </size>
     </property>
     <property name="palette">
@@ -3135,7 +3135,7 @@
         <x>560</x>
         <y>0</y>
         <width>221</width>
-        <height>421</height>
+        <height>431</height>
        </rect>
       </property>
       <property name="currentIndex">
@@ -4091,7 +4091,7 @@
          <string>Skip Calibration</string>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>12</x>
@@ -4140,66 +4140,8 @@
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>208</width>
-          <height>70</height>
-         </rect>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_10">
-         <item row="0" column="0">
-          <widget class="QLabel" name="lMaxDevRA">
-           <property name="text">
-            <string>Max. Dev. RA [px]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QDoubleSpinBox" name="sbDevRA">
-           <property name="minimum">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="maximum">
-            <double>2.000000000000000</double>
-           </property>
-           <property name="singleStep">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="value">
-            <double>0.300000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="lMaxDevDecl">
-           <property name="text">
-            <string>Max. Dev. Decl [px]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QDoubleSpinBox" name="sbDevDecl">
-           <property name="minimum">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="maximum">
-            <double>2.000000000000000</double>
-           </property>
-           <property name="singleStep">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="value">
-            <double>0.300000000000000</double>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>130</y>
+          <x>2</x>
+          <y>110</y>
           <width>210</width>
           <height>58</height>
          </rect>
@@ -4259,18 +4201,252 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <property name="geometry">
          <rect>
           <x>1</x>
-          <y>190</y>
-          <width>209</width>
-          <height>89</height>
+          <y>330</y>
+          <width>212</width>
+          <height>60</height>
          </rect>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_5">
+        <layout class="QVBoxLayout" name="verticalLayout_10">
          <item>
+          <widget class="QPushButton" name="pbGuiding">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>210</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>210</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Guide</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_25">
+           <item>
+            <widget class="QPushButton" name="pbResetGdErr">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Reset Err</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pbResetGuiding">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Reset Guide</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>2</x>
+          <y>80</y>
+          <width>204</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_46">
+         <item>
+          <widget class="QLabel" name="lDevRA">
+           <property name="minimumSize">
+            <size>
+             <width>70</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Dev.  [px]:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leDevRaPix">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>60</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leDevDeclPix">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>60</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>4</x>
+          <y>6</y>
+          <width>201</width>
+          <height>70</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_8">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lMaxDev">
+           <property name="text">
+            <string>Max. Dev.  [px]:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QDoubleSpinBox" name="sbMaxDevInGuiding">
+           <property name="maximumSize">
+            <size>
+             <width>60</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>2.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="value">
+            <double>0.300000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lAggressiveness">
+           <property name="text">
+            <string>Aggressiveness:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QDoubleSpinBox" name="sbGuideAggressiveness">
+           <property name="maximumSize">
+            <size>
+             <width>60</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <double>0.700000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>1.300000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.050000000000000</double>
+           </property>
+           <property name="value">
+            <double>0.900000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>1</x>
+          <y>171</y>
+          <width>210</width>
+          <height>161</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_26">
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="cbSwitchDecl">
+           <property name="text">
+            <string>Switch Decl. Axes</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
           <widget class="QCheckBox" name="cbDeclBacklashComp">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
            <property name="text">
             <string>Compensate backlash</string>
            </property>
@@ -4279,7 +4455,7 @@
            </property>
           </widget>
          </item>
-         <item>
+         <item row="2" column="0">
           <layout class="QHBoxLayout" name="horizontalLayout_26">
            <item>
             <widget class="QCheckBox" name="cbDeclinationInverted">
@@ -4296,223 +4472,87 @@
              <property name="minimumSize">
               <size>
                <width>180</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>180</width>
-               <height>16777215</height>
+               <height>25</height>
               </size>
              </property>
              <property name="text">
-              <string>Declination inverted</string>
+              <string>Declination was inverted</string>
              </property>
             </widget>
            </item>
           </layout>
          </item>
-         <item>
+         <item row="3" column="0">
           <widget class="QCheckBox" name="cbLogGuidingData">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
            <property name="text">
             <string>Log guidingdata</string>
            </property>
           </widget>
          </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>70</y>
-          <width>211</width>
-          <height>58</height>
-         </rect>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_8">
-         <item row="0" column="0">
-          <widget class="QLabel" name="lDevRA">
-           <property name="text">
-            <string>Dev. RA [px]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QLineEdit" name="leDevRaPix">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>87</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>90</width>
-             <height>25</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="lDevDecl">
-           <property name="text">
-            <string>Dev. Decl [px]:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="leDevDeclPix">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>87</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>90</width>
-             <height>25</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>1</x>
-          <y>281</y>
-          <width>208</width>
-          <height>32</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_17">
-         <item>
-          <widget class="QLabel" name="lMaxGuideErr">
-           <property name="minimumSize">
-            <size>
-             <width>90</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>90</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Max. Err.  [&quot;]:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="leMaxGuideErr">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>110</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>2</x>
-          <y>311</y>
-          <width>210</width>
-          <height>60</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_10">
-         <item>
-          <widget class="QPushButton" name="pbResetGdErr">
-           <property name="minimumSize">
-            <size>
-             <width>205</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>205</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Reset Error</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_25">
+         <item row="4" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_17">
            <item>
-            <widget class="QPushButton" name="pbGuiding">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
+            <widget class="QLabel" name="lMaxGuideErr">
              <property name="minimumSize">
               <size>
-               <width>80</width>
-               <height>25</height>
+               <width>90</width>
+               <height>30</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>80</width>
-               <height>25</height>
+               <width>90</width>
+               <height>30</height>
               </size>
              </property>
              <property name="text">
-              <string>Guide</string>
+              <string>Max. Err.  [&quot;]:</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="pbResetGuiding">
+            <widget class="QLineEdit" name="leMaxGuideErr">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="minimumSize">
               <size>
-               <width>120</width>
+               <width>110</width>
                <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>120</width>
+               <width>110</width>
                <height>25</height>
               </size>
              </property>
-             <property name="text">
-              <string>Reset Guiding</string>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -5934,7 +5974,11 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLCDNumber" name="lcdVMaxRA"/>
+          <widget class="QLCDNumber" name="lcdVMaxRA">
+           <property name="value" stdset="0">
+            <double>10.000000000000000</double>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -6054,7 +6098,11 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLCDNumber" name="lcdVMaxDecl"/>
+          <widget class="QLCDNumber" name="lcdVMaxDecl">
+           <property name="value" stdset="0">
+            <double>10.000000000000000</double>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

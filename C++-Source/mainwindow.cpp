@@ -1477,8 +1477,10 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
 double MainWindow::correctGuideStarPosition(float cx, float cy) {
     float devVector[2], devVectorRotated[2],errx,erry,err;
     long pgduration;
+    double aggressiveness;
     QString logString;
 
+    aggressiveness = ui->sbGuideAggressiveness->value(); // a value that dampens the response - values between 0.7 and 1.3
     if (this->guidingState.noOfGuidingSteps == 1) {
         ui->leDevRaPix->setText("0");
         ui->leDevDeclPix->setText("0");
@@ -1570,12 +1572,9 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             logString.clear();
     }
 
-
-
-
     // carry out the correction in RA
-    if (fabs(devVectorRotated[0]) > ui->sbDevRA->value()) {
-        pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[0]); // pulse guide duration in ra
+    if (fabs(devVectorRotated[0]) > ui->sbMaxDevInGuiding->value()) {
+        pgduration=round(aggressiveness*this->guidingState.travelTime_ms*fabs(devVectorRotated[0])); // pulse guide duration in ra
         if (pgduration > 2000) {
             pgduration = 2000;
         }
@@ -1611,11 +1610,9 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     this->waitForDriveStop(true,false); // just to make sure that drive has stopped moving, should not be an issue as guiding is unthreaded
     QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
 
-
-
     // carry out the correction in decl
-    if (fabs(devVectorRotated[1]) > ui->sbDevDecl->value()) {
-        pgduration=this->guidingState.travelTime_ms*fabs(devVectorRotated[1]); // pulse guide duration in decl
+    if (fabs(devVectorRotated[1]) > ui->sbMaxDevInGuiding->value()) {
+        pgduration=round(aggressiveness*this->guidingState.travelTime_ms*fabs(devVectorRotated[1])); // pulse guide duration in decl
         if (pgduration > 2000) {
             pgduration = 2000;
         }
@@ -1631,9 +1628,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             if (this->guidingState.declinationDriveDirection < 0) {
                 this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
                 ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
-                qDebug() << "check comp";
                 if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
-                     qDebug() << "comp";
                     this->compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
                     if (ui->cbLogGuidingData->isChecked()==true) {
                             logString.append("Decl backlash activated.\n");
@@ -1645,7 +1640,11 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
             ui->leDevDeclPix->setText(textEntry->number(-devVectorRotated[1]));
-            this->declPGMinusGd(pgduration);
+            if (ui->cbSwitchDecl->isChecked() == false) {
+                this->declPGMinusGd(pgduration);
+            } else {
+                this->declPGPlusGd(pgduration);
+            }
             if (ui->cbLogGuidingData->isChecked()==true) {
                 logString.append("Decl correction direction:\t Decl-\n");
                 this->guidingLog->write(logString.toLatin1(),logString.length());
@@ -1657,7 +1656,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                 this->guidingState.declinationDriveDirection = -1; // switch state to negative travel
                 ui->cbDeclinationInverted->setChecked(true);
                 if (ui->cbDeclBacklashComp->isChecked()==true) {
-                    compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
+                    this->compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
                 if (ui->cbLogGuidingData->isChecked()==true) {
                             logString.append("Decl backlash activated.\n");
                             this->guidingLog->write(logString.toLatin1(),logString.length());
@@ -1668,7 +1667,11 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
             ui->leDevDeclPix->setText(textEntry->number(devVectorRotated[1]));
-            this->declPGPlusGd(pgduration);
+            if (ui->cbSwitchDecl->isChecked() == false) {
+                this->declPGPlusGd(pgduration);
+            } else {
+                this->declPGMinusGd(pgduration);
+            }
             if (ui->cbLogGuidingData->isChecked()==true) {
                 logString.append("Decl correction direction:\t Decl+\n");
                 this->guidingLog->write(logString.toLatin1(),logString.length());
@@ -3325,8 +3328,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->ctrlTab->setEnabled(isEnabled);
     ui->hsThreshold->setEnabled(isEnabled);
     ui->gbAuxdrives->setEnabled(isEnabled);
-    ui->sbDevRA->setEnabled(isEnabled);
-    ui->sbDevDecl->setEnabled(isEnabled);
+    ui->sbMaxDevInGuiding->setEnabled(isEnabled);
     ui->cbDeclBacklashComp->setEnabled(isEnabled);
     ui->cbLogGuidingData->setEnabled(isEnabled);
     ui->pbResetGdErr->setEnabled(isEnabled);

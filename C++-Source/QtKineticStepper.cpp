@@ -124,24 +124,12 @@ double QtKineticStepper::getKineticsFromController(short whichOne) {
     switch (whichOne) {
     case 1:
         CPhidgetStepper_getCurrentLimit((CPhidgetStepperHandle)SH,0,&retval);
-        if (retval < 0.1) {
-            retval = 0.1;
-        }
-        CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,0.1);
         break;
     case 2:
         CPhidgetStepper_getAcceleration((CPhidgetStepperHandle)SH,0,&retval);
-        if (retval < 100) {
-            retval = 100;
-        }
-        CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,100);
         break;
     case 3:
         CPhidgetStepper_getVelocityLimit((CPhidgetStepperHandle)SH,0,&retval);
-        if (retval < 1) {
-            retval = 1;
-        }
-        CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,10);
         break;
     case 4:
         retval = (this->speedMin);
@@ -162,9 +150,6 @@ void QtKineticStepper::setStepperParams(double val, short whichOne) {
         CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
         break;
     case 2:
-        if (val < 1) {
-            val = 1;
-        }
         this->speedMax=val;
         CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
         break;
