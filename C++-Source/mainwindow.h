@@ -193,9 +193,11 @@ private:
         bool systemIsCalibrated;
         bool calibrationImageReceived;
         short declinationDriveDirection;
-        double travelTime_ms;
+        double travelTime_ms_RA;
+        double travelTime_ms_Decl;
         double rotationAngle;
         double maxDevInArcSec;
+        double rmsDevInArcSec;
         double backlashCompensationInMS;
         long noOfGuidingSteps;
         bool st4IsActive;
