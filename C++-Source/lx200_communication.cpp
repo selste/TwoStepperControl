@@ -2,6 +2,7 @@
 #include "tsc_globaldata.h"
 #include <QDebug>
 #include <unistd.h>
+#include <math.h>
 
 
 extern TSC_GlobalData *g_AllData;

@@ -11,9 +11,9 @@
 #include <QDate>
 #include <math.h>
 #include <unistd.h>
-#include <opencv2/core.hpp>
+#include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
-#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <QMessageBox>
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"

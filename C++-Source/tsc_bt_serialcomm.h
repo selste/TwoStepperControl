@@ -4,8 +4,8 @@
 #include <QObject>
 #include <QString>
 #include <QCoreApplication>
-#include <QSerialPort>
-#include <QSerialPortInfo>
+#include <QtSerialPort/qserialport.h>
+#include <QtSerialPort/qserialportinfo.h>
 
 class tsc_bt_serialcomm :public QObject {
     Q_OBJECT

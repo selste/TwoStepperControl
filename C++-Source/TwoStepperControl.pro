@@ -14,6 +14,7 @@ TARGET = TwoStepperControl
 TEMPLATE = app
 
 CONFIG += c++11
+CONFFIG += j4
 
 SOURCES += \
     main.cpp \
@@ -54,29 +55,12 @@ win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/lib/release/ 
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/lib/debug/ -lphidget21
 else:unix: LIBS += -L$$PWD/../../../usr/lib/ -lphidget21
 
-INCLUDEPATH += $$PWD/../../../usr/include
-DEPENDPATH += $$PWD/../../../usr/include
+
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/release/ -lindiclient
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/debug/ -lindiclient
 else:unix: LIBS += -L$$PWD/../../../../usr/lib/ -lindiclient
 
-INCLUDEPATH += $$PWD/../../../../usr/include
-DEPENDPATH += $$PWD/../../../../usr/include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/release/ -lindi
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/debug/ -lindi
-else:unix: LIBS += -L$$PWD/../../../../usr/lib/ -lindi
-
-INCLUDEPATH += $$PWD/../../../../usr/include/libindi
-DEPENDPATH += $$PWD/../../../../usr/include/libindi
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/release/ -lnova
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/debug/ -lnova
-else:unix: LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/ -lnova
-
-INCLUDEPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
-DEPENDPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/release/ -lm
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/debug/ -lm
@@ -122,3 +106,8 @@ else:unix: LIBS += -L$$PWD/../../../usr/lib/ -lwiringPi
 
 INCLUDEPATH += $$PWD/../../../usr/include
 DEPENDPATH += $$PWD/../../../usr/include
+
+unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/arm-linux-gnueabihf/ -lnova
+
+INCLUDEPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf
+DEPENDPATH += $$PWD/../../../../usr/lib/arm-linux-gnueabihf

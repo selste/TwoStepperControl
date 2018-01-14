@@ -6,8 +6,8 @@
 #include <QListWidgetItem>
 #include <QElapsedTimer>
 #include <QFile>
-#include <QSerialPort>
-#include <QSerialPortInfo>
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
 #include <stdlib.h>
 #include "QtContinuousStepper.h"
 #include "QtKineticStepper.h"
