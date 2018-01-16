@@ -1428,7 +1428,7 @@
            </font>
           </property>
           <property name="digitCount">
-           <number>5</number>
+           <number>6</number>
           </property>
          </widget>
         </item>
@@ -1454,7 +1454,7 @@
            </size>
           </property>
           <property name="digitCount">
-           <number>5</number>
+           <number>6</number>
           </property>
          </widget>
         </item>

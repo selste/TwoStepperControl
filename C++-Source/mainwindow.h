@@ -158,6 +158,7 @@ private slots:
     void terminateGuiderCalibration(void);
     void confirmGuideStar(void);
     void skipCalibration(void);
+    void getTemperature(void);
 
 private:
     struct mountMotionStruct {
@@ -216,7 +217,6 @@ private:
     struct currentCommunicationParameters {
         bool chan0IsOpen;
         bool chan1IsOpen;
-        int selectedChannel;
         QString *guiData;
     };
     Ui::MainWindow *ui;
@@ -231,6 +231,7 @@ private:
     QTimer *st4Timer;
     QTimer *LX200Timer;
     QTimer *auxDriveUpdateTimer;
+    QTimer *tempUpdateTimer;
     QDate *UTDate;
     QTime *UTTime;
     double julianDay;
@@ -257,6 +258,7 @@ private:
     QSerialPort *lx200SerialPort;
     QByteArray *lx200SerialData;
     SPI_Drive *spiDrOnChan1;
+    SPI_Drive *spiDrOnChan0;
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
@@ -272,6 +274,7 @@ private:
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
     float guidingFOVFactor;
     double rotMatrixGuidingXToRA[2][2];
+    float temperature;
     QString *textEntry;
     QString *bt_HandboxCommand;
     QFile *guidingLog;

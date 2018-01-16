@@ -48,6 +48,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->LX200Timer->start(300);
     this->auxDriveUpdateTimer = new QTimer();
     this->auxDriveUpdateTimer->start(500);
+    this->tempUpdateTimer = new QTimer();
+    this->tempUpdateTimer->start(5000);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -132,15 +134,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->dslrStates.dslrSeriesRunning = false;
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
     this->setTrackingRate();
-
-    // ST 4 code
-    if (1 == 1) {
-        ui->pbStartST4->setEnabled(false);
-    } else {
-        ui->cbSTFourIsWorking->setChecked(true);
-    }
-
-
 
         // GPIO pins for DSLR control
     pinMode (1, OUTPUT);
@@ -274,6 +267,16 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.btMoveSouth=0;
     this->mountMotion.btMoveWest=0;
 
+      // now open SPI channel 0 mfor communication with the arduino on the head - this is the ADC for ST4 and temperature
+    this->temperature = 0;
+    this->commSPIParams.guiData = new QString();
+    this->spiDrOnChan0 = new SPI_Drive(0);
+    if (this->spiDrOnChan0->spidrGetFD() != -1) {
+        this->commSPIParams.chan0IsOpen = true;
+    } else {
+       this->commSPIParams.chan0IsOpen = false;
+    }
+
         // start SPI communication via SPI channel #1 for auxiliary drives
     this->spiDrOnChan1 = new SPI_Drive(1);
     if (this->spiDrOnChan1->spidrGetFD() != -1) {
@@ -282,11 +285,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     } else {
        this->commSPIParams.chan1IsOpen = false;
     }
-    this->commSPIParams.guiData = new QString();
     this->auxBoardIsAvailable = this->checkForController();
     if (this->auxBoardIsAvailable == true) {
         ui->gbFocuserInGuide->setEnabled(true);
-        this->commSPIParams.selectedChannel = 1;
         ui->fauxDrives->setEnabled(true);
         ui->leNameAux1->setText(g_AllData->getAuxName(0).toLatin1());
         ui->leNameAux2->setText(g_AllData->getAuxName(1).toLatin1());
@@ -316,6 +317,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         this->sendMicrostepsToController();
     }
 
+    // ST 4 code
+    if (this->commSPIParams.chan0IsOpen == true) {
+        ui->pbStartST4->setEnabled(false);
+    } else {
+        ui->cbSTFourIsWorking->setChecked(true);
+    } // ST4 signals are measured by the HAT Arduino and conveyed vis SPI channel 0; so if this channel is open, ST4 is available
+
+
         // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
     ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
@@ -326,6 +335,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
+    connect(this->tempUpdateTimer, SIGNAL(timeout()), this, SLOT(getTemperature())); // this one polls temperature data from the HAT arduino
     connect(this->auxDriveUpdateTimer, SIGNAL(timeout()),this, SLOT(updateAuxDriveStatus())); // event for checking focusmotors and updating the GUI information
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
@@ -462,6 +472,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
+    this->getTemperature(); // read the temperrature sensor - it is only updated every 30 sec
 
 }
 //------------------------------------------------------------------
@@ -4139,6 +4150,49 @@ void MainWindow::terminateDSLRSingleShot(void) {
     usleep(10);
     digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
 
+}
+
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+// routine for polling temperature from the HAT arduino
+
+void MainWindow::getTemperature(void) {
+    QString temp;
+    float lTmp = 0;
+    char lastC;
+
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("p");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(10);
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("p");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(10);
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("b");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(10);
+    this->spiDrOnChan0->getResponse();
+    temp.append(this->spiDrOnChan0->getResponse());
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("l");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(10);
+    temp.append(this->spiDrOnChan0->getResponse());
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("g");  // this one sets the stream of responses again to the state of ST4
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(10);
+    lastC = this->spiDrOnChan0->getResponse(); // the arduino only provides the byte in the next call, therefore the series ...
+    if (lastC=='-') {
+        lastC = '0';
+    }
+    temp.append(lastC);
+    lTmp=temp.toDouble();
+    this->temperature = lTmp;
+    ui->lcdTemp->display(lTmp);
 }
 
 //---------------------------------------------------------------------
