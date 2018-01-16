@@ -10,11 +10,13 @@ int eSwitch = 1;
 int sSwitch = 1;
 int wSwitch = 1;
 int northIsUp, westIsUp, eastIsUp, southIsUp; 
-int switchStateChanged = 0;
-byte tempDeg, tempSub, isPositive;
+int switchStateChanged = 0, tempDeg;
+char tempDeg1, tempDeg2, isPositive, st4state = '0';
 bool debuggingIsOn = true;
 char reply, readCommand;
-String thelper, dhelper;
+String dHelper, sHelper;
+char buf[32];
+volatile byte pos;
 volatile boolean process_it;
 
 //-----------------------------------------------------------------------
@@ -23,6 +25,8 @@ void setup() {
   if (debuggingIsOn == true) {
     Serial.begin(9600);
   }
+  pinMode(MISO, OUTPUT); // have to send on master in, *slave out*
+  SPCR |= _BV(SPE);  // turn on SPI in slave mode
   SPI.attachInterrupt();   // now turn on interrupts
   process_it = false;
 }
@@ -69,72 +73,90 @@ void loop() {
     switchStateChanged=1;
   }
   if (switchStateChanged == 1) {
+    if ((northIsUp == 1) && (eastIsUp == 1)) {
+      st4state = '5';
+      goto st4stateIsDeterminedLabel;
+    }
+    if ((northIsUp == 1) && (westIsUp == 1)) {
+      st4state = '6';
+      goto st4stateIsDeterminedLabel;
+    }
+    if ((southIsUp == 1) && (eastIsUp == 1)) {
+      st4state = '7';
+      goto st4stateIsDeterminedLabel;
+    }
+    if ((southIsUp == 1) && (westIsUp == 1)) {
+      st4state = '8';
+      goto st4stateIsDeterminedLabel;
+    }
+    if (northIsUp == 1) {
+      st4state = '1';
+      goto st4stateIsDeterminedLabel;
+    }
+    if (eastIsUp == 1) {
+      st4state = '2';
+      goto st4stateIsDeterminedLabel;
+    }
+    if (southIsUp == 1) {
+      st4state = '3';
+      goto st4stateIsDeterminedLabel;
+    }    
+    if (westIsUp == 1) {
+      st4state = '4';
+      goto st4stateIsDeterminedLabel;
+    }
+    if ((northIsUp == 0) && (eastIsUp == 0) && (southIsUp == 0) && (westIsUp == 0)) {
+      st4state = '0';
+    }
+    st4stateIsDeterminedLabel: // couldn't help myself in that case :/
     if (debuggingIsOn) {
-      Serial.print(nSwitch);
-      Serial.print(eSwitch);
-      Serial.print(sSwitch);
-      Serial.println(wSwitch);
-      Serial.println(temp);
-      Serial.print("Temperature in bytes (isPositive - int - decimal: ");
-      Serial.print(isPositive);
-      Serial.print(" - ");
-      Serial.print(tempDeg);
-      Serial.print(" - ");
-      Serial.println(decTemp);
+      Serial.print("State of ST4: ");
+      Serial.println(st4state);
     }
   }
-  delay(5);
   switchStateChanged=0;
-
+  
   // now convert the temperature to bytes
   if (temp > 0) {
-    isPositive = 0x0001;
+    isPositive = '+';
   } else {
-    isPositive = 0x0000;
+    isPositive = '-';
   }
+  
   tempDeg=round(abs(temp));
-  decTemp=round((temp-tempDeg)*10);
-
+  
+  dHelper = String(tempDeg);
+  if (tempDeg < 10) {
+    tempDeg1 = '0'; 
+    tempDeg2 = dHelper[0];
+  } else {
+    tempDeg1 = dHelper[0];
+    tempDeg2 = dHelper[1];
+  }
+  
   if (process_it) { // got a string via SPI - process it accordingly
+    pos = 0;
+    readCommand=buf[0];
     process_it = false;
     switch (readCommand) {
-      case 'n':
-        if (nSwitch == 1) {
-          reply = '1';
-        } else {
-          reply = '0';  
-        }
+      case 's': 
+        reply = st4state; 
         break;
-      case 'e':  
-        if (eSwitch == 1) {
-          reply = '1';
-        } else {
-          reply = '0';  
-        }
-        break;
-      case 's':
-        if (sSwitch == 1) {
-          reply = '1';
-        } else {
-          reply = '0';  
-        }
-        break;
-      case 'w':
-        if (wSwitch == 1) {
-          reply = '1';
-        } else {
-          reply = '0';  
-        }
-        break; 
       case 'p': // ask whether temperature is positive
-          reply = isPositive;
+        reply = isPositive;
+        if (debuggingIsOn) {
+          Serial.print("Temperature: ");
+          Serial.println(temp);
+        }
         break;
-      case 'i': // ask for integer temperature in celsius
-          reply = tempDeg;
-        break;        
-      case 'd': // the 1/10 of a degree is requested here
-          reply = decTemp;
-        break;           
+      case 'b': // ask for first digit of temperature in celsius
+        reply = tempDeg1;
+        break; 
+      case 'l': // ask for second digit of temperature in celsius
+        reply = tempDeg2;
+        break;              
+      case 'g': // this is sent when reading the temperature is terminated; reply is again set to "st4state" 
+        reply = st4state;       
     } 
   }
 }
@@ -143,8 +165,14 @@ void loop() {
 
 ISR(SPI_STC_vect) { // SPI interrupt routine
 byte c = SPDR;  // grab byte from SPI Data Register
-
   SPDR=reply;
-  readCommand=c;
-  process_it = true;  
-}    
+  
+  if (pos < sizeof buf) {
+    if (c != 0x00) {     
+      buf [pos++] = c;
+    } else {
+      buf [pos++] = 0x00;
+      process_it = true;
+    }
+  }  
+}  
