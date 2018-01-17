@@ -136,8 +136,13 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->setTrackingRate();
 
         // GPIO pins for DSLR control
+    setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
+    wiringPiSetup();
+//    system("export WIRINGPI_GPIOMEM=1 &");
+//    system("gpio export 18 out &");
+//    system("gpio export 16 out &");
     pinMode (1, OUTPUT);
-    pinMode (27, OUTPUT); // setting BCM-pins 18 and 27 to output mode for dslr-control
+    pinMode (27, OUTPUT); // setting BCM-pins 18 and 16 to output mode for dslr-control
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -3993,12 +3998,15 @@ void MainWindow::handleDSLRSingleExposure(void) {
         ui->pbDSLRTerminateExposure->setEnabled(true);
     }
     digitalWrite(27,1); // set wiring pi pin 27=ring to high ... focus ...
+    //system("gpio write 27 1 &");
     lWait = new QElapsedTimer();
     lWait->start();
     do {
     } while (lWait->elapsed() < 500);
     delete lWait;
     digitalWrite(1,1); // set wiring pi pin 1=tip to high ... start exposure
+    //system("gpio write 1 1 &");
+    qDebug() << "Pin 1 set to HIGH...";
 }
 
 //------------------------------------------------------------------
@@ -4013,8 +4021,10 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
     ui->lcdDSLRTimeRemaining->display(QString::number(remTime));
     if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
         digitalWrite(27,0);
+        //system("gpio write 27 0 &");
         usleep(10);
         digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
+        //system("gpio write 1 0 &");
         ui->pbDSLRSingleShot->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == false) {
             ui->pbDSLRTerminateExposure->setEnabled(false);
@@ -4024,6 +4034,7 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
         ui->pbDSLRStartSeries->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == true) {
             emit dslrExposureDone();
+
         }
     }
 }
@@ -4139,6 +4150,7 @@ void MainWindow::terminateDSLRSeries(void) {
 //--------------------------------------------------------------------
 // this slot stops a single exposure
 void MainWindow::terminateDSLRSingleShot(void) {
+    qDebug() << "called termination slot";
     this->dslrStates.dslrExposureIsRunning=false;
     this->dslrStates.dslrExpElapsed.invalidate();
     ui->pbDSLRSingleShot->setEnabled(true);
@@ -4146,8 +4158,12 @@ void MainWindow::terminateDSLRSingleShot(void) {
     ui->sbDSLRDuration->setEnabled(true);
     ui->pbDSLRStartSeries->setEnabled(true);
     ui->lcdDSLRTimeRemaining->display("0");
+    qDebug() << "Pin 27 set to LOW...";
+    qDebug() << "Pin 1 set to LOW...";
     digitalWrite(27,0);
+    //system("gpio write 27 0 &");
     usleep(10);
+    //system("gpio write 1 0 &");
     digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
 
 }
