@@ -3902,22 +3902,30 @@ void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it f
 //----------------------------------------------------------------------
 // slot that responds to the strings received from the handbox via bluetooth.
 // the arduino sends a string consisting of 5 characters. "1000" is north,
-// "0100" is east, "0010" is south and "0001" is west. the fifth value is 0
+// "0001" is east, "0010" is south and "0100" is west. the fifth value is 0
 // if the speed is single, and 1 if the speed is the "move" speed.
+// the following 5 characters control focuser motion - the se
 void MainWindow::handleBTHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
+    QString *dirCommand; // the first 5 characters give the directions and the speed
+    QString *focuserCommand; // the next 5 characters are commands for the focuser drives
     short speedSwitchState; // set to 1 or 0 concerning the motion speed
     QElapsedTimer *wait;
+    bool isFocuser1, isForward;
+    QChar focuserValue;
 
     wait = new QElapsedTimer();
     this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
     localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
+    dirCommand = new QString(localBTCommand->left(5));
+    focuserCommand = new QString(localBTCommand->right(5));
+    delete localBTCommand; // delete the local deep copy of the command string
     if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false) &&
             (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA==false)) {
         // ignore this if system is in guiding or autoguider calibration
 
-        speedSwitchState=(localBTCommand->right(1)).toInt(); // the last digit is the motion state
-        localBTCommand->chop(1); // remove the last character
+        speedSwitchState=(dirCommand->right(1)).toInt(); // the last digit is the motion state
+        dirCommand->chop(1); // remove the last character
         if (speedSwitchState == 1) {
             this->setMoveSpeed();
             ui->rbMoveSpeed->setChecked(true);
@@ -3935,21 +3943,21 @@ void MainWindow::handleBTHandbox(void) {
             do {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
             } while (wait->elapsed() < 500);
-            if (localBTCommand->compare("1000") == 0) { // start motions according the first 4 digits.
+            if (dirCommand->compare("1000") == 0) { // start motions according the first 4 digits.
                 this->mountMotion.btMoveNorth = 1;
                 this->declinationMoveHandboxUp();
-            } else if (localBTCommand->compare("0100") == 0) {
+            } else if (dirCommand->compare("0001") == 0) {
                 this->mountMotion.btMoveWest = 1;
                 this->RAMoveHandboxFwd();
-            } else if (localBTCommand->compare("0010") == 0) {
+            } else if (dirCommand->compare("0010") == 0) {
                 this->mountMotion.btMoveSouth = 1;
                 this->declinationMoveHandboxDown();
-            } else if (localBTCommand->compare("0001") == 0) {
+            } else if (dirCommand->compare("0100") == 0) {
                 this->mountMotion.btMoveEast = 1;
                 this->RAMoveHandboxBwd();
             }
         }
-        if (localBTCommand->compare("0000") == 0) {
+        if (dirCommand->compare("0000") == 0) {
             if (this->mountMotion.btMoveNorth == 1) {
                 this->mountMotion.btMoveNorth = 0;
                 this->declinationMoveHandboxUp();
@@ -3971,7 +3979,34 @@ void MainWindow::handleBTHandbox(void) {
             ui->pbMeridianFlip->setEnabled(true);
         } // stop the respective motions
     }
-    delete localBTCommand; // delete the local deep copy of the command string
+
+    if (this->auxDriveIsStartingUp == false) { // the focusercommands are only executed if the aux drives are not active
+        focuserValue = focuserCommand->at(0);
+        if (focuserValue.digitValue() == 1) {
+            isFocuser1 = true;
+        } else {
+            isFocuser1 = false;
+        }
+        focuserValue = focuserCommand->at(1);
+        if (focuserValue.digitValue() == 1) {
+            isForward = true;
+        } else {
+            isForward = false;
+        }
+        focuserCommand->remove(0,2);
+        if (focuserCommand->compare("100") == 0) {
+            qDebug() << "Make full Step";
+        } else if (focuserCommand->compare("010") == 0) {
+            qDebug() << "Make 1/5 Step";
+        } else if (focuserCommand->compare("001") == 0) {
+            qDebug() << "Make 1/20 Step";
+        }
+    }
+
+
+
+    delete dirCommand; // delete the string containing the first 5 characters for handbox control
+    delete focuserCommand; // delete the last 5 characters for the focuser
     delete wait;
 }
 
