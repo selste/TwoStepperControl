@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->auxDriveUpdateTimer = new QTimer();
     this->auxDriveUpdateTimer->start(500);
     this->tempUpdateTimer = new QTimer();
-    this->tempUpdateTimer->start(5000);
+    this->tempUpdateTimer->start(30000);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -273,7 +273,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.btMoveWest=0;
 
       // now open SPI channel 0 mfor communication with the arduino on the head - this is the ADC for ST4 and temperature
-    this->temperature = 0;
     this->commSPIParams.guiData = new QString();
     this->spiDrOnChan0 = new SPI_Drive(0);
     if (this->spiDrOnChan0->spidrGetFD() != -1) {
@@ -477,7 +476,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
-    this->getTemperature(); // read the temperrature sensor - it is only updated every 30 sec
+    this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
 
 }
 //------------------------------------------------------------------
@@ -1762,6 +1761,7 @@ void MainWindow::calibrateAutoGuider(void) {
     bool medianOn;
     short slewCounter;
 
+    this->guidingState.calibrationIsRunning=true;
     ui->teCalibrationStatus->clear();
     this->calibrationToBeTerminated = false;
     ui->pbTerminateCal->setEnabled(true);
@@ -2070,7 +2070,6 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.backlashCompensationInMS=avrgDeclBacklashInPixel*travelTimeInMSForOnePixDecl; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
     this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
-    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
     setControlsForAutoguiderCalibration(true);
     this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -2082,6 +2081,7 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->pbTerminateCal->setEnabled(false);
     this->calibrationToBeTerminated = false;
     ui->pbGuiding->setEnabled(true);
+    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
 }
 
@@ -2138,6 +2138,7 @@ void MainWindow::skipCalibration(void) {
     ui->pbTerminateCal->setEnabled(false);
     this->calibrationToBeTerminated = false;
     ui->pbGuiding->setEnabled(true);
+    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
@@ -2270,6 +2271,7 @@ void MainWindow::doAutoGuiding(void) {
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     } else {
         this->guidingState.guidingIsOn = false;
+        this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
         if (ui->cbLogGuidingData->isChecked()==true) {
             if (this->guidingLog != NULL) {
                 this->guidingLog->close();
@@ -2691,6 +2693,7 @@ void MainWindow::LXstopMotion(void) {
 // slew via LX 200
 void MainWindow::LXslewMount(void) {
     QString lestr;
+
     if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
              && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
@@ -3898,13 +3901,20 @@ void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it f
     this->mountMotion.btMoveEast=0;
     this->mountMotion.btMoveSouth=0;
     this->mountMotion.btMoveWest=0;
+    ui->pbConnectBT->setEnabled(false);
+    ui->pbDisonnectBT->setEnabled(false);
+    this->waitForNMSecs(3000);
+    ui->pbConnectBT->setEnabled(true);
+    ui->pbDisonnectBT->setEnabled(true);
 }
 //----------------------------------------------------------------------
 // slot that responds to the strings received from the handbox via bluetooth.
 // the arduino sends a string consisting of 5 characters. "1000" is north,
 // "0001" is east, "0010" is south and "0100" is west. the fifth value is 0
 // if the speed is single, and 1 if the speed is the "move" speed.
-// the following 5 characters control focuser motion - the se
+// the following 5 characters control focuser motion - the selection of the 
+// drive, the direction, and the stepwidth is encoded here ...
+
 void MainWindow::handleBTHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
     QString *dirCommand; // the first 5 characters give the directions and the speed
@@ -3995,16 +4005,49 @@ void MainWindow::handleBTHandbox(void) {
         }
         focuserCommand->remove(0,2);
         if (focuserCommand->compare("100") == 0) {
-            qDebug() << "Make full Step";
+            if (isForward) {
+                if (isFocuser1) {
+                    mvAux1FwdFull();
+                } else {
+                    mvAux2FwdFull();
+                }
+            } else {
+                if (isFocuser1) {
+                    mvAux1BwdFull();
+                } else {
+                    mvAux2BwdFull();
+                }
+            }
         } else if (focuserCommand->compare("010") == 0) {
-            qDebug() << "Make 1/5 Step";
+            if (isForward) {
+                if (isFocuser1) {
+                    mvAux1FwdSmall();
+                } else {
+                    mvAux2FwdSmall();
+                }
+            } else {
+                if (isFocuser1) {
+                    mvAux1BwdSmall();
+                } else {
+                    mvAux2BwdSmall();
+                }
+            }
         } else if (focuserCommand->compare("001") == 0) {
-            qDebug() << "Make 1/20 Step";
+            if (isForward) {
+                if (isFocuser1) {
+                    mvAux1FwdTiny();
+                } else {
+                    mvAux2FwdTiny();
+                }
+            } else {
+                if (isFocuser1) {
+                    mvAux1BwdTiny();
+                } else {
+                    mvAux2BwdTiny();
+                }
+            }
         }
     }
-
-
-
     delete dirCommand; // delete the string containing the first 5 characters for handbox control
     delete focuserCommand; // delete the last 5 characters for the focuser
     delete wait;
@@ -4242,8 +4285,9 @@ void MainWindow::getTemperature(void) {
     }
     temp.append(lastC);
     lTmp=temp.toDouble();
+
     this->temperature = lTmp;
-    ui->lcdTemp->display(lTmp);
+    ui->lcdTemp->display(this->temperature);
 }
 
 //---------------------------------------------------------------------

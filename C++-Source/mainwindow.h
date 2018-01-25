@@ -204,7 +204,6 @@ private:
         bool st4IsActive;
     };
 
-
     struct DSLRStateStruct {
         QElapsedTimer dslrExpElapsed;
         bool dslrExposureIsRunning;
