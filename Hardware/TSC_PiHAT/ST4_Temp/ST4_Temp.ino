@@ -18,7 +18,7 @@ String dHelper, sHelper;
 char buf[32];
 volatile byte pos;
 volatile boolean process_it;
-float VRef = 4.58; // this is important - this should be 5.0 V, but due to the diode D1 it can be less. here, it is set to 4.6 V, which is 
+float VRef = 4.52; // this is important - this should be 5.0 V, but due to the diode D1 it can be less. here, it is set to 4.6 V, which is 
             // sufficient to drive the arduino, but temperature readings are off if one does not take this into account 
 
 //-----------------------------------------------------------------------
@@ -38,6 +38,16 @@ void setup() {
 void loop() {
   // reading five analog inputs, the ST4 switches and the temperature sensor 
   temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
+//  if (debuggingIsOn) {
+//    Serial.print("Voltages on A0/A1/A2/A3: ");
+//    Serial.print(analogRead(0));
+//    Serial.print("/");
+//    Serial.print(analogRead(1));
+//    Serial.print("/");
+//    Serial.print(analogRead(2));
+//    Serial.print("/");
+//    Serial.println(analogRead(3));
+//  }
   if (analogRead(1) < 200) { // if the voltage drops below 1 V, the switch is closed ...
     northIsUp = 1;
   } else {
@@ -117,7 +127,6 @@ void loop() {
     }
   }
   switchStateChanged=0;
-  
   // now convert the temperature to bytes
   if (temp > 0) {
     isPositive = '+';
