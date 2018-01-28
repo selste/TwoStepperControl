@@ -1845,55 +1845,6 @@
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>8</x>
-         <y>30</y>
-         <width>321</width>
-         <height>72</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_29">
-        <item>
-         <widget class="QPushButton" name="pbConnectBT">
-          <property name="minimumSize">
-           <size>
-            <width>130</width>
-            <height>60</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>130</width>
-            <height>60</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Connect BT</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
-           <widget class="QPushButton" name="pbDisonnectBT">
-            <property name="text">
-             <string>Disconnect BT</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pbTryBTRestart">
-            <property name="text">
-             <string>Try BT restart</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
          <x>10</x>
          <y>150</y>
          <width>320</width>
@@ -1943,6 +1894,70 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>321</width>
+         <height>68</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_10">
+        <item row="0" column="0">
+         <widget class="QPushButton" name="pbConnectBT">
+          <property name="minimumSize">
+           <size>
+            <width>180</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>180</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Connect BT</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="pbDisonnectBT">
+          <property name="text">
+           <string>Disconnect BT</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="pbKillHandboxMotion">
+          <property name="minimumSize">
+           <size>
+            <width>180</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>180</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Terminate HB-Motion</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="pbTryBTRestart">
+          <property name="text">
+           <string>Try BT restart</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
      <widget class="QGroupBox" name="gbST4">
       <property name="geometry">
@@ -1950,7 +1965,7 @@
         <x>410</x>
         <y>210</y>
         <width>361</width>
-        <height>181</height>
+        <height>201</height>
        </rect>
       </property>
       <property name="title">
@@ -1961,8 +1976,8 @@
         <rect>
          <x>0</x>
          <y>60</y>
-         <width>351</width>
-         <height>111</height>
+         <width>361</width>
+         <height>141</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -2106,6 +2121,70 @@
         <property name="text">
          <string>Stop ST 4</string>
         </property>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>110</y>
+          <width>342</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_29">
+         <item>
+          <widget class="QLabel" name="lRAST4Corr">
+           <property name="text">
+            <string>RA Corr. [ms]:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdST4DurationRA">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>60</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="digitCount">
+            <number>4</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lDeclST4Corr">
+           <property name="text">
+            <string>Decl. Corr. [ms]:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdST4DurationDecl">
+           <property name="minimumSize">
+            <size>
+             <width>60</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>60</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="digitCount">
+            <number>4</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QWidget" name="layoutWidget">

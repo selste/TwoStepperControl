@@ -43,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->timer->start(100); // check all 100 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
     this->st4Timer = new QTimer();
-    this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
     this->LX200Timer = new QTimer();
     this->LX200Timer->start(300);
     this->auxDriveUpdateTimer = new QTimer();
@@ -138,9 +137,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         // GPIO pins for DSLR control
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
     wiringPiSetup();
-//    system("export WIRINGPI_GPIOMEM=1 &");
-//    system("gpio export 18 out &");
-//    system("gpio export 16 out &");
     pinMode (1, OUTPUT);
     pinMode (27, OUTPUT); // setting BCM-pins 18 and 16 to output mode for dslr-control
 
@@ -323,11 +319,20 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     // ST 4 code
     if (this->commSPIParams.chan0IsOpen == true) {
-        ui->pbStartST4->setEnabled(false);
-    } else {
+        ui->pbStartST4->setEnabled(true);
         ui->cbSTFourIsWorking->setChecked(true);
+    } else {
+        ui->cbSTFourIsWorking->setChecked(false);
     } // ST4 signals are measured by the HAT Arduino and conveyed vis SPI channel 0; so if this channel is open, ST4 is available
-
+    this->st4State.nActive = false; // a flag that is true when the North-line is closed
+    this->st4State.eActive = false; // same as above for east
+    this->st4State.sActive = false; // same as above for south
+    this->st4State.wActive = false; // same as above for west
+    this->st4State.correctionDone = true; // a flag that is set to true when a correction was carried out
+    this->st4State.RATimeEl = new QElapsedTimer();
+    this->st4State.DeclTimeEl = new QElapsedTimer();
+    this->st4State.RACorrTime = 0;
+    this->st4State.DeclCorrTime = 0; // correction times for ST4
 
         // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
@@ -404,6 +409,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbConfirmGuideStar, SIGNAL(clicked()), this, SLOT(confirmGuideStar())); // just disables the follwing GUI elements in the autoguiding process
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding())); // instantiate all variables for autoguiding and set a flag that takes care of correction in "displayGuideCamImage" and "correctGuideStarPosition"
     connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL())); // store focal length of guidescope to preferences
+    connect(ui->pbKillHandboxMotion, SIGNAL(clicked()), this, SLOT(killHandBoxMotion())); // terminates handbox motion if handbox BT-connection is lost
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbSkipCalibration, SIGNAL(clicked()), this, SLOT(skipCalibration(void))); // does a dummy calibration for autoguiding - for testing purposes
@@ -999,7 +1005,10 @@ void MainWindow::shutDownProgram() {
     if (this->auxBoardIsAvailable == true) {
         emergencyStopAuxDrives();
     }
+    delete spiDrOnChan0;
     delete spiDrOnChan1;
+    delete st4State.RATimeEl;
+    delete st4State.DeclTimeEl;
     delete textEntry;
     delete lx200Comm;
     delete camImg;
@@ -3116,6 +3125,23 @@ void MainWindow::RAMoveHandboxBwd(void) {
 }
 
 //--------------------------------------------------------------
+// this one stops all motion and resumes tracking; is triggered when
+// the "Kill Handbox Motion" button is pressed. Needed for cases where
+// connection to the handbox is lost during handbox motion ...
+
+void MainWindow::killHandBoxMotion(void) {
+    this->emergencyStop();
+    ui->fMainHBCtrl->setEnabled(true); // disable handcontrol widget
+    ui->fHBSpeeds->setEnabled(true);
+    ui->pbMeridianFlip->setEnabled(true);
+    this->mountMotion.btMoveNorth = false;
+    this->mountMotion.btMoveEast = false;
+    this->mountMotion.btMoveSouth = false;
+    this->mountMotion.btMoveWest = false;
+    this->startRATracking();
+}
+
+//--------------------------------------------------------------
 //--------------------------------------------------------------
 //--------------------------------------------------------------
 // pulse guide routines and ST 4
@@ -3135,8 +3161,15 @@ void MainWindow::startST4Guiding(void) {
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();
     } // if tracking is not active - start it ...
-    this->guidingState.st4IsActive=true;
-    this->guidingState.guidingIsOn=true;
+    this->tempUpdateTimer->stop(); // no temperature updates during ST4 guiding - SPI channel 0 is only available for ST4
+    ui->lcdTemp->display("-");
+    this->guidingState.st4IsActive = true;
+    this->guidingState.guidingIsOn = true;
+    this->st4State.nActive = false;
+    this->st4State.eActive = false;
+    this->st4State.sActive = false;
+    this->st4State.wActive = false;
+    this->st4State.correctionDone = false;
     ui->ctrlTab->setEnabled(false);
     ui->catTab->setEnabled(false);
     ui->camTab->setEnabled(false);
@@ -3146,30 +3179,184 @@ void MainWindow::startST4Guiding(void) {
     ui->gbINDI->setEnabled(false);
     ui->pbStartST4->setEnabled(false);
     ui->pbStopST4->setEnabled(true);
+    ui->INDITab->setEnabled(false);
+    ui->cbLXSimpleNumbers->setEnabled(false);
+    ui->cbLX200Logs->setEnabled(false);
+    ui->pbClearLXLog->setEnabled(false);
+    ui->photoTab->setEnabled(false);
+    ui->settingsTab->setEnabled(false);
+    this->commSPIParams.guiData->clear(); // now fill the SPI queue with ST4 state requests
+    this->commSPIParams.guiData->append("g");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20);
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("g");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
+    this->st4Timer->start(20); // if ST4 is active, the interface is read every 50 ms
 }
 
 //--------------------------------------------------------------
 void MainWindow::stopST4Guiding(void) {
+    this->st4Timer->stop();
     this->guidingState.st4IsActive=false;
     this->guidingState.guidingIsOn=false;
+    this->st4State.nActive = false;
+    this->st4State.eActive = false;
+    this->st4State.sActive = false;
+    this->st4State.wActive = false;
+    this->st4State.correctionDone = false;
+    ui->cbST4East->setChecked(false);
+    ui->cbST4North->setChecked(false);
+    ui->cbST4South->setChecked(false);
+    ui->cbST4West->setChecked(false);
     ui->ctrlTab->setEnabled(true);
     ui->catTab->setEnabled(true);
     ui->camTab->setEnabled(true);
+    ui->INDITab->setEnabled(true);
     ui->gearTab->setEnabled(true);
     ui->tabLX200->setEnabled(true);
     ui->gbBluetooth->setEnabled(true);
     ui->gbINDI->setEnabled(true);
+    ui->cbLXSimpleNumbers->setEnabled(true);
+    ui->photoTab->setEnabled(true);
+    ui->settingsTab->setEnabled(true);
+    ui->cbLX200Logs->setEnabled(true);
+    ui->pbClearLXLog->setEnabled(true);
     ui->pbStartST4->setEnabled(true);
     ui->pbStopST4->setEnabled(false);
+    ui->cbST4North->setChecked(false); // update the GUI
+    ui->cbST4East->setChecked(false);
+    ui->cbST4South->setChecked(false);
+    ui->cbST4West->setChecked(false);
+    ui->lcdST4DurationDecl->display(0);
+    ui->lcdST4DurationRA->display(0);
+    this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
+    this->tempUpdateTimer->start(30000); // start the timer for requesting temperature again
 }
 
 //--------------------------------------------------------------
 // read the state of ST4 from the Arduino Mini
 
 void MainWindow::handleST4State(void) {
+    char stateCharFromSPI;
+    bool nUp, eUp, sUp, wUp;
+    bool doSCorr = false;
+    bool doNCorr = false;
+    bool doECorr = false;
+    bool doWCorr = false;
 
-    if (this->guidingState.st4IsActive==true) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    if ((this->guidingState.st4IsActive == true)) { // poll data if ST4 is active and not correcting
+        this->commSPIParams.guiData->clear();
+        this->commSPIParams.guiData->append("g");  // this one sets the stream of responses again to the state of ST4
+        this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+        this->waitForNMSecs(20);
+        stateCharFromSPI = this->spiDrOnChan0->getResponse();
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        switch(stateCharFromSPI) { // translate the character from the HAT arduino into a ST4 state
+            case '0':   nUp=false; eUp=false; sUp=false; wUp=false;
+                        break;
+            case '1':   nUp=true; eUp=false; sUp=false; wUp=false;
+                        break;
+            case '2':   nUp=false; eUp=true; sUp=false; wUp=false;
+                        break;
+            case '3':   nUp=false; eUp=false; sUp=true; wUp=false;
+                        break;
+            case '4':   nUp=false; eUp=false; sUp=false; wUp=true;
+                        break;
+            case '5':   nUp=true; eUp=true; sUp=false; wUp=false;
+                        break;
+            case '6':   nUp=true; eUp=false; sUp=false; wUp=true;
+                        break;
+            case '7':   nUp=false; eUp=true; sUp=true; wUp=false;
+                        break;
+            case '8':   nUp=false; eUp=false; sUp=true; wUp=true;
+                        break;
+            default:    nUp=false; eUp=false; sUp=false; wUp=false;
+                        break;
+        }
+        ui->cbST4North->setChecked(nUp); // update the GUI
+        ui->cbST4East->setChecked(eUp);
+        ui->cbST4South->setChecked(sUp);
+        ui->cbST4West->setChecked(wUp);
+
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        if (nUp != this->st4State.nActive) { // now compare the actual state of ST4 to the earlier states. start or stop a
+                                             // timer if necessary
+            if (nUp == true) { // north has become active
+                this->st4State.DeclTimeEl->start();
+            } else {
+                if (this->st4State.DeclTimeEl->isValid()) {
+                    this->st4State.DeclCorrTime = this->st4State.DeclTimeEl->elapsed();
+                    this->st4State.DeclTimeEl->invalidate();
+                    ui->lcdST4DurationDecl->display((int)(this->st4State.DeclCorrTime));
+                    doNCorr = true;
+                }
+            }
+        }
+        if (sUp != this->st4State.sActive) {
+            if (sUp == true) { // south has become active
+                this->st4State.DeclTimeEl->start();
+            } else {
+                if (this->st4State.DeclTimeEl->isValid()) {
+                    this->st4State.DeclCorrTime = this->st4State.DeclTimeEl->elapsed();
+                    this->st4State.DeclTimeEl->invalidate();
+                    ui->lcdST4DurationDecl->display((int)(this->st4State.DeclCorrTime));
+                    doSCorr = true;
+                }
+            }
+        }
+        if (eUp != this->st4State.eActive) {
+            if (eUp == true) { // east has become active
+                this->st4State.RATimeEl->start();
+            } else {
+                if (this->st4State.RATimeEl->isValid()) {
+                    this->st4State.RACorrTime = this->st4State.RATimeEl->elapsed();
+                    this->st4State.RATimeEl->invalidate();
+                    ui->lcdST4DurationRA->display((int)(this->st4State.RACorrTime));
+                    doECorr = true;
+                }
+            }
+        }
+        if (wUp != this->st4State.wActive) {
+            if (wUp == true) { // east has become active
+                this->st4State.RATimeEl->start();
+            } else {
+                if (this->st4State.RATimeEl->isValid()) {
+                    this->st4State.RACorrTime = this->st4State.RATimeEl->elapsed();
+                    this->st4State.RATimeEl->invalidate();
+                    ui->lcdST4DurationRA->display((int)(this->st4State.RACorrTime));
+                    doWCorr = true;
+                }
+            }
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        this->st4State.nActive = nUp;  // now update the ST4 states
+        this->st4State.eActive = eUp;
+        this->st4State.sActive = sUp;
+        this->st4State.wActive = wUp;
+
+        if ((doWCorr == true) || (doECorr == true)) { // carry out correction in RA
+            this->st4State.correctionDone = false;
+            if (doWCorr == true) {
+                raPGFwdGd((long)this->st4State.RACorrTime);
+            } else {
+                raPGBwdGd((long)this->st4State.RACorrTime);
+            }
+            ui->lcdST4DurationRA->display(0);
+            this->st4State.RACorrTime = 0;
+        }
+        if ((doNCorr == true) || (doSCorr == true)) {
+            this->st4State.correctionDone = false;
+            if (doNCorr == true) {
+                declPGPlusGd((long)this->st4State.DeclCorrTime);
+            } else {
+                declPGMinusGd((long)this->st4State.DeclCorrTime);
+            }
+            ui->lcdST4DurationDecl->display(0);
+            this->st4State.DeclCorrTime = 0;
+        }
+        this->st4State.correctionDone = true; // corrections were carried out
     }
 }
 
@@ -4007,43 +4194,43 @@ void MainWindow::handleBTHandbox(void) {
         if (focuserCommand->compare("100") == 0) {
             if (isForward) {
                 if (isFocuser1) {
-                    mvAux1FwdFull();
+                    mvAux1FwdFullHB();
                 } else {
-                    mvAux2FwdFull();
+                    mvAux2FwdFullHB();
                 }
             } else {
                 if (isFocuser1) {
-                    mvAux1BwdFull();
+                    mvAux1BwdFullHB();
                 } else {
-                    mvAux2BwdFull();
+                    mvAux2BwdFullHB();
                 }
             }
         } else if (focuserCommand->compare("010") == 0) {
             if (isForward) {
                 if (isFocuser1) {
-                    mvAux1FwdSmall();
+                    mvAux1FwdSmallHB();
                 } else {
-                    mvAux2FwdSmall();
+                    mvAux2FwdSmallHB();
                 }
             } else {
                 if (isFocuser1) {
-                    mvAux1BwdSmall();
+                    mvAux1BwdSmallHB();
                 } else {
-                    mvAux2BwdSmall();
+                    mvAux2BwdSmallHB();
                 }
             }
         } else if (focuserCommand->compare("001") == 0) {
             if (isForward) {
                 if (isFocuser1) {
-                    mvAux1FwdTiny();
+                    mvAux1FwdTinyHB();
                 } else {
-                    mvAux2FwdTiny();
+                    mvAux2FwdTinyHB();
                 }
             } else {
                 if (isFocuser1) {
-                    mvAux1BwdTiny();
+                    mvAux1BwdTinyHB();
                 } else {
-                    mvAux2BwdTiny();
+                    mvAux2BwdTinyHB();
                 }
             }
         }
@@ -4076,15 +4263,12 @@ void MainWindow::handleDSLRSingleExposure(void) {
         ui->pbDSLRTerminateExposure->setEnabled(true);
     }
     digitalWrite(27,1); // set wiring pi pin 27=ring to high ... focus ...
-    //system("gpio write 27 1 &");
     lWait = new QElapsedTimer();
     lWait->start();
     do {
     } while (lWait->elapsed() < 500);
     delete lWait;
     digitalWrite(1,1); // set wiring pi pin 1=tip to high ... start exposure
-    //system("gpio write 1 1 &");
-    qDebug() << "Pin 1 set to HIGH...";
 }
 
 //------------------------------------------------------------------
@@ -4259,26 +4443,25 @@ void MainWindow::getTemperature(void) {
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("p");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-    this->waitForNMSecs(10);
+    this->waitForNMSecs(20);
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("p");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-    this->waitForNMSecs(10);
+    this->waitForNMSecs(20);
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("b");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-    this->waitForNMSecs(10);
-    this->spiDrOnChan0->getResponse();
+    this->waitForNMSecs(20);
     temp.append(this->spiDrOnChan0->getResponse());
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("l");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-    this->waitForNMSecs(10);
+    this->waitForNMSecs(20);
     temp.append(this->spiDrOnChan0->getResponse());
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("g");  // this one sets the stream of responses again to the state of ST4
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-    this->waitForNMSecs(10);
+    this->waitForNMSecs(20);
     lastC = this->spiDrOnChan0->getResponse(); // the arduino only provides the byte in the next call, therefore the series ...
     if (lastC=='-') {
         lastC = '0';
@@ -4545,7 +4728,6 @@ void MainWindow::moveAuxPBSlot(short whichDrive, bool isInverted, short dist) {
 
 //-----------------------------------------------
 // same as above, but without saving of parameters - to be called from the guider menu.
-// here, teh settings are not saved...
 void MainWindow::moveGuiderAuxPBSlot(short whichDrive, bool isInverted, short dist) {
 
     this->setAuxDriveControls(false);
@@ -4561,9 +4743,18 @@ void MainWindow::mvAux1FwdFull(void) {
     moveAuxPBSlot(0,false,0);
 }
 
+//----------------------------------------------- // same as above, but without parameter saving
+void MainWindow::mvAux1FwdFullHB(void) {
+    moveGuiderAuxPBSlot(0,false,0);
+}
 //-----------------------------------------------
 void MainWindow::mvAux1BwdFull(void) {
     moveAuxPBSlot(0,true,0);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1BwdFullHB(void) {
+    moveGuiderAuxPBSlot(0,true,0);
 }
 
 //-----------------------------------------------
@@ -4572,13 +4763,27 @@ void MainWindow::mvAux2FwdFull(void) {
 }
 
 //-----------------------------------------------
+void MainWindow::mvAux2FwdFullHB(void) {
+    moveGuiderAuxPBSlot(1,false,0);
+}
+
+//-----------------------------------------------
 void MainWindow::mvAux2BwdFull(void) {
     moveAuxPBSlot(1,true,0);
 }
 
 //-----------------------------------------------
+void MainWindow::mvAux2BwdFullHB(void) {
+    moveGuiderAuxPBSlot(1,true,0);
+}
+//-----------------------------------------------
 void MainWindow::mvAux1FwdSmall(void) {
     moveAuxPBSlot(0,false,1);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1FwdSmallHB(void) {
+    moveGuiderAuxPBSlot(0,false,1);
 }
 
 //-----------------------------------------------
@@ -4587,13 +4792,27 @@ void MainWindow::mvAux1BwdSmall(void) {
 }
 
 //-----------------------------------------------
+void MainWindow::mvAux1BwdSmallHB(void) {
+    moveGuiderAuxPBSlot(0,true,1);
+}
+
+//-----------------------------------------------
 void MainWindow::mvAux2FwdSmall(void) {
     moveAuxPBSlot(1,false,1);
 }
 
 //-----------------------------------------------
+void MainWindow::mvAux2FwdSmallHB(void) {
+    moveGuiderAuxPBSlot(1,false,1);
+}
+//-----------------------------------------------
 void MainWindow::mvAux2BwdSmall(void) {
     moveAuxPBSlot(1,true,1);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2BwdSmallHB(void) {
+    moveGuiderAuxPBSlot(1,true,1);
 }
 
 //-----------------------------------------------
@@ -4602,8 +4821,18 @@ void MainWindow::mvAux1FwdTiny(void) {
 }
 
 //-----------------------------------------------
+void MainWindow::mvAux1FwdTinyHB(void) {
+    moveGuiderAuxPBSlot(0,false,2);
+}
+
+//-----------------------------------------------
 void MainWindow::mvAux1BwdTiny(void) {
     moveAuxPBSlot(0,true,2);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux1BwdTinyHB(void) {
+    moveGuiderAuxPBSlot(0,true,2);
 }
 
 //-----------------------------------------------
@@ -4612,8 +4841,17 @@ void MainWindow::mvAux2FwdTiny(void) {
 }
 
 //-----------------------------------------------
+void MainWindow::mvAux2FwdTinyHB(void) {
+    moveGuiderAuxPBSlot(1,false,2);
+}
+//-----------------------------------------------
 void MainWindow::mvAux2BwdTiny(void) {
     moveAuxPBSlot(1,true,2);
+}
+
+//-----------------------------------------------
+void MainWindow::mvAux2BwdTinyHB(void) {
+    moveGuiderAuxPBSlot(1,true,2);
 }
 
 //-----------------------------------------------

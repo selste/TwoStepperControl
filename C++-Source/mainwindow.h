@@ -60,6 +60,7 @@ private slots:
     void declinationMoveHandboxDown(void);
     void RAMoveHandboxFwd(void);
     void RAMoveHandboxBwd(void);
+    void killHandBoxMotion(void);
     void setCorrectionSpeed(void);
     void setMoveSpeed(void);
     void startGoToObject(void);
@@ -218,12 +219,26 @@ private:
         bool chan1IsOpen;
         QString *guiData;
     };
+
+    struct ST4StateStruct {
+        bool nActive;
+        bool eActive;
+        bool sActive;
+        bool wActive;
+        bool correctionDone;
+        QElapsedTimer *RATimeEl;
+        QElapsedTimer *DeclTimeEl;
+        unsigned long RACorrTime;
+        unsigned long DeclCorrTime;
+    };
+
     Ui::MainWindow *ui;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;
     struct DSLRStateStruct dslrStates;
     struct currentCommunicationParameters commSPIParams;
+    struct ST4StateStruct st4State;
     QtContinuousStepper *StepperDriveRA;
     QtKineticStepper *StepperDriveDecl;
     QTimer *timer;
@@ -321,6 +336,18 @@ private:
     void moveAuxPBSlot(short, bool, short);
     void moveGuiderAuxPBSlot(short, bool, short);
     void calibrationTerminationStuffToBeDone(void);
+    void mvAux1FwdFullHB(void);
+    void mvAux1BwdFullHB(void);
+    void mvAux2FwdFullHB(void);
+    void mvAux2BwdFullHB(void);
+    void mvAux1FwdSmallHB(void);
+    void mvAux1BwdSmallHB(void);
+    void mvAux2FwdSmallHB(void);
+    void mvAux2BwdSmallHB(void);
+    void mvAux1FwdTinyHB(void);
+    void mvAux1BwdTinyHB(void);
+    void mvAux2FwdTinyHB(void);
+    void mvAux2BwdTinyHB(void);
 
 signals:
     void dslrExposureDone(void);
