@@ -129,6 +129,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
     this->guidingState.st4IsActive = false;
+    this->pulseGuideDuration = 500;
     this->dslrStates.dslrExposureIsRunning = false;
     this->dslrStates.dslrSeriesRunning = false;
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
@@ -480,6 +481,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
+    ui->sbPulseGuideDuration->setValue(pulseGuideDuration);
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
@@ -1625,6 +1627,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             logString.clear();
         }
         ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
+        this->pulseGuideDuration=pgduration;
         ui->lePulseRAMS->setText(textEntry->number(pgduration));
         if (devVectorRotated[0]>0) {
             ui->leDevRaPix->setText(textEntry->number(-devVectorRotated[0],'g',2));
@@ -1676,6 +1679,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                         }
                 }
                 ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                this->pulseGuideDuration=pgduration;
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
             ui->leDevDeclPix->setText(textEntry->number(-devVectorRotated[1],'g',2));
@@ -1703,6 +1707,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                         }
                 }
                 ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                this->pulseGuideDuration=pgduration;
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
             ui->leDevDeclPix->setText(textEntry->number(devVectorRotated[1],'g',2));
@@ -1830,6 +1835,7 @@ void MainWindow::calibrateAutoGuider(void) {
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    this->pulseGuideDuration=pulseDuration;
     if (this->calibrationToBeTerminated == true) {
         this->calibrationTerminationStuffToBeDone();
         this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -1866,6 +1872,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl; // speeds are now stored in the global struct
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixRA; // that gives the pulse duration
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew in RA
+    this->pulseGuideDuration=pulseDuration;
     if (this->calibrationToBeTerminated == true) {
         this->calibrationTerminationStuffToBeDone();
         this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -1962,6 +1969,7 @@ void MainWindow::calibrateAutoGuider(void) {
     // now do declination travel to compensate for backlash when reversing declination travel direction
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixDecl; // that gives the pulse duration in decl
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    this->pulseGuideDuration=pulseDuration;
     this->displayCalibrationStatus("Determine declination backlash ...");
     this->declPGMinus();
     this->waitForDriveStop(false,true);
@@ -2128,6 +2136,7 @@ void MainWindow::skipCalibration(void) {
     imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
     pulseDuration = imgProcWindowSize*this->guidingState.travelTime_ms_RA; // that gives the pulse duration
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    this->pulseGuideDuration=pulseDuration;
     avrgAngle=0.0;
     this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
     this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
@@ -3364,7 +3373,7 @@ void MainWindow::handleST4State(void) {
 void MainWindow::declPGPlus(void) {
     long duration;
 
-    duration = ui->sbPulseGuideDuration->value();
+    duration = this->pulseGuideDuration;
     declinationPulseGuide(duration, 1,true);
 }
 
@@ -3384,7 +3393,7 @@ void MainWindow::declPGPlusGd(long duration) {
 void MainWindow::declPGMinus(void) {
     long duration;
 
-    duration = ui->sbPulseGuideDuration->value();
+    duration = this->pulseGuideDuration;
     declinationPulseGuide(duration, -1,true);
 }
 //--------------------------------------------------------------
@@ -3450,7 +3459,7 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, 
 void MainWindow::raPGFwd(void) {
     long duration;
 
-    duration = ui->sbPulseGuideDuration->value();
+    duration = this->pulseGuideDuration;
     raPulseGuide(duration,1,true);
 }
 
@@ -3458,7 +3467,7 @@ void MainWindow::raPGFwd(void) {
 void MainWindow::raPGBwd(void) {
     long duration;
 
-    duration = ui->sbPulseGuideDuration->value();
+    duration = this->pulseGuideDuration;
     raPulseGuide(duration,-1,true);
 }
 

@@ -289,6 +289,7 @@ private:
     float guidingFOVFactor;
     double rotMatrixGuidingXToRA[2][2];
     float temperature;
+    long pulseGuideDuration;
     QString *textEntry;
     QString *bt_HandboxCommand;
     QFile *guidingLog;
