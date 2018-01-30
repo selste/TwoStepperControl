@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 float temp;
+int tmeas;
 int decTemp;
 int nSwitch = 1; // move north button
 int eSwitch = 1; 
@@ -31,23 +32,22 @@ void setup() {
   SPCR |= _BV(SPE);  // turn on SPI in slave mode
   SPI.attachInterrupt();   // now turn on interrupts
   process_it = false;
+  temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
+  tmeas = 0;
 }
 
 //-----------------------------------------------------------------------
 
 void loop() {
   // reading five analog inputs, the ST4 switches and the temperature sensor 
-  temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
-//  if (debuggingIsOn) {
-//    Serial.print("Voltages on A0/A1/A2/A3: ");
-//    Serial.print(analogRead(0));
-//    Serial.print("/");
-//    Serial.print(analogRead(1));
-//    Serial.print("/");
-//    Serial.print(analogRead(2));
-//    Serial.print("/");
-//    Serial.println(analogRead(3));
-//  }
+  temp += (analogRead(4)*VRef*0.9765625-500)*0.1;
+  temp = temp*0.5; // compute a running average
+  tmeas++;
+  if (tmeas > 100) {
+    tmeas = 0;
+    temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
+  }
+  
   if (analogRead(1) < 200) { // if the voltage drops below 1 V, the switch is closed ...
     northIsUp = 1;
   } else {
