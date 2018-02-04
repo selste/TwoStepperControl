@@ -132,6 +132,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->pulseGuideDuration = 500;
     this->dslrStates.dslrExposureIsRunning = false;
     this->dslrStates.dslrSeriesRunning = false;
+    this->dslrStates.ditherTravelInMSRA = 0;
+    this->dslrStates.ditherTravelInMSDecl = 0;
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
     this->setTrackingRate();
 
@@ -1192,6 +1194,7 @@ void MainWindow::setINDISAddrAndPort(void) {
     int sport, gainVal;
     bool isServerUp = 0;
 
+    ui->pbConnectToServer->setEnabled(false);
     saddr=ui->leINDIServer->text();
     sport=ui->sbINDIPort->value();
     isServerUp = camera_client->setINDIServer(saddr,sport);
@@ -1209,9 +1212,11 @@ void MainWindow::setINDISAddrAndPort(void) {
         storeCCDData();
         gainVal=ui->sbCCDGain->value();
         camera_client->sendGain(gainVal);
-        ui->pbConnectToServer->setEnabled(false);
         ui->pbDisconnectFromServer->setEnabled(true);
+    } else {
+          ui->pbConnectToServer->setEnabled(true);
     }
+
 }
 
 //------------------------------------------------------------------
@@ -1767,8 +1772,8 @@ void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
     double currentCentroid[2],initialCentroid[2],slewVector[2],arcsecPPix[2],
         travelPerMSInRACorr, travelPerMSInDeclCorr, travelTimeInMSForOnePixRA,
-        travelTimeInMSForOnePixDecl,tTimeOnePix[4],lengthOfTravel,
-        lengthOfTravelWithDeclBacklash,relativeAngle[4],avrgAngle, sdevAngle,
+        travelTimeInMSForOnePixDecl,tTimeOnePix[4],lengthOfTravel, lengthOfTravelDeclPlus,
+        lengthOfTravelDeclMinus,relativeAngle[4],avrgAngle, sdevAngle,
         avrgDeclBacklashInPixel, sdevBacklashPix, declBacklashInPixel[4], decl_RA_Speedfactor;
     float alpha;
     int thrshld,beta,imgProcWindowSize;
@@ -1974,13 +1979,12 @@ void MainWindow::calibrateAutoGuider(void) {
     this->declPGMinus();
     this->waitForDriveStop(false,true);
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
+    this->displayCalibrationStatus("Applied tension on Decl. drive ...");
     this->waitForDriveStop(false,true);
     this->displayCalibrationStatus("Taking new image...");
     this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
-    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew; done to establish a defined state prior to backlash measurement
 
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Backlash calibration run: ", (float)(slewCounter+1), "/4 ...");
@@ -1998,13 +2002,8 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
-        if (slewCounter%2==0) {
-            this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
-            this->declPGPlus(); // carry out travel
-        } else {
-            this->guidingState.declinationDriveDirection=-1; // remember that we travel backward in decl
-            this->declPGMinus(); // carry out travel
-        } // alternate declination drive direction in order to maintain tension on the worm wheel
+        this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
+        this->declPGPlus(); // carry out travel
         this->waitForDriveStop(false,true);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
@@ -2032,24 +2031,13 @@ void MainWindow::calibrateAutoGuider(void) {
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
         slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
-        this->displayCalibrationStatus("Initial travel: ", lengthOfTravel, "[pix]");
-        initialCentroid[0]=currentCentroid[0];
-        initialCentroid[1]=currentCentroid[1]; // now go back, therefore the endpoint is the new beginning ...
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        this->displayCalibrationStatus("Travel back ...");
-        if (slewCounter%2==0) {
-            this->guidingState.declinationDriveDirection=-1;
-            this->declPGMinus(); // carry out travel
-        } else {
-            this->guidingState.declinationDriveDirection=1;
-            this->declPGPlus(); // carry out travel
-        } // again - alternate declination travel to maintain tension on the worm wheel
+        lengthOfTravelDeclPlus=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of travel
+        this->displayCalibrationStatus("Initial travel in + dir.: ", lengthOfTravelDeclPlus, "[pix]");
+        initialCentroid[0] = currentCentroid[0];
+        initialCentroid[1] = currentCentroid[1]; // now travel back
+        this->displayCalibrationStatus("Decl- slew (pix): ",(float)imgProcWindowSize,"");
+        this->guidingState.declinationDriveDirection=-1; // remember that we travel backward in decl
+        this->declPGMinus(); // carry out travel
         this->waitForDriveStop(false,true);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
@@ -2057,8 +2045,6 @@ void MainWindow::calibrateAutoGuider(void) {
             this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        ui->pbPGDecMinus->setEnabled(false);
-        ui->pbPGDecPlus->setEnabled(false);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
@@ -2069,14 +2055,20 @@ void MainWindow::calibrateAutoGuider(void) {
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        if (this->calibrationToBeTerminated == true) {
+            this->calibrationTerminationStuffToBeDone();
+            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
+            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
+            return;
+        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
         slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravelWithDeclBacklash=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // travel incl. decl backlash
-        this->displayCalibrationStatus("Travel in other dir.: ", lengthOfTravelWithDeclBacklash, "[pix]");
-        declBacklashInPixel[slewCounter]=fabs(-lengthOfTravelWithDeclBacklash+lengthOfTravel); // determine backlash in pixel
-        this->displayCalibrationStatus("Decl backlash (pix): ",(float)declBacklashInPixel[slewCounter],"");
+        lengthOfTravelDeclMinus=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of travel
+        this->displayCalibrationStatus("Travel in - dir.: ", lengthOfTravelDeclMinus, "[pix]");
+        declBacklashInPixel[slewCounter] = lengthOfTravelDeclPlus-lengthOfTravelDeclMinus;
+        this->displayCalibrationStatus("Backlash: ",declBacklashInPixel[slewCounter],"[pix]");
     }
 
     avrgDeclBacklashInPixel=(declBacklashInPixel[0]+declBacklashInPixel[1]+declBacklashInPixel[2]+declBacklashInPixel[3])/4.0;
@@ -2142,9 +2134,6 @@ void MainWindow::skipCalibration(void) {
     this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
     this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
     this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
-
-    // fake mirror check in decl is missing here ...
-
     this->guidingState.backlashCompensationInMS=0;
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
@@ -3234,13 +3223,13 @@ void MainWindow::stopST4Guiding(void) {
     ui->pbClearLXLog->setEnabled(true);
     ui->pbStartST4->setEnabled(true);
     ui->pbStopST4->setEnabled(false);
+    ui->lcdST4DurationDecl->display(0);
+    ui->lcdST4DurationRA->display(0);
+    this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
     ui->cbST4North->setChecked(false); // update the GUI
     ui->cbST4East->setChecked(false);
     ui->cbST4South->setChecked(false);
     ui->cbST4West->setChecked(false);
-    ui->lcdST4DurationDecl->display(0);
-    ui->lcdST4DurationRA->display(0);
-    this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
     this->tempUpdateTimer->start(30000); // start the timer for requesting temperature again
 }
 
@@ -4305,7 +4294,6 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
         ui->pbDSLRStartSeries->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == true) {
             emit dslrExposureDone();
-
         }
     }
 }
@@ -4336,10 +4324,6 @@ void MainWindow::startDSLRSeries(void) {
 void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
     int expsTaken;
-    int randDeclPixStep, randRAPixStep, pixDisplacement;
-    float invRandMax = 1/(float)RAND_MAX;
-    float travelTimeMS, raTimeMS, declTimeMS;
-    short sign;
 
     ui->pbDSLRSingleShot->setEnabled(false);
     ui->sbDSLRDuration->setEnabled(false);
@@ -4348,46 +4332,14 @@ void MainWindow::takeNextExposureInSeries(void) {
     this->dslrStates.noOfExposuresLeft--;
     expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
     ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
-    if (ui->cbDither->isChecked()==true) {
-        if (this->guidingState.guidingIsOn == true) {
-            this->doAutoGuiding();
-        } // stop autoguiding
-        do {
-            randRAPixStep = qrand()*invRandMax*g_AllData->getDitherRange(false);
-            randDeclPixStep = qrand()*invRandMax*g_AllData->getDitherRange(false);
-            pixDisplacement = round(sqrt(randRAPixStep*randRAPixStep+randDeclPixStep*randDeclPixStep));
-        } while ((pixDisplacement < g_AllData->getDitherRange(true)) || (pixDisplacement > g_AllData->getDitherRange(false)));
-        ui->lcdDitherStep->display(pixDisplacement);
 
-        if (this->guidingState.travelTime_ms_RA < 0.1) {
-            travelTimeMS = 100;
-        } else {
-            travelTimeMS = this->guidingState.travelTime_ms_RA;
-        }
-        sign = 1;
-        if (qrand()%2 == 0) {
-            sign = -1;
-        } // compute a random sign for the first displacement
-        raTimeMS = randRAPixStep*travelTimeMS;
-        qDebug() << "steps ra:" << randRAPixStep << raTimeMS;
-
-        if (qrand()%2 == 0) {
-            sign *= -1;
-        } // compute a random sign for the second displacement
-        declTimeMS = randDeclPixStep*travelTimeMS;
-        qDebug() << "steps decl:" << randDeclPixStep << declTimeMS;
-
-        if (this->guidingState.systemIsCalibrated == true) {
-            this->doAutoGuiding();
-            // start autoguiding - what to do if guide star is lost?
-        }
-    }
     if (this->dslrStates.noOfExposuresLeft > 0) {
+        this->carryOutDitheringStep();
         wait = new QElapsedTimer();
         wait->start();
         do {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-        } while (wait->elapsed() < 5000); // just wait for 5 seconds until next exposure is taken
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
+        } while (wait->elapsed() < 10000); // just wait for 10 seconds until next exposure is taken
         delete wait;
         this->handleDSLRSingleExposure();
     } else {
@@ -4396,8 +4348,122 @@ void MainWindow::takeNextExposureInSeries(void) {
 }
 
 //-------------------------------------------------------------------
+// this routine is called in a series - it does dithering of DSLR exposures
+
+void MainWindow::carryOutDitheringStep(void) {
+    int randDeclPixStep, randRAPixStep, pixDisplacement;
+    float invRandMax = 1/(float)RAND_MAX;
+    float travelTimeMS, raTimeMS, declTimeMS, guideCamVsDSLRRatio, avrgGuiderPixSize;;
+    short sign;
+    bool restartGuiding = false;
+
+    if (ui->cbDither->isChecked() == true) { // this is the dithering routine
+        if (this->guidingState.guidingIsOn == true) {
+            this->doAutoGuiding();
+            restartGuiding = true;
+        } // stop autoguiding
+        raTimeMS = -this->dslrStates.ditherTravelInMSRA;
+        declTimeMS = -this->dslrStates.ditherTravelInMSDecl; // read the last dither step times and revert these
+        if (raTimeMS < 0) {
+            this->raPGBwdGd(abs(raTimeMS));
+        } else {
+            this->raPGFwdGd(abs(raTimeMS));
+        }
+        this->waitForNMSecs(250);
+        if (declTimeMS < 0) {
+            this->declPGMinusGd(abs(declTimeMS));
+        } else {
+            this->declPGPlusGd(abs(declTimeMS));
+        } // went back to old position before last dither step ...
+        this->waitForNMSecs(250);
+        avrgGuiderPixSize=sqrt((g_AllData->getCameraPixelSize(0))*(g_AllData->getCameraPixelSize(0)) +
+                            (g_AllData->getCameraPixelSize(1)*(g_AllData->getCameraPixelSize(1))));
+        guideCamVsDSLRRatio=(avrgGuiderPixSize*g_AllData->getMainScopeFocalLength())/
+                (g_AllData->getDSLRDiagPixSize()*g_AllData->getGuideScopeFocalLength());
+        // correction times for guiding are scaled for the guiding scope, but here they are used
+        // guiding scope, but here they are used for them main scope, therefore this factor is necessary
+        do {
+            randRAPixStep = qrand()*invRandMax*g_AllData->getDitherRange(false);
+            randDeclPixStep = qrand()*invRandMax*g_AllData->getDitherRange(false);
+            pixDisplacement = round(sqrt(randRAPixStep*randRAPixStep+randDeclPixStep*randDeclPixStep));
+        } while ((pixDisplacement < g_AllData->getDitherRange(true)) || (pixDisplacement > g_AllData->getDitherRange(false)));
+        ui->lcdDitherStep->display(pixDisplacement);
+        if (this->guidingState.travelTime_ms_RA < 0.1) {
+            travelTimeMS = 100; // just set something if nothing is set
+        } else {
+            travelTimeMS = this->guidingState.travelTime_ms_RA;
+        }
+        travelTimeMS*=guideCamVsDSLRRatio;
+        sign = 1;
+        if (qrand()%2 == 0) {
+            sign = -1;
+        } // compute a random sign for the first displacement
+        raTimeMS = randRAPixStep*travelTimeMS;
+        if (qrand()%2 == 0) {
+            sign *= -1;
+        } // compute a random sign for the second displacement
+        declTimeMS = randDeclPixStep*travelTimeMS;
+        if (raTimeMS > 2000) {
+            raTimeMS=2000;
+        }
+        if (declTimeMS > 2000) {
+            declTimeMS=2000;
+        } // limit travel time if something goes wrong
+        this->dslrStates.ditherTravelInMSRA = raTimeMS;
+        this->dslrStates.ditherTravelInMSDecl = declTimeMS; // remember the steps
+        if (raTimeMS < 0) {
+            this->raPGBwdGd(abs(raTimeMS));
+        } else {
+            this->raPGFwdGd(abs(raTimeMS));
+        }
+        this->waitForNMSecs(250);
+        if (declTimeMS < 0) {
+            this->declPGMinusGd(abs(declTimeMS));
+        } else {
+            this->declPGPlusGd(abs(declTimeMS));
+        } // did dither step ...
+        this->waitForNMSecs(250);
+        if ((this->guidingState.systemIsCalibrated == true) && (restartGuiding == true)) {
+            this->doAutoGuiding();
+            // start autoguiding
+        }
+    }
+}
+
+//-------------------------------------------------------------------
+// this moves back to the position before the last dithering step when the series is done
+
+void MainWindow::undoLastDithering(void) {
+    bool restartGuiding = false;
+    float raTimeMS, declTimeMS;
+
+    if (this->guidingState.guidingIsOn == true) {
+        this->doAutoGuiding();
+        restartGuiding = true;
+    } // stop autoguiding
+    raTimeMS = -this->dslrStates.ditherTravelInMSRA;
+    declTimeMS = -this->dslrStates.ditherTravelInMSDecl; // read the last dither step times and revert these
+    if (raTimeMS < 0) {
+        this->raPGBwdGd(abs(raTimeMS));
+    } else {
+        this->raPGFwdGd(abs(raTimeMS));
+    }
+    this->waitForNMSecs(250);
+    if (declTimeMS < 0) {
+        this->declPGMinusGd(abs(declTimeMS));
+    } else {
+        this->declPGPlusGd(abs(declTimeMS));
+    } // went back to old position before last dither step ...
+    if ((this->guidingState.systemIsCalibrated == true) && (restartGuiding == true)) {
+        this->doAutoGuiding();
+    // start autoguiding
+    }
+}
+
+//-------------------------------------------------------------------
 // this slot is called when all exposures of a series are taken
 void MainWindow::stopDSLRExposureSeries(void) {
+
     ui->pbDSLRSingleShot->setEnabled(true);
     ui->sbDSLRDuration->setEnabled(true);
     ui->cbExpSeriesDone->setChecked(true);
@@ -4406,6 +4472,10 @@ void MainWindow::stopDSLRExposureSeries(void) {
     ui->cbDither->setEnabled(true);
     ui->pbDSLRStopSeries->setEnabled(false);
     ui->sbDSLRRepeat->setValue(0);
+    ui->lcdDitherStep->display(0);
+    this->undoLastDithering();
+    this->dslrStates.ditherTravelInMSRA = 0;
+    this->dslrStates.ditherTravelInMSDecl = 0;
     this->dslrStates.dslrSeriesRunning = false;
 }
 
@@ -4416,12 +4486,15 @@ void MainWindow::terminateDSLRSeries(void) {
     this->dslrStates.noOfExposuresLeft = 0;
     this->terminateDSLRSingleShot();
     ui->lcdDSLRExpsTaken->display("0");
+    this->undoLastDithering();
+    this->dslrStates.ditherTravelInMSRA = 0;
+    this->dslrStates.ditherTravelInMSDecl = 0;
+    ui->lcdDitherStep->display(0);
 }
 
 //--------------------------------------------------------------------
 // this slot stops a single exposure
 void MainWindow::terminateDSLRSingleShot(void) {
-    qDebug() << "called termination slot";
     this->dslrStates.dslrExposureIsRunning=false;
     this->dslrStates.dslrExpElapsed.invalidate();
     ui->pbDSLRSingleShot->setEnabled(true);
@@ -4429,14 +4502,9 @@ void MainWindow::terminateDSLRSingleShot(void) {
     ui->sbDSLRDuration->setEnabled(true);
     ui->pbDSLRStartSeries->setEnabled(true);
     ui->lcdDSLRTimeRemaining->display("0");
-    qDebug() << "Pin 27 set to LOW...";
-    qDebug() << "Pin 1 set to LOW...";
     digitalWrite(27,0);
-    //system("gpio write 27 0 &");
     usleep(10);
-    //system("gpio write 1 0 &");
     digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
-
 }
 
 //---------------------------------------------------------------------

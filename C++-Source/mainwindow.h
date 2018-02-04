@@ -212,6 +212,8 @@ private:
         int dslrExpTime;
         int noOfExposures;
         int noOfExposuresLeft;
+        double ditherTravelInMSRA;
+        double ditherTravelInMSDecl;
     };
 
     struct currentCommunicationParameters {
@@ -324,6 +326,8 @@ private:
     void shutDownPort(void);
     void openPort(void);
     void updateDSLRGUIAndCountdown(void);
+    void carryOutDitheringStep(void);
+    void undoLastDithering(void);
     void waitForNMSecs(int);
     void checkDrivesForActivity(void);
     bool checkForController(void);

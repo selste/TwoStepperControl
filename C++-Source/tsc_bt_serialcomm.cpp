@@ -1,5 +1,6 @@
 #include "tsc_bt_serialcomm.h"
 #include <QElapsedTimer>
+#include <unistd.h>
 #include <QDebug>
 
 //---------------------------------------------------
@@ -26,6 +27,12 @@ void tsc_bt_serialcomm::bt_serialcommTryRestart(QString bt_MACaddr) {
     QString startupRFPort;
     this->portIsUp=false;
 
+    startupRFPort.append("sudo rfcomm release hci0 ");
+    startupRFPort.append(bt_MACaddr);
+    startupRFPort.append(" &");
+    system(startupRFPort.toLatin1());
+    usleep(2000);
+    startupRFPort.clear();
     startupRFPort.append("sudo rfcomm connect hci0 ");
     startupRFPort.append(bt_MACaddr);
     startupRFPort.append(" &");
