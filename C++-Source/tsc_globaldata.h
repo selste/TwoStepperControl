@@ -54,6 +54,8 @@ public:
     QString* getBTMACAddress(void); // get the MAC address of the BT-adapter
     void setLX200IPAddress(QString); // store the IP address for LX200
     QString* getLX200IPAddress(void); // get IP address for LX200
+    void setHandboxIPAddress(QString); // store the IP address for the TCP Handbox
+    QString* getHandboxIPAddress(void); // get IP address for the TCP Handbox
     void setLocalSTime(double); // set the local sidereal time
     double getLocalSTime(void); // get the local sidereal time
     void setCelestialSpeed(short); // speed is sidereal, lunar or solar
@@ -91,6 +93,7 @@ private:
     int ditherRangeMax;
     QString *BTMACAddress;
     QString *LX200IPAddress;
+    QString *HandboxIPAddress;
     double celestialSpeed;
 
     struct initialStarPosStruct {

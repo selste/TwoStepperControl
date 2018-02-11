@@ -33,6 +33,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->BTMACAddress=new QString("00:00:00:00:00:00");
     this->getBTMACAddress(); // if a MAC address is stored for the BT-adapter in ".TSC_BTMAC.tsp" - use it ...
     this->LX200IPAddress = new QString("127.0.0.1");
+    this->HandboxIPAddress = new QString("127.0.0.1");
     this->celestialSpeed=0.0041780746; // default speed is sidereal speed
     if (this->loadGlobalData() == false) {
         this->gearData.planetaryRatioRA=9;
@@ -205,6 +206,12 @@ void TSC_GlobalData::setLX200IPAddress(QString ipadd) {
 }
 
 //-----------------------------------------------
+void TSC_GlobalData::setHandboxIPAddress(QString ipadd) {
+    this->HandboxIPAddress->clear();
+    this->HandboxIPAddress->append(ipadd);
+}
+
+//-----------------------------------------------
 void TSC_GlobalData::setCelestialSpeed(short what) {
     switch (what) {
         case 0: this->celestialSpeed=0.0041780746; break; // sidereal tracking rate
@@ -222,6 +229,11 @@ double TSC_GlobalData::getCelestialSpeed(void) {
 //-----------------------------------------------
 QString* TSC_GlobalData::getLX200IPAddress(void) {
     return this->LX200IPAddress;
+}
+
+//-----------------------------------------------
+QString* TSC_GlobalData::getHandboxIPAddress(void) {
+    return this->HandboxIPAddress;
 }
 
 //-----------------------------------------------

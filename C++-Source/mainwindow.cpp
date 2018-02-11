@@ -241,12 +241,20 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     for(listIter = 0; listIter < ipAddressList.count(); listIter++) {
         if ((ipAddressList[listIter].isLoopback() == false) && (ipAddressList[listIter].protocol() == QAbstractSocket::IPv4Protocol)) {
             ui->listWidgetIPAddresses->addItem(ipAddressList[listIter].toString());
+            ui->listWidgetIPAddresses_2->addItem(ipAddressList[listIter].toString());
         }
     }
     this->LXServer = new QTcpServer();
     this->LXSocket = new QTcpSocket(this);
     this->LXServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
     this->tcpLXdata = new QByteArray(); // a byte array holding the data coming in from the TCP/IP socket
+
+    // repeat the above proccedure for the TCP/IP handbox
+    this->HBServer = new QTcpServer();
+    this->HBSocket = new QTcpSocket(this);
+    this->HBServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
+    this->tcpHBData = new QByteArray();
+    this->tcpHandboxIsConnected=false;
 
         // instantiate the class for serial communication via LX200
     this->LX200SerialPortIsUp = false;
@@ -352,6 +360,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
     connect(ui->listWidgetIPAddresses,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressChosen())); // selection of IP address for LX 200
+    connect(ui->listWidgetIPAddresses_2,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressForHandboxChosen())); // selection of IP address for the handbox
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
     connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
@@ -403,6 +412,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbTerminateCal, SIGNAL(clicked()), this, SLOT(terminateGuiderCalibration())); // kill all motion immediately
     connect(ui->pbEnableTCP, SIGNAL(clicked()), this, SLOT(connectToIPSocket())); // connect to a LX 200 socket
     connect(ui->pbDisableTCP, SIGNAL(clicked()), this, SLOT(disconnectFromIPSocket())); // disconnect from LX 200 socket
+    connect(ui->pbTCPHBEnable, SIGNAL(clicked()), this, SLOT(connectHandboxToIPSocket())); // connect to a IP socket for the handbox
+    connect(ui->pbTCPHBDisable, SIGNAL(clicked()), this, SLOT(disconnectHandboxFromIPSocket())); // disconnect the TCP/IP handbox und shut down server
     connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd())); // pulse guide for a given amount of time defined in a spinbox
@@ -1021,6 +1032,10 @@ void MainWindow::shutDownProgram() {
     delete LXSocket;
     delete LXServerAddress;
     delete tcpLXdata;
+    delete HBServer;
+    delete HBSocket;
+    delete HBServerAddress;
+    delete tcpHBData;
     delete UTDate;
     delete UTTime;
     delete lx200SerialPort;
@@ -2441,6 +2456,55 @@ void MainWindow::setRegularFOV(void) {
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
+// TCP/IP Handbox ServerStuff
+//------------------------------------------------------------------
+//------------------------------------------------------------------
+// a slot that handles things when an IP address for LX200 was chosen
+void MainWindow::IPaddressForHandboxChosen(void) {
+    QString *ipaddress;
+
+    ipaddress = new QString(ui->listWidgetIPAddresses_2->currentItem()->text());
+    g_AllData->setHandboxIPAddress(*ipaddress);
+    delete ipaddress;
+    ui->pbTCPHBEnable->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+// a slot that establishes Handbox TCP/IP communication
+void MainWindow::connectHandboxToIPSocket(void) {
+    QString *ipaddress;
+    qint16 hbport;
+
+    ipaddress = new QString(g_AllData->getHandboxIPAddress()->toLatin1());
+    this->HBServerAddress->setAddress(*ipaddress);
+    delete ipaddress;
+    hbport = (qint16)(ui->sbHBTCPIPPort->value());
+    if (this->HBServer->listen(*HBServerAddress,hbport) != true) {
+        qDebug() << "Could not open TCPServer for Handbox";
+    } else {
+        ui->pbTCPHBEnable->setEnabled(false);
+        ui->pbTCPHBDisable->setEnabled(true);
+        ui->listWidgetIPAddresses_2->setEnabled(false);
+        ui->sbHBTCPIPPort->setEnabled(false);
+    }
+}
+
+//------------------------------------------------------------------
+// a slot that stops TCP/IP communication for the handbox
+void MainWindow::disconnectHandboxFromIPSocket(void) {
+    this->HBServer->close();
+    this->HBSocket->close();
+    ui->pbTCPHBEnable ->setEnabled(true);
+    ui->pbTCPHBDisable->setEnabled(false);
+    ui->listWidgetIPAddresses_2->setEnabled(true);
+    ui->cbTCPHandboxEnabled->setChecked(false);
+    ui->sbHBTCPIPPort->setEnabled(true);
+    this->tcpHandboxIsConnected=false;
+}
+
+//------------------------------------------------------------------
+//------------------------------------------------------------------
+//------------------------------------------------------------------
 // LX 200 related stuff
 //------------------------------------------------------------------
 //------------------------------------------------------------------
@@ -2471,6 +2535,7 @@ void MainWindow::connectToIPSocket(void) {
         ui->pbDisableTCP->setEnabled(true);
         ui->listWidgetIPAddresses->setEnabled(false);
         ui->pbLX200Active->setEnabled(false);
+        ui->sbLX200Port->setEnabled(false);
     }
 }
 
@@ -2485,6 +2550,7 @@ void MainWindow::disconnectFromIPSocket(void) {
     ui->cbTCPConnected->setChecked(false);
     this->lx200IsOn=false;
     ui->pbLX200Active->setEnabled(true);
+    ui->sbLX200Port->setEnabled(true);
 }
 
 //------------------------------------------------------------------
@@ -3173,7 +3239,7 @@ void MainWindow::startST4Guiding(void) {
     ui->camTab->setEnabled(false);
     ui->gearTab->setEnabled(false);
     ui->tabLX200->setEnabled(false);
-    ui->gbBluetooth->setEnabled(false);
+    ui->tabHB->setEnabled(false);
     ui->gbINDI->setEnabled(false);
     ui->pbStartST4->setEnabled(false);
     ui->pbStopST4->setEnabled(true);
@@ -3214,7 +3280,7 @@ void MainWindow::stopST4Guiding(void) {
     ui->INDITab->setEnabled(true);
     ui->gearTab->setEnabled(true);
     ui->tabLX200->setEnabled(true);
-    ui->gbBluetooth->setEnabled(true);
+    ui->tabHB->setEnabled(true);
     ui->gbINDI->setEnabled(true);
     ui->cbLXSimpleNumbers->setEnabled(true);
     ui->photoTab->setEnabled(true);

@@ -160,6 +160,9 @@ private slots:
     void confirmGuideStar(void);
     void skipCalibration(void);
     void getTemperature(void);
+    void IPaddressForHandboxChosen(void);
+    void connectHandboxToIPSocket(void);
+    void disconnectHandboxFromIPSocket(void);
 
 private:
     struct mountMotionStruct {
@@ -268,9 +271,13 @@ private:
     QFuture<void> futureStepperBehaviourDecl_Corr;
     ccd_client *camera_client;
     QTcpServer *LXServer;
+    QTcpServer *HBServer;
     QTcpSocket *LXSocket;
+    QTcpSocket *HBSocket;
     QHostAddress *LXServerAddress;
+    QHostAddress *HBServerAddress;
     QByteArray *tcpLXdata;
+    QByteArray *tcpHBData;
     QSerialPort *lx200SerialPort;
     QByteArray *lx200SerialData;
     SPI_Drive *spiDrOnChan1;
@@ -280,6 +287,7 @@ private:
     bool lx200IsOn;
     bool ccdCameraIsAcquiring;
     bool auxBoardIsAvailable = 0;
+    bool tcpHandboxIsConnected = 0;
     bool auxDriveIsStartingUp = false; // a flag that suppresses GUI updates when one of the focus motors comes up
     bool calibrationToBeTerminated = 0; // a flag that is set when the calibration process is stopped prematurely
     float ra; // right ascension of a current object
