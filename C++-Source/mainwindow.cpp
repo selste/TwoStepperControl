@@ -4163,7 +4163,7 @@ void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it f
 // "0001" is east, "0010" is south and "0100" is west. the fifth value is 0
 // if the speed is single, and 1 if the speed is the "move" speed.
 // the following 5 characters control focuser motion - the selection of the 
-// drive, the direction, and the stepwidth is encoded here ...
+// drive, the direction, and the stepwidth is encoded here in five digits with values 1 or 0
 
 void MainWindow::handleBTHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
@@ -4297,7 +4297,7 @@ void MainWindow::handleBTHandbox(void) {
                 }
             }
         }
-    }
+    } // decoded the 5 integers indicating the number of the focuser, the direction, and the amount of the step
     delete dirCommand; // delete the string containing the first 5 characters for handbox control
     delete focuserCommand; // delete the last 5 characters for the focuser
     delete wait;
@@ -4346,10 +4346,8 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
     ui->lcdDSLRTimeRemaining->display(QString::number(remTime));
     if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
         digitalWrite(27,0);
-        //system("gpio write 27 0 &");
         usleep(10);
         digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
-        //system("gpio write 1 0 &");
         ui->pbDSLRSingleShot->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == false) {
             ui->pbDSLRTerminateExposure->setEnabled(false);
@@ -4375,9 +4373,11 @@ void MainWindow::startDSLRSeries(void) {
         ui->pbDSLRStopSeries->setEnabled(true);
         ui->pbDSLRTerminateExposure->setEnabled(false);
         ui->cbDither->setEnabled(false);
+        ui->lcdTempSeriesDiff->display(0);
         this->dslrStates.dslrSeriesRunning = true;
         this->dslrStates.noOfExposures = ui->sbDSLRRepeat->value();
         this->dslrStates.noOfExposuresLeft=this->dslrStates.noOfExposures;
+        this->dslrStates.tempAtSeriesStart=this->temperature;
         ui->sbDSLRRepeat->setEnabled(false);
         ui->lcdDSLRExpsTaken->display("0");
         this->handleDSLRSingleExposure();
@@ -4389,7 +4389,11 @@ void MainWindow::startDSLRSeries(void) {
 void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
     int expsTaken;
+    float tempDiff; // difference between temperature at series start and next exposure
 
+    this->getTemperature(); // read the temperature sensor
+    tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
+    ui->lcdTempSeriesDiff->display(round(tempDiff));
     ui->pbDSLRSingleShot->setEnabled(false);
     ui->sbDSLRDuration->setEnabled(false);
     ui->pbDSLRStartSeries->setEnabled(false);

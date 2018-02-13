@@ -33,7 +33,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-private slots:
+private slots: // callbacks for (mainly) GUI widgets
     void updateReadings(void);
     void startRATracking(void);
     void stopRATracking(void);
@@ -165,7 +165,7 @@ private slots:
     void disconnectHandboxFromIPSocket(void);
 
 private:
-    struct mountMotionStruct {
+    struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
         bool RATrackingIsOn;  // true when the telescope is in tracking mode
         bool RADriveIsMoving; // true when the RA drive moves but does not track
         bool DeclDriveIsMoving; // true when the Decl drive moves
@@ -181,31 +181,31 @@ private:
         qint64 DeclMoveElapsedTimeInMS; // timestamp for elapsed time of the tracking since last call to clock-sync
         qint64 RAGoToElapsedTimeInMS;
         qint64 DeclGoToElapsedTimeInMS;
-        bool btMoveNorth;
+        bool btMoveNorth; // true when handbox command is active
         bool btMoveEast;
         bool btMoveSouth;
         bool btMoveWest;
     };
-    struct currentGuideStarPosition {
+    struct currentGuideStarPosition { // used in autoguiding
         float centrX;
         float centrY;
     };
 
-    struct guidingStateStruct {
-        bool guideStarSelected;
-        bool guidingIsOn;
-        bool calibrationIsRunning;
-        bool systemIsCalibrated;
-        bool calibrationImageReceived;
-        short declinationDriveDirection;
-        double travelTime_ms_RA;
-        double travelTime_ms_Decl;
-        double rotationAngle;
-        double maxDevInArcSec;
-        double rmsDevInArcSec;
-        double backlashCompensationInMS;
-        long noOfGuidingSteps;
-        bool st4IsActive;
+    struct guidingStateStruct { // holds all relevant information during autoguiding (not ST4)
+        bool guideStarSelected; // true if a gudie star is selected
+        bool guidingIsOn; // true if guiding us running
+        bool calibrationIsRunning; // true during calibration of the autoguider
+        bool systemIsCalibrated; // true if a pulse length and a rotation matrix is found
+        bool calibrationImageReceived; // false while waiting for a camera image for autoguider calibration
+        short declinationDriveDirection; // if a mirror/prism is involved, mirroring the autoguider is necessary
+        double travelTime_ms_RA; // correction pulse in milliseconds in right ascension
+        double travelTime_ms_Decl; // same for declination
+        double rotationAngle; // relative angle between mount and camera coordinate system
+        double maxDevInArcSec; // maximum error in seconds of arc duign guiding
+        double rmsDevInArcSec; // rms error in " during guiding
+        double backlashCompensationInMS; // additional pulse to be issued if declination travel is inverted
+        long noOfGuidingSteps; // number of acquired autoguider images
+        bool st4IsActive; // true if ST4 is active
     };
 
     struct DSLRStateStruct {
@@ -217,6 +217,7 @@ private:
         int noOfExposuresLeft;
         double ditherTravelInMSRA;
         double ditherTravelInMSDecl;
+        float tempAtSeriesStart;
     };
 
     struct currentCommunicationParameters {
