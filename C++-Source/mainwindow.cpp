@@ -3270,10 +3270,6 @@ void MainWindow::stopST4Guiding(void) {
     this->st4State.sActive = false;
     this->st4State.wActive = false;
     this->st4State.correctionDone = false;
-    ui->cbST4East->setChecked(false);
-    ui->cbST4North->setChecked(false);
-    ui->cbST4South->setChecked(false);
-    ui->cbST4West->setChecked(false);
     ui->ctrlTab->setEnabled(true);
     ui->catTab->setEnabled(true);
     ui->camTab->setEnabled(true);
@@ -3292,10 +3288,13 @@ void MainWindow::stopST4Guiding(void) {
     ui->lcdST4DurationDecl->display(0);
     ui->lcdST4DurationRA->display(0);
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
+    this->getTemperature(); // call it a second time to avoid trash in the SPI register
+    this->waitForNMSecs(250);
     ui->cbST4North->setChecked(false); // update the GUI
     ui->cbST4East->setChecked(false);
     ui->cbST4South->setChecked(false);
     ui->cbST4West->setChecked(false);
+
     this->tempUpdateTimer->start(30000); // start the timer for requesting temperature again
 }
 
