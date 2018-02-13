@@ -4,7 +4,6 @@
 #include <stdlib.h>
 
 float temp;
-int tmeas;
 int decTemp;
 int nSwitch = 1; // move north button
 int eSwitch = 1; 
@@ -13,7 +12,7 @@ int wSwitch = 1;
 int northIsUp, westIsUp, eastIsUp, southIsUp; 
 int switchStateChanged = 0, tempDeg;
 char tempDeg1, tempDeg2, isPositive, st4state = '0';
-bool debuggingIsOn = true;
+bool debuggingIsOn = true, readTemp = true;
 char reply, readCommand;
 String dHelper, sHelper;
 char buf[32];
@@ -33,19 +32,15 @@ void setup() {
   SPI.attachInterrupt();   // now turn on interrupts
   process_it = false;
   temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
-  tmeas = 0;
 }
 
 //-----------------------------------------------------------------------
 
 void loop() {
-  // reading five analog inputs, the ST4 switches and the temperature sensor 
-  temp += (analogRead(4)*VRef*0.9765625-500)*0.1;
-  temp = temp*0.5; // compute a running average
-  tmeas++;
-  if (tmeas > 100) {
-    tmeas = 0;
-    temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
+  // reading five analog inputs, the ST4 switches and the temperature sensor
+  if (readTemp == true) { // read analog sensor only if temperature is not read out
+    temp += (analogRead(4)*VRef*0.9765625-500)*0.1;
+    temp = temp*0.5; // compute a running average
   }
   
   if (analogRead(1) < 200) { // if the voltage drops below 1 V, the switch is closed ...
@@ -135,7 +130,6 @@ void loop() {
   }
   
   tempDeg=round(abs(temp));
-  
   dHelper = String(tempDeg);
   if (tempDeg < 10) {
     tempDeg1 = '0'; 
@@ -153,7 +147,8 @@ void loop() {
       case 's': 
         reply = st4state; 
         break;
-      case 'p': // ask whether temperature is positive
+      case 'p': // ask whether temperature is positive and stop temperature readings
+        readTemp = false;
         reply = isPositive;
         if (debuggingIsOn) {
           Serial.print("Temperature: ");
@@ -166,7 +161,9 @@ void loop() {
       case 'l': // ask for second digit of temperature in celsius
         reply = tempDeg2;
         break;              
-      case 'g': // this is sent when reading the temperature is terminated; reply is again set to "st4state" 
+      case 'g': // this is sent when reading the temperature is terminated; reply is again set to "st4state" . temperature reading starts again with new averaging
+        readTemp = true;
+        temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
         reply = st4state;       
     } 
   }
