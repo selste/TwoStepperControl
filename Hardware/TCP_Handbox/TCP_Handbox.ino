@@ -8,6 +8,8 @@ const char* ssid     = "TSCHotspot";
 const char* password = "TSCRaspi";
 const char* TSCServer = "192.168.50.5";
 const int TSCPort = 49153;
+String lineFromTSC;
+short failedConnects = 0;
 WiFiClient hbClient;
 
 //--------------------------------------------------------------------
@@ -17,21 +19,21 @@ void setup(void) {
   drawLogoAndWait();
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(2000);
   } 
   delay(500);
   u8g2.clearBuffer();          
-  u8g2.setFont(u8g2_font_ncenB08_tr); // choose a suitable font
+  u8g2.setFont(u8g2_font_6x13_tf); // choose a suitable font
   u8g2.drawStr(0,10,"Found TSCHotspot!"); 
   u8g2.sendBuffer();          
   delay(1000);  
-  u8g2.drawStr(0,20,"Waiting for TSC ..."); 
+  u8g2.drawStr(0,25,"Waiting for TSC ..."); 
   u8g2.sendBuffer();          
   delay(1000);  
   while (!hbClient.connect(TSCServer, TSCPort)) {
     delay(500);
   }          
-  u8g2.drawStr(0,30,"Connected to TSC!");
+  u8g2.drawStr(0,40,"Connected to TSC!");
   u8g2.sendBuffer();          
   delay(1000); 
 }
@@ -39,9 +41,46 @@ void setup(void) {
 //-------------------------------------------------------------------
 
 void loop(void) {
+  if (hbClient.available() != 0) {
+    lineFromTSC = hbClient.readStringUntil('\r');
+    handleTSCdata();
+  }
+  if (hbClient.connected() == false) {
+    failedConnects++;
+    delay(500);
+  }
+  if (failedConnects > 5) {
+    u8g2.clearBuffer(); 
+    u8g2.drawStr(0,10,"Connection lost!"); 
+    u8g2.sendBuffer();
+    delay(3000); 
+    exit(0);
+  }
+}
 
- 
-
+//-------------------------------------------------------------------
+void handleTSCdata(void) {
+  if (lineFromTSC.charAt(0) == 'H') {
+    u8g2.clearBuffer(); 
+    u8g2.drawStr(0,10,lineFromTSC.c_str()); 
+    u8g2.sendBuffer();  
+  }
+  if (lineFromTSC.charAt(0) == 'D') { 
+    u8g2.drawStr(0,25,lineFromTSC.c_str()); 
+    u8g2.sendBuffer();  
+  }
+  if (lineFromTSC.charAt(0) == 'G') { 
+    u8g2.drawStr(0,40,lineFromTSC.c_str()); 
+    u8g2.sendBuffer();  
+  }
+  if (lineFromTSC.charAt(0) == 'E') { 
+    u8g2.drawStr(0,40,lineFromTSC.c_str()); 
+    u8g2.sendBuffer();  
+  }
+  if (lineFromTSC.charAt(0) == 'M') { 
+    u8g2.drawStr(0,55,lineFromTSC.c_str()); 
+    u8g2.sendBuffer();  
+  }
 }
 
 //-------------------------------------------------------------------
