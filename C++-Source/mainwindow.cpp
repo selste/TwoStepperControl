@@ -49,6 +49,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->auxDriveUpdateTimer->start(500);
     this->tempUpdateTimer = new QTimer();
     this->tempUpdateTimer->start(30000);
+    this->tcpHandBoxTimer = new QTimer();
+    this->tcpHandBoxTimer->start(2000);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -356,6 +358,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
     connect(this->tempUpdateTimer, SIGNAL(timeout()), this, SLOT(getTemperature())); // this one polls temperature data from the HAT arduino
+    connect(this->tcpHandBoxTimer, SIGNAL(timeout()), this, SLOT(sendDataToTCPHandboxSlot())); // send status of TSC to the TCP-IP handbox if connected
     connect(this->auxDriveUpdateTimer, SIGNAL(timeout()),this, SLOT(updateAuxDriveStatus())); // event for checking focusmotors and updating the GUI information
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
@@ -492,6 +495,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
+    connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
     ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     ui->sbPulseGuideDuration->setValue(pulseGuideDuration);
@@ -529,6 +533,7 @@ void MainWindow::updateReadings() {
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
     }
+
     if (this->dslrStates.dslrExposureIsRunning == true) { // check a timer and update display of the remaining time ...
         this->updateDSLRGUIAndCountdown();
     }
@@ -632,7 +637,6 @@ void MainWindow::updateReadings() {
         }
     } // slew has ended ...
 
-//    ui->leHourAngle->setText(textEntry->number(g_AllData->getActualScopePosition(0),'f',5));
     hourAngleForDisplay=(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
     while (hourAngleForDisplay < 0) {
         hourAngleForDisplay += 360;
@@ -1032,8 +1036,8 @@ void MainWindow::shutDownProgram() {
     delete LXSocket;
     delete LXServerAddress;
     delete tcpLXdata;
-    delete HBServer;
     delete HBSocket;
+    delete HBServer;
     delete HBServerAddress;
     delete tcpHBData;
     delete UTDate;
@@ -2490,6 +2494,15 @@ void MainWindow::connectHandboxToIPSocket(void) {
 }
 
 //------------------------------------------------------------------
+// a slot that connects the TCP/IP handbox;
+// the server listens and establishes a socket when a connection comes in
+void MainWindow::establishHBIPLink(void) {
+    ui->cbTCPHandboxEnabled ->setChecked(true);
+    this->HBSocket = this->HBServer->nextPendingConnection();
+    this->tcpHandboxIsConnected = true;
+}
+
+//------------------------------------------------------------------
 // a slot that stops TCP/IP communication for the handbox
 void MainWindow::disconnectHandboxFromIPSocket(void) {
     this->HBServer->close();
@@ -2499,7 +2512,120 @@ void MainWindow::disconnectHandboxFromIPSocket(void) {
     ui->listWidgetIPAddresses_2->setEnabled(true);
     ui->cbTCPHandboxEnabled->setChecked(false);
     ui->sbHBTCPIPPort->setEnabled(true);
-    this->tcpHandboxIsConnected=false;
+    this->tcpHandboxIsConnected = false;
+}
+
+
+//------------------------------------------------------------------
+// a routine that reads data from the TCP/IP handbox
+void MainWindow::readTCPHandboxData(void) {
+    short charsToBeRead;
+
+    charsToBeRead = this->HBSocket->bytesAvailable();
+    if (charsToBeRead >= 10) { // the handbox sends a string of the type "xxxxxxxxxx" where x is either 0 or 1
+        this->tcpHBData->clear();
+        this->tcpHBData->append(this->HBSocket->readAll());
+    }
+}
+
+//------------------------------------------------------------------
+// a routine that sends data to the handbox
+void MainWindow::sendDataToTCPHandbox(QString dataForHandBox) {
+    this->HBSocket->write(dataForHandBox.toLatin1());
+}
+
+//------------------------------------------------------------------
+// a slot for the routine "sendDataToTCPHandbox"
+void MainWindow::sendDataToTCPHandboxSlot(void) {
+    QString *stateString;
+    int gotoETA, dslrNums;
+
+    if (this->tcpHandboxIsConnected == true) {
+        stateString = new QString();
+        stateString->append("Hour Angle: ");
+        stateString->append(ui->leHourAngle->text());
+        stateString->append("\r");
+        sendDataToTCPHandbox(*stateString);
+        stateString->clear();
+        stateString->append("Decl: ");
+        stateString->append(ui->leDecl->text());
+        stateString->append("\r");
+        sendDataToTCPHandbox(*stateString);
+        stateString->clear();
+        if ((this->mountMotion.GoToIsActiveInDecl == true) || (this->mountMotion.GoToIsActiveInRA == true)) {
+            // system is in GOTO mode, send ETA to handbox
+            gotoETA = (int)ui->lcdGotoTime->value();
+            stateString->append("GoTo ETA: ");
+            stateString->append(QString::number(gotoETA));
+            stateString->append(" [s]\r");
+            sendDataToTCPHandbox(*stateString);
+            stateString->clear();
+        }
+        if (this->dslrStates.dslrSeriesRunning == true) {
+            if (this->guidingState.guidingIsOn == true) {
+                // send # of exposure, time elapsed and guiding error
+                dslrNums = (int)ui->lcdDSLRExpsTaken->value();
+                stateString->append("Exp.#: ");
+                stateString->append(QString::number(dslrNums));
+                dslrNums = (int)(ui->lcdDSLRTimeRemaining->value());
+                stateString->append("/");
+                stateString->append(QString::number(dslrNums));
+                stateString->append(" [s]\r");
+                sendDataToTCPHandbox(*stateString);
+                stateString->clear();
+                stateString->append("Max/RMS Err.: ");
+                stateString->append(ui->leMaxGuideErr->text());
+                stateString->append(" ['']\r");
+                sendDataToTCPHandbox(*stateString);
+                stateString->clear();
+            } else {
+                // send # of exposure and time elapsed
+                dslrNums = (int)ui->lcdDSLRExpsTaken->value();
+                stateString->append("Exp.#: ");
+                stateString->append(QString::number(dslrNums));
+                dslrNums = (int)ui->lcdDSLRTimeRemaining->value();
+                stateString->append("/: ");
+                stateString->append(QString::number(dslrNums));
+                stateString->append(" [s]\r");
+                sendDataToTCPHandbox(*stateString);
+                stateString->clear();
+            }
+        } else { // DSLR may be taking a single image
+            if (this->dslrStates.dslrExposureIsRunning == true) {
+                if (this->guidingState.guidingIsOn == true) {
+                    // send time elapsed and guiding error
+                    dslrNums = (int)ui->lcdDSLRTimeRemaining->value();
+                    stateString->append("Exp. Time: ");
+                    stateString->append(QString::number(dslrNums));
+                    stateString->append(" [s]\r");
+                    sendDataToTCPHandbox(*stateString);
+                    stateString->clear();
+                    stateString->append("Max/RMS Err.: ");
+                    stateString->append(ui->leMaxGuideErr->text());
+                    stateString->append(" ['']\r");
+                    sendDataToTCPHandbox(*stateString);
+                    stateString->clear();
+                } else {
+                    // send # of exposure and time elapsed
+                    dslrNums = (int)(ui->lcdDSLRTimeRemaining->value());
+                    stateString->append("Exp. Time: ");
+                    stateString->append(QString::number(dslrNums));
+                    stateString->append(" [s]\r");
+                    sendDataToTCPHandbox(*stateString);
+                    stateString->clear();
+                }
+            }
+        }
+        if ((this->guidingState.guidingIsOn == true) && (this->dslrStates.dslrSeriesRunning == false) &&
+            (this->dslrStates.dslrExposureIsRunning == false)) {
+            stateString->append("Max/RMS Err.: ");
+            stateString->append(ui->leMaxGuideErr->text());
+            stateString->append(" ['']\r");
+            sendDataToTCPHandbox(*stateString);
+            stateString->clear();
+        }
+        delete stateString;
+    }
 }
 
 //------------------------------------------------------------------
@@ -4379,7 +4505,7 @@ void MainWindow::startDSLRSeries(void) {
         this->dslrStates.noOfExposuresLeft=this->dslrStates.noOfExposures;
         this->dslrStates.tempAtSeriesStart=this->temperature;
         ui->sbDSLRRepeat->setEnabled(false);
-        ui->lcdDSLRExpsTaken->display("0");
+        ui->lcdDSLRExpsTaken->display("1");
         this->handleDSLRSingleExposure();
     }
 }
@@ -4409,6 +4535,7 @@ void MainWindow::takeNextExposureInSeries(void) {
         do {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
         } while (wait->elapsed() < 10000); // just wait for 10 seconds until next exposure is taken
+        ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
         delete wait;
         this->handleDSLRSingleExposure();
     } else {

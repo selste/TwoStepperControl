@@ -163,6 +163,8 @@ private slots: // callbacks for (mainly) GUI widgets
     void IPaddressForHandboxChosen(void);
     void connectHandboxToIPSocket(void);
     void disconnectHandboxFromIPSocket(void);
+    void establishHBIPLink(void);
+    void sendDataToTCPHandboxSlot(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
@@ -252,6 +254,7 @@ private:
     QTimer *LX200Timer;
     QTimer *auxDriveUpdateTimer;
     QTimer *tempUpdateTimer;
+    QTimer *tcpHandBoxTimer;
     QDate *UTDate;
     QTime *UTTime;
     double julianDay;
@@ -362,6 +365,8 @@ private:
     void mvAux1BwdTinyHB(void);
     void mvAux2FwdTinyHB(void);
     void mvAux2BwdTinyHB(void);
+    void readTCPHandboxData(void);
+    void sendDataToTCPHandbox(QString);
 
 signals:
     void dslrExposureDone(void);
