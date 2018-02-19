@@ -4,12 +4,26 @@
 #include <WiFi.h>
 
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
-const char* ssid     = "TSCHotspot";
-const char* password = "TSCRaspi";
+const char* ssid     = "TSCHotspot"; // name of the autonomous hotspot of TSC
+const char* password = "TSCRaspi"; // password for access to TSCHotspot
 const char* TSCServer = "192.168.50.5";
 const int TSCPort = 49153;
+
 String lineFromTSC;
+String lineToTSC;
+String pSwitchState;
 short failedConnects = 0;
+int nSwitch = LOW; // move north button
+int eSwitch = LOW; 
+int sSwitch = LOW; 
+int wSwitch = LOW;
+int ffull = LOW;
+int f5th = LOW;
+int f20th = LOW;
+int speedSwitch;
+int fSelect;
+int fFwd;
+int switchStateChanged = 0;
 WiFiClient hbClient;
 
 //--------------------------------------------------------------------
@@ -31,11 +45,36 @@ void setup(void) {
   u8g2.sendBuffer();          
   delay(1000);  
   while (!hbClient.connect(TSCServer, TSCPort)) {
-    delay(500);
+    delay(1000);
   }          
   u8g2.drawStr(0,40,"Connected to TSC!");
   u8g2.sendBuffer();          
-  delay(1000); 
+  delay(500); 
+  pinMode(26,INPUT); // north
+  pinMode(25,INPUT); // east
+  pinMode(34,INPUT); // south
+  pinMode(39,INPUT); // west
+  pinMode(36,INPUT); // full focuser step
+  pinMode(4,INPUT); // 1/5 focuser step
+  pinMode(21,INPUT); // 1/20 focuser step
+  pinMode(15,INPUT); // speed selection switch 
+  pinMode(33,INPUT); // select focuser drive
+  pinMode(12,INPUT); // select focuser direction
+  if (digitalRead(15) == LOW) {
+    speedSwitch=LOW;
+  } else {
+    speedSwitch=HIGH;
+  }
+  if (digitalRead(33) == LOW) {
+    fSelect=LOW;
+  } else {
+    fSelect=HIGH;
+  }
+  if (digitalRead(12) == LOW) {
+    fFwd=LOW;
+  } else {
+    fFwd=HIGH;
+  }
 }
 
 //-------------------------------------------------------------------
@@ -56,6 +95,83 @@ void loop(void) {
     delay(3000); 
     exit(0);
   }
+
+  if (digitalRead(26) != nSwitch) {
+    nSwitch = digitalRead(26);
+    switchStateChanged=1;
+  }
+  if (digitalRead(25) != eSwitch) {
+    eSwitch = digitalRead(25);
+    switchStateChanged=1;
+  }
+  if (digitalRead(34) != sSwitch) {
+    sSwitch = digitalRead(34);
+    switchStateChanged=1;
+  }
+  if (digitalRead(39) != wSwitch) {
+    wSwitch = digitalRead(39);
+    switchStateChanged=1;
+  }
+  if (digitalRead(15) != speedSwitch) {
+    speedSwitch = digitalRead(15);
+    switchStateChanged=1;
+  }
+  if (digitalRead(33) != fSelect) {
+    fSelect = digitalRead(33);
+    switchStateChanged=1;
+  }
+  if (digitalRead(12) != fFwd) {
+    fFwd = digitalRead(12);
+    switchStateChanged=1;
+  }
+  if (digitalRead(36) != ffull) {
+    ffull = digitalRead(36);
+    switchStateChanged=1;
+  }
+  if (digitalRead(4) != f5th) {
+    f5th = digitalRead(4);
+    switchStateChanged=1;
+  }
+  if (digitalRead(21) != f20th) {
+    f20th = digitalRead(21);
+    switchStateChanged=1;
+  }
+
+  if (switchStateChanged == 1) {
+    lineToTSC="";
+    lineToTSC.concat(nSwitch);
+    lineToTSC.concat(eSwitch);
+    lineToTSC.concat(sSwitch);  
+    lineToTSC.concat(wSwitch);
+    lineToTSC.concat(speedSwitch);
+    lineToTSC.concat(fSelect);
+    lineToTSC.concat(fFwd);
+    lineToTSC.concat(ffull);
+    lineToTSC.concat(f5th);
+    lineToTSC.concat(f20th);  
+    hbClient.print(lineToTSC.c_str());
+    delay(50);
+  }
+  delay(10);
+  switchStateChanged=0;
+  u8g2.setFont(u8g2_font_crox5tb_tf);
+  if (nSwitch == 1) {
+    u8g2.drawStr(110,55,"N");
+    u8g2.sendBuffer();  
+  }
+  if (eSwitch == 1) {
+    u8g2.drawStr(110,55,"E");
+    u8g2.sendBuffer();  
+  }
+  if (sSwitch == 1) {
+    u8g2.drawStr(110,55,"S");
+    u8g2.sendBuffer();  
+  }
+  if (wSwitch == 1) {
+    u8g2.drawStr(110,55,"W");
+    u8g2.sendBuffer();  
+  }
+  u8g2.setFont(u8g2_font_6x13_tf); 
 }
 
 //-------------------------------------------------------------------
@@ -73,7 +189,7 @@ void handleTSCdata(void) {
     u8g2.drawStr(0,40,lineFromTSC.c_str()); 
     u8g2.sendBuffer();  
   }
-  if (lineFromTSC.charAt(0) == 'E') { 
+  if (lineFromTSC.charAt(0) == 'E') {
     u8g2.drawStr(0,40,lineFromTSC.c_str()); 
     u8g2.sendBuffer();  
   }
@@ -81,6 +197,29 @@ void handleTSCdata(void) {
     u8g2.drawStr(0,55,lineFromTSC.c_str()); 
     u8g2.sendBuffer();  
   }
+  u8g2.setFont(u8g2_font_5x8_tf);
+  pSwitchState = "";
+  pSwitchState.concat("Spd:");
+  if (speedSwitch == 1) {
+    pSwitchState.concat("+ "); 
+  } else {
+    pSwitchState.concat("- "); 
+  }
+  pSwitchState.concat("Foc:");
+  if (fSelect == 0) {
+    pSwitchState.concat("1 ");
+  } else {
+    pSwitchState.concat("2 ");
+  }
+  pSwitchState.concat("FDir:");
+  if (fFwd == 1) {
+    pSwitchState.concat("+"); 
+  } else {
+    pSwitchState.concat("-"); 
+  }
+  u8g2.drawStr(0,63,pSwitchState.c_str()); 
+  u8g2.sendBuffer(); 
+  u8g2.setFont(u8g2_font_6x13_tf); 
 }
 
 //-------------------------------------------------------------------
@@ -179,4 +318,7 @@ void drawLogoAndWait(void) {
    delay(1000);
 
 }
+
+//-----------------------------------------------------------------------------
+
 
