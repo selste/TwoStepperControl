@@ -254,7 +254,7 @@ private:
     QTimer *LX200Timer;
     QTimer *auxDriveUpdateTimer;
     QTimer *tempUpdateTimer;
-    QTimer *tcpHandBoxTimer;
+    QTimer *tcpHandBoxSendTimer;
     QDate *UTDate;
     QTime *UTTime;
     double julianDay;

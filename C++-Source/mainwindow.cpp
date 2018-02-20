@@ -49,8 +49,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->auxDriveUpdateTimer->start(500);
     this->tempUpdateTimer = new QTimer();
     this->tempUpdateTimer->start(30000);
-    this->tcpHandBoxTimer = new QTimer();
-    this->tcpHandBoxTimer->start(2000);
+    this->tcpHandBoxSendTimer = new QTimer();
+    this->tcpHandBoxSendTimer->start(1000);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -358,7 +358,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
     connect(this->st4Timer, SIGNAL(timeout()), this, SLOT(readST4Port())); // this is the event for reading LX200
     connect(this->tempUpdateTimer, SIGNAL(timeout()), this, SLOT(getTemperature())); // this one polls temperature data from the HAT arduino
-    connect(this->tcpHandBoxTimer, SIGNAL(timeout()), this, SLOT(sendDataToTCPHandboxSlot())); // send status of TSC to the TCP-IP handbox if connected
+    connect(this->tcpHandBoxSendTimer, SIGNAL(timeout()), this, SLOT(sendDataToTCPHandboxSlot())); // send status of TSC to the TCP-IP handbox if connected
     connect(this->auxDriveUpdateTimer, SIGNAL(timeout()),this, SLOT(updateAuxDriveStatus())); // event for checking focusmotors and updating the GUI information
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
@@ -533,7 +533,11 @@ void MainWindow::updateReadings() {
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
         this->bt_Handbox->getDataFromSerialPort();
     }
-
+    if (this->tcpHandboxIsConnected == true) {
+        if (this->HBSocket->bytesAvailable()) {
+            this->readTCPHandboxData();
+        }
+    }
     if (this->dslrStates.dslrExposureIsRunning == true) { // check a timer and update display of the remaining time ...
         this->updateDSLRGUIAndCountdown();
     }
@@ -2525,6 +2529,8 @@ void MainWindow::readTCPHandboxData(void) {
     if (charsToBeRead >= 10) { // the handbox sends a string of the type "xxxxxxxxxx" where x is either 0 or 1
         this->tcpHBData->clear();
         this->tcpHBData->append(this->HBSocket->readAll());
+        qDebug() << "Data received: " << this->tcpHBData->data();
+        // now some action should be taken ...
     }
 }
 
@@ -4301,8 +4307,13 @@ void MainWindow::handleBTHandbox(void) {
     QChar focuserValue;
 
     wait = new QElapsedTimer();
-    this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
-    localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
+    if (this->tcpHandboxIsConnected == false) { // in this case, the command comes from the BT-handbox
+        this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
+        localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
+    } else {
+        localBTCommand=new QString(this->tcpHBData->data()); // in this case the data comes from the TCP handbox
+    }
+
     dirCommand = new QString(localBTCommand->left(5));
     focuserCommand = new QString(localBTCommand->right(5));
     delete localBTCommand; // delete the local deep copy of the command string
