@@ -353,6 +353,23 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbDitherMax->setValue(g_AllData->getDitherRange(false));
     ui->sbDitherMin->setValue(g_AllData->getDitherRange(true));
 
+    // force a few line edit fields to accept doubles or ints only ...
+    ui->leLat->setValidator(new QDoubleValidator(-90, 90, 10, this));
+    ui->leLong->setValidator(new QDoubleValidator(-180, 180, 10, this));
+    ui->leUTCOffs->setValidator(new QIntValidator(-12,12,this));
+    ui->leFrameSizeX->setValidator(new QIntValidator(0,30000,this));
+    ui->leFrameSizeY->setValidator(new QIntValidator(0,30000,this));
+    ui->lePixelSizeX->setValidator(new QDoubleValidator(0,500,3,this));
+    ui->lePixelSizeY->setValidator(new QDoubleValidator(0,500,3,this));
+    ui->leRAGear->setValidator(new QDoubleValidator(-10000,10000,10,this));
+    ui->leRAPlanetary->setValidator(new QDoubleValidator(-10000,10000,10,this));
+    ui->leRAStepsize->setValidator(new QDoubleValidator(0,100,10,this));
+    ui->leRAWorm->setValidator(new QDoubleValidator(0,10000,10,this));
+    ui->leDeclGear->setValidator(new QDoubleValidator(-10000,10000,10,this));
+    ui->leDeclPlanetary->setValidator(new QDoubleValidator(-10000,10000,10,this));
+    ui->leDeclStepSize->setValidator(new QDoubleValidator(0,100,10,this));
+    ui->leDeclWorm->setValidator(new QDoubleValidator(0,10000,10,this));
+
     // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
@@ -2247,6 +2264,7 @@ void MainWindow::resetGuidingCalibration(void) {
         ui->teCalibrationStatus->clear();
         this->guidingState.guideStarSelected=false;
         this->guidingState.guidingIsOn=false;
+        g_AllData->setGuidingState(false);
         this->guidingState.calibrationIsRunning=false;
         this->guidingState.systemIsCalibrated=false;
         this->guidingState.calibrationImageReceived=false;
@@ -3361,6 +3379,7 @@ void MainWindow::startST4Guiding(void) {
     ui->lcdTemp->display("-");
     this->guidingState.st4IsActive = true;
     this->guidingState.guidingIsOn = true;
+    g_AllData->setGuidingState(true);
     this->st4State.nActive = false;
     this->st4State.eActive = false;
     this->st4State.sActive = false;
@@ -3397,6 +3416,7 @@ void MainWindow::stopST4Guiding(void) {
     this->st4Timer->stop();
     this->guidingState.st4IsActive=false;
     this->guidingState.guidingIsOn=false;
+    g_AllData->setGuidingState(false);
     this->st4State.nActive = false;
     this->st4State.eActive = false;
     this->st4State.sActive = false;

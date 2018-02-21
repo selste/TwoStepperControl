@@ -1528,6 +1528,9 @@
            <pointsize>12</pointsize>
           </font>
          </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="1" column="0">
@@ -1543,6 +1546,9 @@
           <font>
            <pointsize>12</pointsize>
           </font>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -2201,6 +2207,9 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
          </layout>
@@ -2239,6 +2248,9 @@
               <width>100</width>
               <height>16777215</height>
              </size>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -3372,7 +3384,7 @@
        </rect>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabCCDAcq">
        <attribute name="title">
