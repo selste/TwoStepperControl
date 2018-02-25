@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->tempUpdateTimer = new QTimer();
     this->tempUpdateTimer->start(30000);
     this->tcpHandBoxSendTimer = new QTimer();
-    this->tcpHandBoxSendTimer->start(1000);
+    this->tcpHandBoxSendTimer->start(2000);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -201,8 +201,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
     ui->leLong->setText(textEntry->number(g_AllData->getSiteCoords(1)));
     textEntry->clear();
-    ui->leUTCOffs->setText(textEntry->number(g_AllData->getSiteCoords(2)));
-    textEntry->clear();
+    ui->sbUTCOffs->setValue(g_AllData->getSiteCoords(2));
 
         // camera and guiding class are instantiated
     camera_client = new ccd_client(); // install a camera client for guiding via INDI
@@ -356,7 +355,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     // force a few line edit fields to accept doubles or ints only ...
     ui->leLat->setValidator(new QDoubleValidator(-90, 90, 10, this));
     ui->leLong->setValidator(new QDoubleValidator(-180, 180, 10, this));
-    ui->leUTCOffs->setValidator(new QIntValidator(-12,12,this));
     ui->leFrameSizeX->setValidator(new QIntValidator(0,30000,this));
     ui->leFrameSizeY->setValidator(new QIntValidator(0,30000,this));
     ui->lePixelSizeX->setValidator(new QDoubleValidator(0,500,3,this));
@@ -547,7 +545,7 @@ void MainWindow::updateReadings() {
     if (this->guidingState.guidingIsOn == true) {
         ui->cbDither->setEnabled(true);
     } else {
-  //      ui->cbDither->setEnabled(false);
+        ui->cbDither->setEnabled(false);
     }
     this->updateTimeAndDate();
     if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
@@ -4206,8 +4204,7 @@ void MainWindow::storeSiteData(void)  {
     leEntry->append(ui->leLong->text());
     guilong=leEntry->toDouble();
     leEntry->clear();
-    leEntry->append(ui->leUTCOffs->text());
-    guiUTCOffs=leEntry->toDouble();
+    guiUTCOffs=ui->sbUTCOffs->value();
     delete leEntry;
     g_AllData->setSiteParams(guilat,guilong,guiUTCOffs);
     g_AllData->setSiteParams(ui->leControllerName->text());
