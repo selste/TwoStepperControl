@@ -444,6 +444,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding())); // instantiate all variables for autoguiding and set a flag that takes care of correction in "displayGuideCamImage" and "correctGuideStarPosition"
     connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL())); // store focal length of guidescope to preferences
     connect(ui->pbKillHandboxMotion, SIGNAL(clicked()), this, SLOT(killHandBoxMotion())); // terminates handbox motion if handbox BT-connection is lost
+    connect(ui->pbTCPHBKillMotion, SIGNAL(clicked()), this, SLOT(killHandBoxMotion())); // terminates handbox motion if handbox TCP-connection is lost
     connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbSkipCalibration, SIGNAL(clicked()), this, SLOT(skipCalibration(void))); // does a dummy calibration for autoguiding - for testing purposes
@@ -510,9 +511,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*)),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
-    connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleBTHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
+    connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
+    connect(this, SIGNAL(tcpHandboxDataReceived()), this, SLOT(handleHandbox()),Qt::QueuedConnection); // handle data comming from the TCP/IP handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
+
     ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     ui->sbPulseGuideDuration->setValue(pulseGuideDuration);
@@ -1610,7 +1613,6 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         return 0.0;
     } // when called for the first time, make the current centroid the reference ...
     if (ui->cbLogGuidingData->isChecked()==true) {
-        qDebug() << "Centroid:" << cx << cy;
         logString.append("Measured centroid:\t");
         logString.append(QString::number((double)cx,'g',3));
         logString.append("\t");
@@ -2506,7 +2508,6 @@ void MainWindow::connectHandboxToIPSocket(void) {
     delete ipaddress;
     hbport = (qint16)(ui->sbHBTCPIPPort->value());
     if (this->HBServer->listen(*HBServerAddress,hbport) != true) {
-        qDebug() << "Could not open TCPServer for Handbox";
     } else {
         ui->pbTCPHBEnable->setEnabled(false);
         ui->pbTCPHBDisable->setEnabled(true);
@@ -2522,6 +2523,10 @@ void MainWindow::establishHBIPLink(void) {
     ui->cbTCPHandboxEnabled ->setChecked(true);
     this->HBSocket = this->HBServer->nextPendingConnection();
     this->tcpHandboxIsConnected = true;
+    ui->pbTCPHBKillMotion->setEnabled(true);
+    ui->BTHBTab->setEnabled(false);
+    ui->pbTCPHBEnable->setEnabled(false);
+    ui->pbTCPHBDisable->setEnabled(true);
 }
 
 //------------------------------------------------------------------
@@ -2533,6 +2538,9 @@ void MainWindow::disconnectHandboxFromIPSocket(void) {
     ui->pbTCPHBDisable->setEnabled(false);
     ui->listWidgetIPAddresses_2->setEnabled(true);
     ui->cbTCPHandboxEnabled->setChecked(false);
+    ui->BTHBTab->setEnabled(true);
+    ui->pbTCPHBEnable->setEnabled(true);
+    ui->pbTCPHBDisable->setEnabled(false);
     ui->sbHBTCPIPPort->setEnabled(true);
     this->tcpHandboxIsConnected = false;
 }
@@ -2547,8 +2555,7 @@ void MainWindow::readTCPHandboxData(void) {
     if (charsToBeRead >= 10) { // the handbox sends a string of the type "xxxxxxxxxx" where x is either 0 or 1
         this->tcpHBData->clear();
         this->tcpHBData->append(this->HBSocket->readAll());
-        qDebug() << "Data received: " << this->tcpHBData->data();
-        // now some action should be taken ...
+        emit tcpHandboxDataReceived();
     }
 }
 
@@ -2679,7 +2686,6 @@ void MainWindow::connectToIPSocket(void) {
     delete ipaddress;
     lxport = (qint16)(ui->sbLX200Port->value());
     if (this->LXServer->listen(*LXServerAddress,lxport) != true) {
-        qDebug() << "Could not open TCPServer";
     } else {
         ui->pbEnableTCP->setEnabled(false);
         ui->pbDisableTCP->setEnabled(true);
@@ -4272,6 +4278,10 @@ void MainWindow::startBTComm(void) { // start BT communications
     this->bt_Handbox->openPort();
     if (this->bt_Handbox->getPortState()==true) {
         ui->cbBTIsUp->setChecked(true);
+        ui->pbConnectBT->setEnabled(false);
+        ui->pbDisonnectBT->setEnabled(true);
+        ui->pbKillHandboxMotion->setEnabled(true);
+        ui->TCPIPHBtab->setEnabled(false);
     }
 }
 
@@ -4279,6 +4289,10 @@ void MainWindow::startBTComm(void) { // start BT communications
 void MainWindow::stopBTComm(void) {  // stop BT communications
     this->bt_Handbox->shutDownPort();
     ui->cbBTIsUp->setChecked(false);
+    ui->TCPIPHBtab->setEnabled(true);
+    ui->pbConnectBT->setEnabled(true);
+    ui->pbDisonnectBT->setEnabled(false);
+    ui->pbKillHandboxMotion->setEnabled(false);
 }
 
 //----------------------------------------------------------------------
@@ -4310,14 +4324,14 @@ void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it f
     ui->pbDisonnectBT->setEnabled(true);
 }
 //----------------------------------------------------------------------
-// slot that responds to the strings received from the handbox via bluetooth.
+// slot that responds to the strings received from the handbox via bluetooth or tcp/ip.
 // the arduino sends a string consisting of 5 characters. "1000" is north,
 // "0001" is east, "0010" is south and "0100" is west. the fifth value is 0
 // if the speed is single, and 1 if the speed is the "move" speed.
 // the following 5 characters control focuser motion - the selection of the 
 // drive, the direction, and the stepwidth is encoded here in five digits with values 1 or 0
 
-void MainWindow::handleBTHandbox(void) {
+void MainWindow::handleHandbox(void) {
     QString *localBTCommand; // make a deep copy of the command string
     QString *dirCommand; // the first 5 characters give the directions and the speed
     QString *focuserCommand; // the next 5 characters are commands for the focuser drives

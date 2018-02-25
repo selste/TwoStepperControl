@@ -120,7 +120,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void stopBTComm(void);
     void saveBTMACAddr(void);
     void restartBTComm(void);
-    void handleBTHandbox(void);
+    void handleHandbox(void);
     void readST4Port(void);
     void startST4Guiding(void);
     void stopST4Guiding(void);
@@ -370,6 +370,7 @@ private:
 
 signals:
     void dslrExposureDone(void);
+    void tcpHandboxDataReceived(void);
 
 };
 

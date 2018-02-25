@@ -2488,7 +2488,7 @@
         <x>410</x>
         <y>10</y>
         <width>351</width>
-        <height>201</height>
+        <height>211</height>
        </rect>
       </property>
       <property name="currentIndex">
@@ -2576,7 +2576,7 @@
         <property name="geometry">
          <rect>
           <x>170</x>
-          <y>130</y>
+          <y>140</y>
           <width>163</width>
           <height>23</height>
          </rect>
@@ -2601,6 +2601,22 @@
          </item>
         </layout>
        </widget>
+       <widget class="QPushButton" name="pbTCPHBKillMotion">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>140</y>
+          <width>151</width>
+          <height>29</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Stop HBox-Motion</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="BTHBTab">
        <attribute name="title">
@@ -2618,6 +2634,9 @@
         <layout class="QGridLayout" name="gridLayout_10">
          <item row="0" column="1">
           <widget class="QPushButton" name="pbDisonnectBT">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Disconnect BT</string>
            </property>
@@ -2651,6 +2670,9 @@
          </item>
          <item row="1" column="0">
           <widget class="QPushButton" name="pbKillHandboxMotion">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="minimumSize">
             <size>
              <width>180</width>
