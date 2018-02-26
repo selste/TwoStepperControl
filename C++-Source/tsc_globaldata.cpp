@@ -68,6 +68,8 @@ TSC_GlobalData::TSC_GlobalData() {
         this->mainScopeFocalLength=1000;
         this->ditherRangeMin=3;
         this->ditherRangeMax=15;
+        this->gotoSpeed = 110;
+        this->motionSpeed = 50;
     }
 }
 
@@ -77,6 +79,21 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete monotonicGlobalTimer;
     delete BTMACAddress;
     delete LX200IPAddress;
+}
+
+//-----------------------------------------------
+int TSC_GlobalData::getHandBoxSpeeds(short what) {
+    if (what == 0) {
+        return this->gotoSpeed;
+    } else {
+        return this->motionSpeed;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setHandBoxSpeeds(int gSpeed, int mSpeed) {
+    this->gotoSpeed=gSpeed;
+    this->motionSpeed=mSpeed;
 }
 
 //-----------------------------------------------
@@ -787,6 +804,15 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append(std::to_string(this->ditherRangeMax));
     ostr.append("// Maximum range for dithering of DSLR exposures.\n");
     outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->gotoSpeed));
+    ostr.append("// Speed for GoTo\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->motionSpeed));
+    ostr.append("// Speed for moving the mount with the handbox quickly.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -943,6 +969,14 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isDitherMax(line);
     isDitherMax >> this->ditherRangeMax;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isGoToSpeed(line);
+    isGoToSpeed >> this->gotoSpeed;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isMoveSpeed(line);
+    isMoveSpeed >> this->motionSpeed;
     infile.close(); // close the reading file for preferences
     return true;
 }

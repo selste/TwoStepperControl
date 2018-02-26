@@ -138,6 +138,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->dslrStates.ditherTravelInMSDecl = 0;
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
     this->setTrackingRate();
+    ui->sbGoToSpeed->setValue(g_AllData->getHandBoxSpeeds(0));
+    ui->sbMoveSpeed->setValue(g_AllData->getHandBoxSpeeds(1));
+    ui->rbCorrSpeed->setChecked(true); // make sure that the loaded motion speed from prefs is set, but set the system to move speed ...
 
         // GPIO pins for DSLR control
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
@@ -480,6 +483,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGdFocSmallFwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxFwdTiny())); // move guide focuser drive 1 forward
     connect(ui->pbGdFocSmallBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdTiny())); // move guide focuser drive 1 bward
     connect(ui->pbStoreDSLRSettings, SIGNAL(clicked()), this, SLOT(storeDSLRSettingsForDithering())); // store DSLR pixel size and main scope focal length for dithering
+    connect(ui->pbStoreSpeeds, SIGNAL(clicked()), this, SLOT(storeHandBoxSpeeds())); // store the goto and motion speeds for the handbox
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -4193,6 +4197,13 @@ void MainWindow::storeDSLRSettingsForDithering(void) {
 }
 
 //------------------------------------------------------------------
+// store data for handbox motion
+void MainWindow::storeHandBoxSpeeds(void) {
+    g_AllData->setHandBoxSpeeds(ui->sbGoToSpeed->value(),ui->sbMoveSpeed->value());
+    g_AllData->storeGlobalData();
+}
+
+//------------------------------------------------------------------
 // store data site from the GUI to the global data and to the .tsp file ...
 void MainWindow::storeSiteData(void)  {
     double guilat, guilong, guiUTCOffs;
@@ -4318,7 +4329,7 @@ void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it f
     ui->pbDisonnectBT->setEnabled(false);
     this->waitForNMSecs(3000);
     ui->pbConnectBT->setEnabled(true);
-    ui->pbDisonnectBT->setEnabled(true);
+    ui->pbDisonnectBT->setEnabled(false);
 }
 //----------------------------------------------------------------------
 // slot that responds to the strings received from the handbox via bluetooth or tcp/ip.

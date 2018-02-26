@@ -16,6 +16,8 @@ public:
     ~TSC_GlobalData(void);
     void storeGlobalData(void);
     bool loadGlobalData(void); // trying to load a "TSC_Preferences.tsc" datafile in the home directory
+    void setHandBoxSpeeds(int, int); // store Goto and Motion speed for handbox
+    int getHandBoxSpeeds(short); // 0 for GoToSpeed, 1 for MotionSpeed
     void setINDIState(bool); // true if INDI-Server is connected
     bool getINDIState(void);
     void setInitialStarPosition(float, float); // store the coordinates of the last click - the routine converts it also to ccd-coordinates
@@ -95,6 +97,8 @@ private:
     QString *LX200IPAddress;
     QString *HandboxIPAddress;
     double celestialSpeed;
+    int gotoSpeed;
+    int motionSpeed;
 
     struct initialStarPosStruct {
         float screenx;
