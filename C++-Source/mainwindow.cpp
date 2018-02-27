@@ -365,11 +365,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leRAGear->setValidator(new QDoubleValidator(-10000,10000,10,this));
     ui->leRAPlanetary->setValidator(new QDoubleValidator(-10000,10000,10,this));
     ui->leRAStepsize->setValidator(new QDoubleValidator(0,100,10,this));
-    ui->leRAWorm->setValidator(new QDoubleValidator(0,10000,10,this));
+    ui->leRAWorm->setValidator(new QIntValidator(0,10000,this));
     ui->leDeclGear->setValidator(new QDoubleValidator(-10000,10000,10,this));
     ui->leDeclPlanetary->setValidator(new QDoubleValidator(-10000,10000,10,this));
     ui->leDeclStepSize->setValidator(new QDoubleValidator(0,100,10,this));
-    ui->leDeclWorm->setValidator(new QDoubleValidator(0,10000,10,this));
+    ui->leDeclWorm->setValidator(new QIntValidator(0,10000,this));
 
     // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
@@ -3566,7 +3566,6 @@ void MainWindow::handleST4State(void) {
             } else {
                 raPGBwdGd((long)this->st4State.RACorrTime);
             }
-            ui->lcdST4DurationRA->display(0);
             this->st4State.RACorrTime = 0;
         }
         if ((doNCorr == true) || (doSCorr == true)) {
@@ -3576,7 +3575,6 @@ void MainWindow::handleST4State(void) {
             } else {
                 declPGMinusGd((long)this->st4State.DeclCorrTime);
             }
-            ui->lcdST4DurationDecl->display(0);
             this->st4State.DeclCorrTime = 0;
         }
         this->st4State.correctionDone = true; // corrections were carried out

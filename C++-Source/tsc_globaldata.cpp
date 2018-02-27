@@ -694,7 +694,7 @@ void TSC_GlobalData::storeGlobalData(void) {
     outfile << ostr.data();
     ostr.clear();
     ostr = std::to_string(this->gearData.wormSizeDecl);
-    ostr.append("// Number of teeth of the RA-worm.\n");
+    ostr.append("// Number of teeth of the Decl-worm.\n");
     outfile << ostr.data();
     ostr.clear();
     ostr = std::to_string(this->gearData.stepSizeDecl);
