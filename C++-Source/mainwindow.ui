@@ -1403,7 +1403,7 @@
              <number>1</number>
             </property>
             <property name="maximum">
-             <number>250</number>
+             <number>500</number>
             </property>
             <property name="value">
              <number>100</number>
@@ -1444,7 +1444,7 @@
              <number>1</number>
             </property>
             <property name="maximum">
-             <number>200</number>
+             <number>500</number>
             </property>
             <property name="value">
              <number>70</number>
@@ -1863,9 +1863,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>60</y>
+         <y>30</y>
          <width>361</width>
-         <height>121</height>
+         <height>151</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -1960,22 +1960,22 @@
         </property>
         <property name="geometry">
          <rect>
-          <x>170</x>
-          <y>10</y>
+          <x>190</x>
+          <y>30</y>
           <width>150</width>
-          <height>30</height>
+          <height>25</height>
          </rect>
         </property>
         <property name="minimumSize">
          <size>
           <width>150</width>
-          <height>30</height>
+          <height>25</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>150</width>
-          <height>30</height>
+          <height>24</height>
          </size>
         </property>
         <property name="text">
@@ -1988,35 +1988,35 @@
         </property>
         <property name="geometry">
          <rect>
-          <x>170</x>
-          <y>50</y>
+          <x>190</x>
+          <y>60</y>
           <width>150</width>
-          <height>30</height>
+          <height>25</height>
          </rect>
         </property>
         <property name="minimumSize">
          <size>
           <width>150</width>
-          <height>30</height>
+          <height>25</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>150</width>
-          <height>30</height>
+          <height>25</height>
          </size>
         </property>
         <property name="text">
          <string>Stop ST 4</string>
         </property>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>90</y>
+          <x>11</x>
+          <y>91</y>
           <width>342</width>
-          <height>23</height>
+          <height>41</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_29">
@@ -2032,7 +2032,7 @@
            <property name="minimumSize">
             <size>
              <width>60</width>
-             <height>20</height>
+             <height>30</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -2058,7 +2058,7 @@
            <property name="minimumSize">
             <size>
              <width>60</width>
-             <height>20</height>
+             <height>30</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -2078,8 +2078,8 @@
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>180</x>
-         <y>30</y>
+         <x>190</x>
+         <y>60</y>
          <width>151</width>
          <height>31</height>
         </rect>
@@ -4904,26 +4904,13 @@
        <property name="title">
         <string>DSLR-Timer</string>
        </property>
-       <widget class="Line" name="line_2">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>160</y>
-          <width>181</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>11</x>
-          <y>40</y>
+          <y>30</y>
           <width>180</width>
-          <height>127</height>
+          <height>131</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -5036,13 +5023,13 @@
                <property name="minimumSize">
                 <size>
                  <width>80</width>
-                 <height>20</height>
+                 <height>25</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
                  <width>80</width>
-                 <height>20</height>
+                 <height>25</height>
                 </size>
                </property>
               </widget>
@@ -5073,43 +5060,51 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="">
         <property name="geometry">
          <rect>
-          <x>12</x>
-          <y>180</y>
-          <width>176</width>
-          <height>213</height>
+          <x>13</x>
+          <y>160</y>
+          <width>165</width>
+          <height>32</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QLabel" name="lDSLRRep">
+           <property name="text">
+            <string>Repetitions:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_6">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>18</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="sbDSLRRepeat"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>13</x>
+          <y>200</y>
+          <width>170</width>
+          <height>95</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
-           <item>
-            <widget class="QLabel" name="lDSLRRep">
-             <property name="text">
-              <string>Repetitions:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>18</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="sbDSLRRepeat"/>
-           </item>
-          </layout>
-         </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_35">
            <item>
@@ -5138,7 +5133,7 @@
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>13</width>
+               <width>40</width>
                <height>20</height>
               </size>
              </property>
@@ -5149,14 +5144,17 @@
              <property name="minimumSize">
               <size>
                <width>50</width>
-               <height>20</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>50</width>
-               <height>20</height>
+               <height>25</height>
               </size>
+             </property>
+             <property name="digitCount">
+              <number>3</number>
              </property>
             </widget>
            </item>
@@ -5214,6 +5212,18 @@
            </property>
           </widget>
          </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>13</x>
+          <y>300</y>
+          <width>176</width>
+          <height>81</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_11">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_8">
            <item>
