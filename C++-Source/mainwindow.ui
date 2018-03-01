@@ -2010,7 +2010,7 @@
          <string>Stop ST 4</string>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>11</x>
@@ -2084,7 +2084,18 @@
          <height>31</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_33">
+       <layout class="QHBoxLayout" name="horizontalLayout_33"/>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>190</x>
+         <y>0</y>
+         <width>150</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_41">
         <item>
          <widget class="QCheckBox" name="cbSTFourIsWorking">
           <property name="enabled">
@@ -2104,19 +2115,6 @@
         </item>
        </layout>
       </widget>
-     </widget>
-     <widget class="Line" name="line_9">
-      <property name="geometry">
-       <rect>
-        <x>410</x>
-        <y>220</y>
-        <width>351</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
      </widget>
      <widget class="QGroupBox" name="gbLogLX">
       <property name="geometry">
@@ -5060,7 +5058,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>13</x>
@@ -5095,7 +5093,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>13</x>
@@ -5214,7 +5212,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>13</x>

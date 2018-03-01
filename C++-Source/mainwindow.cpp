@@ -4492,7 +4492,7 @@ void MainWindow::handleDSLRSingleExposure(void) {
     int duration;
     QElapsedTimer *lWait;
 
-    duration = ui->sbDSLRDuration->value()+0.5; // add the 500 ms for pre-release on pin 27 ...
+    duration = ui->sbDSLRDuration->value()+0.5; // add the 2000 ms for pre-release on pin 27 ...
     dslrStates.dslrExpTime=duration;
     dslrStates.dslrExposureIsRunning=true;
     dslrStates.dslrExpElapsed.start();
