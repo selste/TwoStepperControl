@@ -4147,9 +4147,11 @@ void MainWindow::storeGearData(void) {
 
     if (this->StepperDriveRA->getStopped() == false) {
         this->stopRATracking();
+        StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2)/g_AllData->getGearData(3),g_AllData->getGearData(8));
         StepperDriveRA->changeSpeedForGearChange();
         this->startRATracking();
     } else {
+        StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2)/g_AllData->getGearData(3),g_AllData->getGearData(8));
         StepperDriveRA->changeSpeedForGearChange();
     }
     StepperDriveDecl->setGearRatioAndMicrosteps(g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6)/g_AllData->getGearData(7),g_AllData->getGearData(8));
