@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <U8g2lib.h>
+#include <U8g2lib.h> 
 #include <Wire.h>
 #include <WiFi.h>
 
@@ -61,7 +61,7 @@ void setup(void) {
   pinMode(21,INPUT); // 1/20 focuser step
   pinMode(15,INPUT); // speed selection switch 
   pinMode(33,INPUT); // select focuser drive
-  pinMode(12,INPUT); // select focuser direction
+  pinMode(27,INPUT); // select focuser direction
   if (digitalRead(15) == LOW) {
     speedSwitch=LOW;
   } else {
@@ -72,7 +72,7 @@ void setup(void) {
   } else {
     fSelect=HIGH;
   }
-  if (digitalRead(12) == LOW) {
+  if (digitalRead(27) == LOW) {
     fFwd=LOW;
   } else {
     fFwd=HIGH;
@@ -110,8 +110,8 @@ void loop(void) {
     fSelect = digitalRead(33);
     switchStateChanged=1;
   }
-  if (digitalRead(12) != fFwd) {
-    fFwd = digitalRead(12);
+  if (digitalRead(27) != fFwd) {
+    fFwd = digitalRead(27);
     switchStateChanged=1;
   }
   if (digitalRead(36) != ffull) {
