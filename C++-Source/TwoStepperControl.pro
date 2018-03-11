@@ -43,13 +43,15 @@ HEADERS  += \
     tsc_bt_serialcomm.h \
     spi_drive.h
 
-INCLUDEPATH += /home/pi
-INCLUDEPATH += /home/pi/libindi/libs/
-INCLUDEPATH += /home/pi/libindi/
+# INCLUDEPATH += /home/pi
+# INCLUDEPATH += /home/pi/libindi/libs/
+# INCLUDEPATH += /home/pi/libindi/
 INCLUDEPATH += /usr/local/include/opencv2
 INCLUDEPATH += /usr/include/libindi
 
 FORMS    += mainwindow.ui
+
+QMAKE_DEFAULT_INCDIRS = \\
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/lib/release/ -lphidget21
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/lib/debug/ -lphidget21
