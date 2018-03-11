@@ -3985,7 +3985,7 @@ void MainWindow::setINDIrbuttons(bool isEnabled) {
 //------------------------------------------------------------------
 void MainWindow::setAuxDriveControls(bool isEnabled) {
     if (this->auxDriveIsStartingUp == false) {
-        ui->fAuxDrGUI->setEnabled(isEnabled);
+        ui->gbAuxdrives->setEnabled(isEnabled);
         ui->gbFocuserInGuide->setEnabled(isEnabled);
         ui->pbStoreAuxData->setEnabled(isEnabled);
         ui->sbAuxAcc->setEnabled(isEnabled);
@@ -4492,7 +4492,6 @@ void MainWindow::handleHandbox(void) {
 // slot that handles start of DSLR exposure ...
 void MainWindow::handleDSLRSingleExposure(void) {
     int duration;
-    QElapsedTimer *lWait;
 
     duration = ui->sbDSLRDuration->value()+0.5; // add the 2000 ms for pre-release on pin 27 ...
     dslrStates.dslrExpTime=duration;
@@ -4504,12 +4503,6 @@ void MainWindow::handleDSLRSingleExposure(void) {
     if (this->dslrStates.dslrSeriesRunning == false) {
         ui->pbDSLRTerminateExposure->setEnabled(true);
     }
-    digitalWrite(27,1); // set wiring pi pin 27=ring to high ... focus ...
-    lWait = new QElapsedTimer();
-    lWait->start();
-    do {
-    } while (lWait->elapsed() < 500);
-    delete lWait;
     digitalWrite(1,1); // set wiring pi pin 1=tip to high ... start exposure
 }
 
@@ -4524,8 +4517,6 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
     remTime = (this->dslrStates.dslrExpTime - round(this->dslrStates.dslrExpElapsed.elapsed()/1000.0));
     ui->lcdDSLRTimeRemaining->display(QString::number(remTime));
     if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
-        digitalWrite(27,0);
-        usleep(10);
         digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
         ui->pbDSLRSingleShot->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == false) {
@@ -4569,6 +4560,7 @@ void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
     int expsTaken;
     float tempDiff; // difference between temperature at series start and next exposure
+    long pauseBetweenExpsInMS; // time as read from the GUI between single exposures
 
     this->getTemperature(); // read the temperature sensor
     tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
@@ -4583,11 +4575,12 @@ void MainWindow::takeNextExposureInSeries(void) {
 
     if (this->dslrStates.noOfExposuresLeft > 0) {
         this->carryOutDitheringStep();
+        pauseBetweenExpsInMS = ui->sbPauseInExpSeries->value()*1000;
         wait = new QElapsedTimer();
         wait->start();
         do {
             QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
-        } while (wait->elapsed() < 10000); // just wait for 10 seconds until next exposure is taken
+        } while (wait->elapsed() < pauseBetweenExpsInMS); // just wait for a given # of seconds until next exposure is taken
         ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
         delete wait;
         this->handleDSLRSingleExposure();
@@ -4751,8 +4744,6 @@ void MainWindow::terminateDSLRSingleShot(void) {
     ui->sbDSLRDuration->setEnabled(true);
     ui->pbDSLRStartSeries->setEnabled(true);
     ui->lcdDSLRTimeRemaining->display("0");
-    digitalWrite(27,0);
-    usleep(10);
     digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
 }
 

@@ -4875,429 +4875,225 @@
      <attribute name="title">
       <string>Photo/AuxDrives</string>
      </attribute>
-     <widget class="QFrame" name="frame_2">
+     <widget class="QGroupBox" name="gbAuxdrives">
       <property name="geometry">
        <rect>
-        <x>10</x>
+        <x>380</x>
         <y>10</y>
-        <width>211</width>
+        <width>381</width>
         <height>411</height>
        </rect>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+      <property name="title">
+       <string>Auxiliary Motors</string>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <widget class="QGroupBox" name="gbDSLR">
+      <widget class="QFrame" name="fauxDrives">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>10</y>
-         <width>191</width>
-         <height>391</height>
+         <y>30</y>
+         <width>371</width>
+         <height>341</height>
         </rect>
        </property>
-       <property name="title">
-        <string>DSLR-Timer</string>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
        </property>
-       <widget class="QWidget" name="layoutWidget">
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QPushButton" name="pbStoreAuxData">
         <property name="geometry">
          <rect>
-          <x>11</x>
-          <y>30</y>
-          <width>180</width>
-          <height>131</height>
+          <x>10</x>
+          <y>280</y>
+          <width>161</width>
+          <height>51</height>
          </rect>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_27">
-           <item>
-            <widget class="QLabel" name="lDuration">
-             <property name="text">
-              <string>Duration:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="sbDSLRDuration">
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-             <property name="maximum">
-              <number>7200</number>
-             </property>
-             <property name="value">
-              <number>1</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="ldslrSecs">
-             <property name="text">
-              <string> [s]</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
-           <item>
-            <widget class="QPushButton" name="pbDSLRSingleShot">
-             <property name="minimumSize">
-              <size>
-               <width>90</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>90</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Expose</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pbDSLRTerminateExposure">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Stop</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_40">
-           <item>
-            <widget class="QLabel" name="ldslrTimeRem">
-             <property name="text">
-              <string>Time remaining:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_7">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>36</width>
-               <height>18</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_10">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_38">
-             <item>
-              <widget class="QLCDNumber" name="lcdDSLRTimeRemaining">
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>25</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>80</width>
-                 <height>25</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="ldslrMS">
-               <property name="text">
-                <string>[s]</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-        </layout>
+        <property name="text">
+         <string>Store Parameters
+to Drives</string>
+        </property>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="layoutWidget_22">
         <property name="geometry">
          <rect>
-          <x>13</x>
-          <y>160</y>
-          <width>165</width>
-          <height>32</height>
+          <x>10</x>
+          <y>200</y>
+          <width>248</width>
+          <height>71</height>
          </rect>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
-         <item>
-          <widget class="QLabel" name="lDSLRRep">
-           <property name="text">
-            <string>Repetitions:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_6">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
+        <layout class="QGridLayout" name="gridLayout_20">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lAuxAcc">
+           <property name="minimumSize">
             <size>
-             <width>18</width>
-             <height>20</height>
+             <width>170</width>
+             <height>0</height>
             </size>
            </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="sbDSLRRepeat"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>13</x>
-          <y>200</y>
-          <width>170</width>
-          <height>95</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_35">
-           <item>
-            <widget class="QLabel" name="ldslrExpNo">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Exp. #:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QLCDNumber" name="lcdDSLRExpsTaken">
-             <property name="minimumSize">
-              <size>
-               <width>50</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>50</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="digitCount">
-              <number>3</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_42">
-           <item>
-            <widget class="QPushButton" name="pbDSLRStartSeries">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Start</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="pbDSLRStopSeries">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Stop</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="cbDither">
+           <property name="maximumSize">
+            <size>
+             <width>170</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="text">
-            <string>Dither in Guiding</string>
+            <string>Acceleration [mstp/s²]:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lAuxSpeed">
+           <property name="minimumSize">
+            <size>
+             <width>170</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>170</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Max. Speed [mstp/s]:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSpinBox" name="sbAuxAcc">
+           <property name="minimumSize">
+            <size>
+             <width>70</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="minimum">
+            <number>50</number>
+           </property>
+           <property name="maximum">
+            <number>5000</number>
+           </property>
+           <property name="singleStep">
+            <number>50</number>
+           </property>
+           <property name="value">
+            <number>500</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="sbAuxSpeed">
+           <property name="minimumSize">
+            <size>
+             <width>70</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>70</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="minimum">
+            <number>50</number>
+           </property>
+           <property name="maximum">
+            <number>300</number>
+           </property>
+           <property name="singleStep">
+            <number>50</number>
+           </property>
+           <property name="value">
+            <number>300</number>
            </property>
           </widget>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QTabWidget" name="twAuxDrives">
         <property name="geometry">
          <rect>
-          <x>13</x>
-          <y>300</y>
-          <width>176</width>
-          <height>81</height>
+          <x>8</x>
+          <y>10</y>
+          <width>351</width>
+          <height>181</height>
          </rect>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_11">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <property name="minimumSize">
+         <size>
+          <width>351</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="tabAuxStatus">
+         <attribute name="title">
+          <string>Status</string>
+         </attribute>
+         <widget class="QWidget" name="layoutWidget_14">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>182</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_31">
            <item>
-            <widget class="QLabel" name="lDitherRange">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>20</height>
-              </size>
+            <widget class="QCheckBox" name="cbSPI1Open">
+             <property name="enabled">
+              <bool>false</bool>
              </property>
              <property name="text">
-              <string>Dither step [pix]: </string>
+              <string/>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLCDNumber" name="lcdDitherStep">
-             <property name="minimumSize">
-              <size>
-               <width>50</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>50</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="digitCount">
-              <number>3</number>
+            <widget class="QLabel" name="lSPI1Open">
+             <property name="text">
+              <string>SPI Channel 1 is open</string>
              </property>
             </widget>
            </item>
           </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_37">
+         </widget>
+         <widget class="QWidget" name="layoutWidget_15">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>40</y>
+            <width>231</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_23">
            <item>
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Temp. Diff. [°C]:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLCDNumber" name="lcdTempSeriesDiff">
-             <property name="minimumSize">
-              <size>
-               <width>50</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>50</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="digitCount">
-              <number>3</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_34">
-           <item>
-            <widget class="QCheckBox" name="cbExpSeriesDone">
+            <widget class="QCheckBox" name="cbAuxBoardIsConnected">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -5316,523 +5112,29 @@
              <property name="text">
               <string/>
              </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="lExpSeriesDone">
-             <property name="minimumSize">
-              <size>
-               <width>90</width>
-               <height>20</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>90</width>
-               <height>20</height>
-              </size>
-             </property>
+            <widget class="QLabel" name="lAuxBoardConn">
              <property name="text">
-              <string>Series done</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-     </widget>
-     <widget class="QFrame" name="frame_5">
-      <property name="geometry">
-       <rect>
-        <x>230</x>
-        <y>10</y>
-        <width>541</width>
-        <height>411</height>
-       </rect>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <widget class="QGroupBox" name="gbAuxdrives">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>0</y>
-         <width>531</width>
-         <height>401</height>
-        </rect>
-       </property>
-       <property name="title">
-        <string>Auxiliary Drives</string>
-       </property>
-       <widget class="QFrame" name="fauxDrives">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>40</y>
-          <width>521</width>
-          <height>361</height>
-         </rect>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <widget class="QPushButton" name="pbStoreAuxData">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>280</y>
-           <width>331</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Store Parameters to File and Drives</string>
-         </property>
-        </widget>
-        <widget class="QGroupBox" name="gb">
-         <property name="geometry">
-          <rect>
-           <x>350</x>
-           <y>210</y>
-           <width>171</width>
-           <height>141</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>Microsteps</string>
-         </property>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>11</x>
-            <y>39</y>
-            <width>148</width>
-            <height>92</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_21">
-           <item row="0" column="0">
-            <widget class="QRadioButton" name="rbAuxMs1">
-             <property name="minimumSize">
-              <size>
-               <width>70</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/1</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QRadioButton" name="rbAuxMs8">
-             <property name="minimumSize">
-              <size>
-               <width>70</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/8</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QRadioButton" name="rbAuxMs2">
-             <property name="minimumSize">
-              <size>
-               <width>70</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/2</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QRadioButton" name="rbAuxMs16">
-             <property name="minimumSize">
-              <size>
-               <width>70</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/16</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QRadioButton" name="rbAuxMs4">
-             <property name="minimumSize">
-              <size>
-               <width>70</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/4</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QRadioButton" name="rbAuxMs32">
-             <property name="minimumSize">
-              <size>
-               <width>70</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>70</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/32</string>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
+              <string>Auxiliary board is connected</string>
              </property>
             </widget>
            </item>
           </layout>
          </widget>
         </widget>
-        <widget class="QWidget" name="layoutWidget_22">
-         <property name="geometry">
-          <rect>
-           <x>12</x>
-           <y>200</y>
-           <width>328</width>
-           <height>74</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_20">
-          <item row="0" column="0">
-           <widget class="QLabel" name="lAuxAcc">
-            <property name="minimumSize">
-             <size>
-              <width>170</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>170</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Acceleration [mstp/s²]:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="lAuxSpeed">
-            <property name="minimumSize">
-             <size>
-              <width>170</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>170</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Max. Speed [mstp/s]:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="sbAuxAcc">
-            <property name="minimum">
-             <number>50</number>
-            </property>
-            <property name="maximum">
-             <number>5000</number>
-            </property>
-            <property name="singleStep">
-             <number>50</number>
-            </property>
-            <property name="value">
-             <number>500</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="sbAuxSpeed">
-            <property name="minimum">
-             <number>50</number>
-            </property>
-            <property name="maximum">
-             <number>300</number>
-            </property>
-            <property name="singleStep">
-             <number>50</number>
-            </property>
-            <property name="value">
-             <number>300</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QPushButton" name="pbStopAuxDrives">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>310</y>
-           <width>331</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Stop auxiliary drives</string>
-         </property>
-        </widget>
-        <widget class="QFrame" name="fAuxDrGUI">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>0</y>
-           <width>531</width>
-           <height>201</height>
-          </rect>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <widget class="QWidget" name="layoutWidget_15">
-          <property name="geometry">
-           <rect>
-            <x>210</x>
-            <y>10</y>
-            <width>191</width>
-            <height>72</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_23">
-           <item row="0" column="0">
-            <widget class="QLabel" name="lNameAux2">
-             <property name="text">
-              <string>Name:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="leNameAux2">
-             <property name="minimumSize">
-              <size>
-               <width>130</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>130</width>
-               <height>30</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="lAuxSteps2">
-             <property name="text">
-              <string>Steps:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="sbStepsAux2">
-             <property name="minimum">
-              <number>-50000</number>
-             </property>
-             <property name="maximum">
-              <number>50000</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="layoutWidget_16">
-          <property name="geometry">
-           <rect>
-            <x>210</x>
-            <y>90</y>
-            <width>194</width>
-            <height>61</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_25">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pbFwdMovAux2">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>+</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pbFwdMovAux2_Tenth">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/5 +</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="pbFwdMovAux2_Thirth">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/20 +</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QPushButton" name="pbBwdMovAux2">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>-</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QPushButton" name="pbBwdMovAux2_Tenth">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/5 -</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="pbBwdMovAux2_Thirth">
-             <property name="minimumSize">
-              <size>
-               <width>60</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>1/20 -</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
+        <widget class="QWidget" name="tabAuxDrive1">
+         <attribute name="title">
+          <string>Aux 1</string>
+         </attribute>
          <widget class="QWidget" name="layoutWidget_17">
           <property name="geometry">
            <rect>
             <x>10</x>
             <y>10</y>
             <width>191</width>
-            <height>72</height>
+            <height>61</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_22">
@@ -5848,13 +5150,13 @@
              <property name="minimumSize">
               <size>
                <width>130</width>
-               <height>30</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>130</width>
-               <height>30</height>
+               <height>25</height>
               </size>
              </property>
             </widget>
@@ -5868,137 +5170,26 @@
            </item>
            <item row="1" column="1">
             <widget class="QSpinBox" name="sbStepsAux1">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
              <property name="minimum">
-              <number>-50000</number>
+              <number>-500000</number>
              </property>
              <property name="maximum">
-              <number>50000</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QWidget" name="layoutWidget_18">
-          <property name="geometry">
-           <rect>
-            <x>210</x>
-            <y>160</y>
-            <width>110</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_22">
-           <item>
-            <widget class="QCheckBox" name="cbAuxDr2Active">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lDr2Act">
-             <property name="font">
-              <font>
-               <pointsize>12</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Drive active</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-         <widget class="QGroupBox" name="gbSelectGuiderFocusMotor">
-          <property name="geometry">
-           <rect>
-            <x>420</x>
-            <y>10</y>
-            <width>101</width>
-            <height>171</height>
-           </rect>
-          </property>
-          <property name="title">
-           <string>Guider Drive</string>
-          </property>
-          <widget class="QRadioButton" name="rbNoFinderFocuser">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>30</y>
-             <width>71</width>
-             <height>26</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>None</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-          </widget>
-          <widget class="QRadioButton" name="rbNo1FinderFocuser">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>60</y>
-             <width>71</width>
-             <height>26</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>No. 1</string>
-           </property>
-          </widget>
-          <widget class="QRadioButton" name="rbNo2FinderFocuser">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>90</y>
-             <width>71</width>
-             <height>26</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>No. 2</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </widget>
-         <widget class="QWidget" name="layoutWidget_19">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>160</y>
-            <width>110</width>
-            <height>23</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_21">
-           <item>
-            <widget class="QCheckBox" name="cbAuxDr1Active">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lDr1Act">
-             <property name="font">
-              <font>
-               <pointsize>12</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Drive active</string>
+              <number>500000</number>
              </property>
             </widget>
            </item>
@@ -6008,7 +5199,7 @@
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>90</y>
+            <y>80</y>
             <width>194</width>
             <height>60</height>
            </rect>
@@ -6094,92 +5285,1137 @@
            </item>
           </layout>
          </widget>
-         <widget class="Line" name="line_3">
+         <widget class="QWidget" name="layoutWidget_16">
           <property name="geometry">
            <rect>
-            <x>400</x>
+            <x>210</x>
             <y>10</y>
-            <width>21</width>
-            <height>181</height>
+            <width>104</width>
+            <height>23</height>
            </rect>
           </property>
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+          <layout class="QHBoxLayout" name="horizontalLayout_21">
+           <item>
+            <widget class="QCheckBox" name="cbAuxDr1Active">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lDr1Act">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Drive active</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tabAux2">
+         <attribute name="title">
+          <string>Aux 2</string>
+         </attribute>
+         <widget class="QWidget" name="layoutWidget_18">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>80</y>
+            <width>194</width>
+            <height>61</height>
+           </rect>
           </property>
+          <layout class="QGridLayout" name="gridLayout_25">
+           <item row="0" column="1">
+            <widget class="QPushButton" name="pbFwdMovAux2_Tenth">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>1/5 +</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="pbFwdMovAux2_Thirth">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>1/20 +</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pbBwdMovAux2">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>-</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pbBwdMovAux2_Tenth">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>1/5 -</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="pbBwdMovAux2_Thirth">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>1/20 -</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="pbFwdMovAux2">
+             <property name="minimumSize">
+              <size>
+               <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>+</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="layoutWidget_19">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>191</width>
+            <height>61</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_23">
+           <item row="0" column="0">
+            <widget class="QLabel" name="lNameAux2">
+             <property name="text">
+              <string>Name:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="leNameAux2">
+             <property name="minimumSize">
+              <size>
+               <width>130</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>130</width>
+               <height>25</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="lAuxSteps2">
+             <property name="text">
+              <string>Steps:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QSpinBox" name="sbStepsAux2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="minimum">
+              <number>-50000</number>
+             </property>
+             <property name="maximum">
+              <number>50000</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="layoutWidget_21">
+          <property name="geometry">
+           <rect>
+            <x>210</x>
+            <y>10</y>
+            <width>104</width>
+            <height>23</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_47">
+           <item>
+            <widget class="QCheckBox" name="cbAuxDr2Active">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lDr2Act">
+             <property name="font">
+              <font>
+               <pointsize>12</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Drive active</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tabAuxDrGuider">
+         <attribute name="title">
+          <string>Guider</string>
+         </attribute>
+         <widget class="QGroupBox" name="gbSelectGuiderFocusMotor">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>161</width>
+            <height>131</height>
+           </rect>
+          </property>
+          <property name="title">
+           <string>Guider Drive</string>
+          </property>
+          <widget class="QWidget" name="layoutWidget_23">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>30</y>
+             <width>131</width>
+             <height>95</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_12">
+            <item>
+             <widget class="QRadioButton" name="rbNoFinderFocuser">
+              <property name="text">
+               <string>None</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNo1FinderFocuser">
+              <property name="text">
+               <string>Drive No. 1</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNo2FinderFocuser">
+              <property name="text">
+               <string>Drive No. 2</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tabAuxDriveMicrosteps">
+         <attribute name="title">
+          <string>MSteps</string>
+         </attribute>
+         <widget class="QGroupBox" name="gb">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>181</width>
+            <height>131</height>
+           </rect>
+          </property>
+          <property name="title">
+           <string>Microsteps</string>
+          </property>
+          <widget class="QWidget" name="layoutWidget_8">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>30</y>
+             <width>151</width>
+             <height>101</height>
+            </rect>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_21">
+            <item row="0" column="0">
+             <widget class="QRadioButton" name="rbAuxMs1">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>1/1</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QRadioButton" name="rbAuxMs8">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>1/8</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QRadioButton" name="rbAuxMs2">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>1/2</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QRadioButton" name="rbAuxMs16">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>1/16</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QRadioButton" name="rbAuxMs4">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>1/4</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QRadioButton" name="rbAuxMs32">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>1/32</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </widget>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QPushButton" name="pbStopAuxDrives">
         <property name="geometry">
          <rect>
-          <x>130</x>
-          <y>0</y>
-          <width>182</width>
-          <height>23</height>
+          <x>190</x>
+          <y>280</y>
+          <width>171</width>
+          <height>51</height>
          </rect>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_31">
-         <item>
-          <widget class="QCheckBox" name="cbSPI1Open">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lSPI1Open">
-           <property name="text">
-            <string>SPI Channel 1 is open</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>320</x>
-          <y>0</y>
-          <width>193</width>
-          <height>23</height>
-         </rect>
+        <property name="text">
+         <string>Stop auxiliary
+drives</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_23">
-         <item>
-          <widget class="QCheckBox" name="cbAuxBoardIsConnected">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>20</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>20</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lAuxBoardConn">
-           <property name="text">
-            <string>Aux board is connected</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
       </widget>
+     </widget>
+     <widget class="QGroupBox" name="gbDSLR">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>351</width>
+        <height>411</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>DSLR-Timer</string>
+      </property>
+      <widget class="Line" name="line_2">
+       <property name="geometry">
+        <rect>
+         <x>160</x>
+         <y>30</y>
+         <width>16</width>
+         <height>281</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+      <widget class="QLabel" name="lSingelExp">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>40</y>
+         <width>131</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Single Exposure:</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_4">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>40</y>
+         <width>151</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Exposure Series:</string>
+       </property>
+      </widget>
+      <widget class="Line" name="line_3">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>61</y>
+         <width>118</width>
+         <height>3</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="Line" name="line_7">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>61</y>
+         <width>118</width>
+         <height>3</height>
+        </rect>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbDSLRTerminateExposure">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>260</y>
+         <width>151</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>1000</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Stop Exposure</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbDSLRSingleShot">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>210</y>
+         <width>151</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>1000</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Start Exposure</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbDSLRStopSeries">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>260</y>
+         <width>171</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>60</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Stop Series</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbDSLRStartSeries">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>210</y>
+         <width>171</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Start Series</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="ldslrTimeRem">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>113</y>
+         <width>113</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Time remaining:</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>3</x>
+         <y>137</y>
+         <width>104</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QLCDNumber" name="lcdDSLRTimeRemaining">
+          <property name="minimumSize">
+           <size>
+            <width>80</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>80</width>
+            <height>25</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="ldslrMS">
+          <property name="text">
+           <string>[s]</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>72</y>
+         <width>151</width>
+         <height>32</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <item>
+         <widget class="QLabel" name="lDSLRRep">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Repetitions:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="sbDSLRRepeat">
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>60</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>110</y>
+         <width>164</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_35">
+        <item>
+         <widget class="QLabel" name="ldslrExpNo">
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>60</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Exp. #:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLCDNumber" name="lcdDSLRExpsTaken">
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="digitCount">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QCheckBox" name="cbDither">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>180</y>
+         <width>168</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>20</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>20</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Dither in Guiding</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>140</y>
+         <width>135</width>
+         <height>32</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_10">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Pause [s]:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="sbPauseInExpSeries">
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>60</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+          <property name="minimum">
+           <number>5</number>
+          </property>
+          <property name="maximum">
+           <number>30</number>
+          </property>
+          <property name="value">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>171</x>
+         <y>320</y>
+         <width>176</width>
+         <height>90</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QLabel" name="lDitherRange">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Dither step [pix]: </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLCDNumber" name="lcdDitherStep">
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="digitCount">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_37">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Temp. Diff. [°C]:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLCDNumber" name="lcdTempSeriesDiff">
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="digitCount">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_34">
+          <item>
+           <widget class="QCheckBox" name="cbExpSeriesDone">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lExpSeriesDone">
+            <property name="minimumSize">
+             <size>
+              <width>90</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>90</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Series done</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>2</x>
+         <y>71</y>
+         <width>161</width>
+         <height>32</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_22">
+        <item>
+         <widget class="QLabel" name="lDuration">
+          <property name="text">
+           <string>Duration:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="sbDSLRDuration">
+          <property name="minimumSize">
+           <size>
+            <width>70</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>70</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+          <property name="maximum">
+           <number>7200</number>
+          </property>
+          <property name="value">
+           <number>1</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="ldslrSecs">
+          <property name="minimumSize">
+           <size>
+            <width>20</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>20</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string> [s]</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="Line" name="line_8">
+      <property name="geometry">
+       <rect>
+        <x>360</x>
+        <y>10</y>
+        <width>20</width>
+        <height>401</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="gearTab">
