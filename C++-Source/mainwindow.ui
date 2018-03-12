@@ -4878,7 +4878,7 @@
      <widget class="QGroupBox" name="gbAuxdrives">
       <property name="geometry">
        <rect>
-        <x>380</x>
+        <x>390</x>
         <y>10</y>
         <width>381</width>
         <height>411</height>
@@ -4895,7 +4895,7 @@
         <rect>
          <x>10</x>
          <y>30</y>
-         <width>371</width>
+         <width>351</width>
          <height>341</height>
         </rect>
        </property>
@@ -4910,7 +4910,7 @@
          <rect>
           <x>10</x>
           <y>280</y>
-          <width>161</width>
+          <width>151</width>
           <height>51</height>
          </rect>
         </property>
@@ -5036,13 +5036,13 @@ to Drives</string>
          <rect>
           <x>8</x>
           <y>10</y>
-          <width>351</width>
+          <width>331</width>
           <height>181</height>
          </rect>
         </property>
         <property name="minimumSize">
          <size>
-          <width>351</width>
+          <width>330</width>
           <height>0</height>
          </size>
         </property>
@@ -5201,7 +5201,7 @@ to Drives</string>
             <x>10</x>
             <y>80</y>
             <width>194</width>
-            <height>60</height>
+            <height>61</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_24">
@@ -5210,6 +5210,12 @@ to Drives</string>
              <property name="minimumSize">
               <size>
                <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
                <height>25</height>
               </size>
              </property>
@@ -5226,6 +5232,12 @@ to Drives</string>
                <height>25</height>
               </size>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
              <property name="text">
               <string>1/5 +</string>
              </property>
@@ -5236,6 +5248,12 @@ to Drives</string>
              <property name="minimumSize">
               <size>
                <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
                <height>25</height>
               </size>
              </property>
@@ -5252,6 +5270,12 @@ to Drives</string>
                <height>25</height>
               </size>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
              <property name="text">
               <string>-</string>
              </property>
@@ -5265,6 +5289,12 @@ to Drives</string>
                <height>25</height>
               </size>
              </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
              <property name="text">
               <string>1/5 -</string>
              </property>
@@ -5275,6 +5305,12 @@ to Drives</string>
              <property name="minimumSize">
               <size>
                <width>60</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
                <height>25</height>
               </size>
              </property>
@@ -5554,14 +5590,14 @@ to Drives</string>
         </widget>
         <widget class="QWidget" name="tabAuxDrGuider">
          <attribute name="title">
-          <string>Guider</string>
+          <string>Guider/MSteps</string>
          </attribute>
          <widget class="QGroupBox" name="gbSelectGuiderFocusMotor">
           <property name="geometry">
            <rect>
             <x>10</x>
             <y>10</y>
-            <width>161</width>
+            <width>141</width>
             <height>131</height>
            </rect>
           </property>
@@ -5608,17 +5644,12 @@ to Drives</string>
            </layout>
           </widget>
          </widget>
-        </widget>
-        <widget class="QWidget" name="tabAuxDriveMicrosteps">
-         <attribute name="title">
-          <string>MSteps</string>
-         </attribute>
          <widget class="QGroupBox" name="gb">
           <property name="geometry">
            <rect>
-            <x>10</x>
+            <x>170</x>
             <y>10</y>
-            <width>181</width>
+            <width>151</width>
             <height>131</height>
            </rect>
           </property>
@@ -5630,7 +5661,7 @@ to Drives</string>
             <rect>
              <x>10</x>
              <y>30</y>
-             <width>151</width>
+             <width>148</width>
              <height>101</height>
             </rect>
            </property>
@@ -5758,14 +5789,27 @@ to Drives</string>
            </layout>
           </widget>
          </widget>
+         <widget class="Line" name="line_10">
+          <property name="geometry">
+           <rect>
+            <x>152</x>
+            <y>13</y>
+            <width>20</width>
+            <height>121</height>
+           </rect>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
         </widget>
        </widget>
        <widget class="QPushButton" name="pbStopAuxDrives">
         <property name="geometry">
          <rect>
-          <x>190</x>
+          <x>170</x>
           <y>280</y>
-          <width>171</width>
+          <width>161</width>
           <height>51</height>
          </rect>
         </property>
@@ -5781,7 +5825,7 @@ drives</string>
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>351</width>
+        <width>361</width>
         <height>411</height>
        </rect>
       </property>
@@ -5791,10 +5835,10 @@ drives</string>
       <widget class="Line" name="line_2">
        <property name="geometry">
         <rect>
-         <x>160</x>
+         <x>162</x>
          <y>30</y>
          <width>16</width>
-         <height>281</height>
+         <height>271</height>
         </rect>
        </property>
        <property name="orientation">
@@ -5972,7 +6016,7 @@ drives</string>
         <string>Time remaining:</string>
        </property>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>3</x>
@@ -6007,7 +6051,7 @@ drives</string>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>180</x>
@@ -6057,7 +6101,7 @@ drives</string>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>180</x>
@@ -6145,7 +6189,7 @@ drives</string>
         <string>Dither in Guiding</string>
        </property>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>180</x>
@@ -6195,161 +6239,174 @@ drives</string>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="Line" name="line_9">
        <property name="geometry">
         <rect>
-         <x>171</x>
-         <y>320</y>
-         <width>176</width>
-         <height>90</height>
+         <x>0</x>
+         <y>303</y>
+         <width>351</width>
+         <height>16</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>387</y>
+         <width>164</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_34">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_8">
-          <item>
-           <widget class="QLabel" name="lDitherRange">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Dither step [pix]: </string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLCDNumber" name="lcdDitherStep">
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="digitCount">
-             <number>3</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QCheckBox" name="cbExpSeriesDone">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_37">
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Temp. Diff. [°C]:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLCDNumber" name="lcdTempSeriesDiff">
-            <property name="minimumSize">
-             <size>
-              <width>50</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>50</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="digitCount">
-             <number>3</number>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QLabel" name="lExpSeriesDone">
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>90</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Series done</string>
+          </property>
+         </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_34">
-          <item>
-           <widget class="QCheckBox" name="cbExpSeriesDone">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="lExpSeriesDone">
-            <property name="minimumSize">
-             <size>
-              <width>90</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>90</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Series done</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
+         <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>2</x>
-         <y>71</y>
-         <width>161</width>
+         <x>0</x>
+         <y>322</y>
+         <width>331</width>
+         <height>58</height>
+        </rect>
+       </property>
+       <layout class="QFormLayout" name="formLayout_5">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lDitherRange">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Last dither step radius [pix]: </string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLCDNumber" name="lcdDitherStep">
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="digitCount">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Temperature difference to last exp. [°C]:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLCDNumber" name="lcdTempSeriesDiff">
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="digitCount">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>3</x>
+         <y>72</y>
+         <width>163</width>
          <height>32</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_22">
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
         <item>
          <widget class="QLabel" name="lDuration">
           <property name="text">
@@ -6361,13 +6418,13 @@ drives</string>
          <widget class="QSpinBox" name="sbDSLRDuration">
           <property name="minimumSize">
            <size>
-            <width>70</width>
+            <width>65</width>
             <height>30</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>70</width>
+            <width>65</width>
             <height>30</height>
            </size>
           </property>
@@ -6407,7 +6464,7 @@ drives</string>
      <widget class="Line" name="line_8">
       <property name="geometry">
        <rect>
-        <x>360</x>
+        <x>370</x>
         <y>10</y>
         <width>20</width>
         <height>401</height>
