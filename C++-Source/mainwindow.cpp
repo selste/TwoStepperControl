@@ -2934,6 +2934,8 @@ void MainWindow::LXsyncMount(void) {
         lestr = QString::number(this->decl, 'g', 8);
         ui->lineEditDecl->setText(lestr);
         ui->leLX200Decl->setText(lestr);
+        ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
+        ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
     }
 }
 
