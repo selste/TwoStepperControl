@@ -166,6 +166,8 @@ private slots: // callbacks for (mainly) GUI widgets
     void establishHBIPLink(void);
     void sendDataToTCPHandboxSlot(void);
     void storeHandBoxSpeeds(void);
+    void determineParkingPosition(void);
+    void gotoParkPosition(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount

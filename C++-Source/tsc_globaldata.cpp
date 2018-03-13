@@ -70,6 +70,8 @@ TSC_GlobalData::TSC_GlobalData() {
         this->ditherRangeMax=15;
         this->gotoSpeed = 110;
         this->motionSpeed = 50;
+        this->parkingHA = 0.0;
+        this->parkingDecl = 0.0;
     }
 }
 
@@ -79,6 +81,21 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete monotonicGlobalTimer;
     delete BTMACAddress;
     delete LX200IPAddress;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setParkingPosition(float ha, float decl) {
+    this->parkingHA = ha;
+    this->parkingDecl = decl;
+}
+
+//-----------------------------------------------
+float TSC_GlobalData::getParkingPosition(short what) {
+    if (what == 0) {
+        return this->parkingHA;
+    } else {
+        return this->parkingDecl;
+    }
 }
 
 //-----------------------------------------------
@@ -813,6 +830,14 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Speed for moving the mount with the handbox quickly.\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr.append(std::to_string(this->parkingHA));
+    ostr.append("// Hour angle of parking position.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(std::to_string(this->parkingDecl));
+    ostr.append("// Declination of parking position.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -977,6 +1002,14 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isMoveSpeed(line);
     isMoveSpeed >> this->motionSpeed;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isParkingHA(line);
+    isParkingHA >> this->parkingHA;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isParkingDecl(line);
+    isParkingDecl >> this->parkingDecl;
     infile.close(); // close the reading file for preferences
     return true;
 }

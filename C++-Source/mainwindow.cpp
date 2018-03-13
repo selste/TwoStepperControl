@@ -205,6 +205,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leLong->setText(textEntry->number(g_AllData->getSiteCoords(1)));
     textEntry->clear();
     ui->sbUTCOffs->setValue(g_AllData->getSiteCoords(2));
+    ui->lcdHAPark->display(g_AllData->getParkingPosition(0));
+    ui->lcdDecPark->display(g_AllData->getParkingPosition(1));
 
         // camera and guiding class are instantiated
     camera_client = new ccd_client(); // install a camera client for guiding via INDI
@@ -484,6 +486,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGdFocSmallBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdTiny())); // move guide focuser drive 1 bward
     connect(ui->pbStoreDSLRSettings, SIGNAL(clicked()), this, SLOT(storeDSLRSettingsForDithering())); // store DSLR pixel size and main scope focal length for dithering
     connect(ui->pbStoreSpeeds, SIGNAL(clicked()), this, SLOT(storeHandBoxSpeeds())); // store the goto and motion speeds for the handbox
+    connect(ui->pbStorePark, SIGNAL(clicked()), this, SLOT(determineParkingPosition())); // store the actual position as parking position
+    connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -760,6 +764,7 @@ void MainWindow::syncMount(void) {
     // a microtimer starts ...
     this->startRATracking(); // start tracking again
     ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
+    ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
 }
 //---------------------------------------------------------------------
 // that one handles GOTO-commands. it leaves when the destination is reached ...
@@ -1034,6 +1039,35 @@ void MainWindow::startGoToObject(void) {
     this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
     delete waitState;
     return;
+}
+
+//------------------------------------------------------------------
+// this routine computes a fixed parking position from the current scope position
+void MainWindow::determineParkingPosition(void) {
+    float parkHA;
+    float parkDecl;
+
+    parkHA = (g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
+    while (parkHA < 0) {
+        parkHA += 360;
+    }
+    while (parkHA > 360) {
+        parkHA -= 360;
+    }
+    parkDecl = g_AllData->getActualScopePosition(1); // got current position
+    ui->lcdHAPark->display(parkHA);
+    ui->lcdDecPark->display(parkDecl);
+    g_AllData->setParkingPosition(parkHA, parkDecl);
+    g_AllData->storeGlobalData(); // ... and stored it to the preferences file
+}
+
+//------------------------------------------------------------------
+// this routine parks the telescope at the stored parking position
+void MainWindow::gotoParkPosition(void) {
+    this->ra   = g_AllData->getLocalSTime()*15 - g_AllData->getParkingPosition(0);
+    this->decl = g_AllData->getParkingPosition(1);
+    this->startGoToObject();
+    this->stopRATracking();
 }
 
 //------------------------------------------------------------------
@@ -4504,6 +4538,7 @@ void MainWindow::handleDSLRSingleExposure(void) {
         ui->pbDSLRTerminateExposure->setEnabled(true);
     }
     digitalWrite(1,1); // set wiring pi pin 1=tip to high ... start exposure
+    this->waitForNMSecs(250);
 }
 
 //------------------------------------------------------------------
@@ -4518,6 +4553,7 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
     ui->lcdDSLRTimeRemaining->display(QString::number(remTime));
     if (this->dslrStates.dslrExpElapsed.elapsed() > this->ui->sbDSLRDuration->value()*1000) {
         digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
+        this->waitForNMSecs(250);
         ui->pbDSLRSingleShot->setEnabled(true);
         if (this->dslrStates.dslrSeriesRunning == false) {
             ui->pbDSLRTerminateExposure->setEnabled(false);
@@ -4745,6 +4781,7 @@ void MainWindow::terminateDSLRSingleShot(void) {
     ui->pbDSLRStartSeries->setEnabled(true);
     ui->lcdDSLRTimeRemaining->display("0");
     digitalWrite(1,0); // set wiring pi pin 1=tip/expose to low ...
+    this->waitForNMSecs(250);
 }
 
 //---------------------------------------------------------------------

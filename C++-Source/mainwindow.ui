@@ -1832,7 +1832,7 @@
     </widget>
     <widget class="QWidget" name="LX200Tab">
      <attribute name="title">
-      <string>LX200/BT/ST 4</string>
+      <string>LX200/HB/ST 4</string>
      </attribute>
      <widget class="Line" name="line">
       <property name="geometry">
@@ -7715,7 +7715,7 @@ drives</string>
         <x>10</x>
         <y>10</y>
         <width>321</width>
-        <height>231</height>
+        <height>221</height>
        </rect>
       </property>
       <property name="title">
@@ -7808,6 +7808,127 @@ drives</string>
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
+     </widget>
+     <widget class="Line" name="line_11">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>230</y>
+        <width>741</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="gbScopeParking">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>260</y>
+        <width>731</width>
+        <height>141</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Scope Parking</string>
+      </property>
+      <widget class="QPushButton" name="pbGoToPark">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>40</y>
+         <width>181</width>
+         <height>81</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Go to
+Parking Position</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbStorePark">
+       <property name="geometry">
+        <rect>
+         <x>520</x>
+         <y>40</y>
+         <width>181</width>
+         <height>81</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Store
+Parking Position</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>40</y>
+         <width>311</width>
+         <height>81</height>
+        </rect>
+       </property>
+       <layout class="QFormLayout" name="formLayout_6">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lHAPark">
+          <property name="text">
+           <string>Park Pos. Hour Angle:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLCDNumber" name="lcdHAPark">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="digitCount">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lDeclPark">
+          <property name="text">
+           <string>Park Pos. Declination:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLCDNumber" name="lcdDecPark">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="digitCount">
+           <number>8</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
    </widget>

@@ -80,6 +80,8 @@ public:
     int getMainScopeFocalLength(void);
     void setDitherRange(int, bool); // set dither range; first argument is the number, second is the flag "isMinimum"
     int getDitherRange(bool); // the boolean indicates whether the number requested "isMinimum"
+    void setParkingPosition(float, float); // store the actual position as parking position
+    float getParkingPosition(short); // get the stored parking position. 0 is for the hour angle, 1 is for declination.
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -99,6 +101,8 @@ private:
     double celestialSpeed;
     int gotoSpeed;
     int motionSpeed;
+    float parkingHA;
+    float parkingDecl;
 
     struct initialStarPosStruct {
         float screenx;
