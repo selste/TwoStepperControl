@@ -7830,8 +7830,8 @@ drives</string>
        <rect>
         <x>20</x>
         <y>260</y>
-        <width>731</width>
-        <height>141</height>
+        <width>521</width>
+        <height>161</height>
        </rect>
       </property>
       <property name="title">
@@ -7843,7 +7843,7 @@ drives</string>
          <x>330</x>
          <y>40</y>
          <width>181</width>
-         <height>81</height>
+         <height>51</height>
         </rect>
        </property>
        <property name="text">
@@ -7854,10 +7854,10 @@ Parking Position</string>
       <widget class="QPushButton" name="pbStorePark">
        <property name="geometry">
         <rect>
-         <x>520</x>
-         <y>40</y>
+         <x>330</x>
+         <y>100</y>
          <width>181</width>
-         <height>81</height>
+         <height>51</height>
         </rect>
        </property>
        <property name="text">
@@ -7896,6 +7896,9 @@ Parking Position</string>
             <height>30</height>
            </size>
           </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
           <property name="digitCount">
            <number>10</number>
           </property>
@@ -7922,13 +7925,30 @@ Parking Position</string>
             <height>30</height>
            </size>
           </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
           <property name="digitCount">
-           <number>8</number>
+           <number>10</number>
           </property>
          </widget>
         </item>
        </layout>
       </widget>
+     </widget>
+     <widget class="QPushButton" name="pbSyncToPark">
+      <property name="geometry">
+       <rect>
+        <x>550</x>
+        <y>300</y>
+        <width>141</width>
+        <height>111</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Sync to 
+ Parking Position</string>
+      </property>
      </widget>
     </widget>
    </widget>

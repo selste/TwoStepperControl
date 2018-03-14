@@ -1,4 +1,12 @@
-﻿#include "mainwindow.h"
+﻿
+//-------------------------------------------------------------------------------------
+// this is the main class of TSC. it virtually manages all user interaction and all
+// device - driven actions. these are timing tasks, management of the GUI and
+// operations such as goto, guiding, reacting to user inputs and handboxes and
+// interaction with external programs via ST4 and LX200.
+// w. birkfellner, 2018
+
+#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <qtimer.h>
 #include <QtConcurrent/qtconcurrentrun.h>
@@ -488,6 +496,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStoreSpeeds, SIGNAL(clicked()), this, SLOT(storeHandBoxSpeeds())); // store the goto and motion speeds for the handbox
     connect(ui->pbStorePark, SIGNAL(clicked()), this, SLOT(determineParkingPosition())); // store the actual position as parking position
     connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
+    connect(ui->pbSyncToPark, SIGNAL(clicked()), this, SLOT(syncParkPosition())); // if the scope is parked, sync it to the known parking position
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
     connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
@@ -1068,6 +1077,14 @@ void MainWindow::gotoParkPosition(void) {
     this->decl = g_AllData->getParkingPosition(1);
     this->startGoToObject();
     this->stopRATracking();
+}
+
+//------------------------------------------------------------------
+// this routine syncs the telescope at the stored parking position
+void MainWindow::syncParkPosition(void) {
+    this->ra   = g_AllData->getLocalSTime()*15 - g_AllData->getParkingPosition(0);
+    this->decl = g_AllData->getParkingPosition(1);
+    this->syncMount(); // sync the mount
 }
 
 //------------------------------------------------------------------

@@ -168,6 +168,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void storeHandBoxSpeeds(void);
     void determineParkingPosition(void);
     void gotoParkPosition(void);
+    void syncParkPosition(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
