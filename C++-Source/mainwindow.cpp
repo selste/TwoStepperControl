@@ -4617,18 +4617,17 @@ void MainWindow::takeNextExposureInSeries(void) {
     float tempDiff; // difference between temperature at series start and next exposure
     long pauseBetweenExpsInMS; // time as read from the GUI between single exposures
 
-    this->getTemperature(); // read the temperature sensor
-    tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
-    ui->lcdTempSeriesDiff->display(round(tempDiff));
-    ui->pbDSLRSingleShot->setEnabled(false);
-    ui->sbDSLRDuration->setEnabled(false);
-    ui->pbDSLRStartSeries->setEnabled(false);
-    ui->cbDither->setEnabled(false);
-    this->dslrStates.noOfExposuresLeft--;
-    expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
-    ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
-
     if (this->dslrStates.noOfExposuresLeft > 0) {
+        this->getTemperature(); // read the temperature sensor
+        tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
+        ui->lcdTempSeriesDiff->display(round(tempDiff));
+        ui->pbDSLRSingleShot->setEnabled(false);
+        ui->sbDSLRDuration->setEnabled(false);
+        ui->pbDSLRStartSeries->setEnabled(false);
+        ui->cbDither->setEnabled(false);
+        this->dslrStates.noOfExposuresLeft--;
+        expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
+        ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
         this->carryOutDitheringStep();
         pauseBetweenExpsInMS = ui->sbPauseInExpSeries->value()*1000;
         wait = new QElapsedTimer();
@@ -4638,7 +4637,11 @@ void MainWindow::takeNextExposureInSeries(void) {
         } while (wait->elapsed() < pauseBetweenExpsInMS); // just wait for a given # of seconds until next exposure is taken
         ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
         delete wait;
-        this->handleDSLRSingleExposure();
+        if (this->dslrStates.noOfExposuresLeft > 0) { // it is possible to terminate the series in a pause ... this has to be taken care of ...
+            this->handleDSLRSingleExposure();
+        } else {
+            this->stopDSLRExposureSeries();
+        }
     } else {
         this->stopDSLRExposureSeries();
     }
@@ -4770,6 +4773,7 @@ void MainWindow::stopDSLRExposureSeries(void) {
     ui->pbDSLRStopSeries->setEnabled(false);
     ui->sbDSLRRepeat->setValue(0);
     ui->lcdDitherStep->display(0);
+    ui->lcdDSLRExpsTaken->display(0);
     this->undoLastDithering();
     this->dslrStates.ditherTravelInMSRA = 0;
     this->dslrStates.ditherTravelInMSDecl = 0;
@@ -4779,10 +4783,13 @@ void MainWindow::stopDSLRExposureSeries(void) {
 //--------------------------------------------------------------------
 // this slot terminates a series of exposures prematurely
 void MainWindow::terminateDSLRSeries(void) {
+
+    this->dslrStates.dslrSeriesRunning = false;
+    this->dslrStates.noOfExposuresLeft = 0;
     this->stopDSLRExposureSeries();
     this->dslrStates.noOfExposuresLeft = 0;
     this->terminateDSLRSingleShot();
-    ui->lcdDSLRExpsTaken->display("0");
+    ui->lcdDSLRExpsTaken->display(0);
     this->undoLastDithering();
     this->dslrStates.ditherTravelInMSRA = 0;
     this->dslrStates.ditherTravelInMSDecl = 0;
