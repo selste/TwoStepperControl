@@ -1,4 +1,15 @@
-﻿
+﻿// this code is part of "TSC", a free control software for astronomical telescopes
+// Copyright (C)  2016-18, wolfgang birkfellner
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //-------------------------------------------------------------------------------------
 // this is the main class of TSC. it virtually manages all user interaction and all
 // device - driven actions. these are timing tasks, management of the GUI and
@@ -1380,6 +1391,27 @@ void MainWindow::deployINDICommand(void) {
 
     ui->sbCCDGain->setEnabled(true);
     ui->sbExposureTime->setEnabled(true);
+    if (ui->rbApogee->isChecked()== true) {
+        retval = system("indiserver -v indi_apogee_ccd &");
+    }
+    if (ui->rbATIK->isChecked()== true) {
+        retval = system("indiserver -v indi_atik_ccd &");
+    }
+    if (ui->rbFLI->isChecked()== true) {
+        retval = system("indiserver -v indi_fli_ccd &");
+    }
+    if (ui->rbINova->isChecked()== true) {
+        retval = system("indiserver -v indi_nova_ccd &");
+    }
+    if (ui->rbMeadeDSI->isChecked()== true) {
+        retval = system("indiserver -v indi_dsi_ccd &");
+    }
+    if (ui->rbQSI->isChecked()== true) {
+        retval = system("indiserver -v indi_qsi_ccd &");
+    }
+    if (ui->rbSBIG->isChecked()== true) {
+        retval = system("indiserver -v indi_sbig_ccd &");
+    }
     if (ui->rbQHYINDI->isChecked()== true) {
         retval = system("indiserver -v indi_qhy_ccd &");
     }
@@ -1397,6 +1429,7 @@ void MainWindow::deployINDICommand(void) {
     if (ui->rbSLXPress->isChecked() == true) {
         retval = system("indiserver -v indi_sx_ccd &");
     }
+
     if (retval == 0) {
         ui->pbStartINDIServer->setEnabled(false);
         ui->pbKillINDIServer->setEnabled(true);
@@ -4590,6 +4623,7 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
 // slot that starts a series of exposures ...
 void MainWindow::startDSLRSeries(void) {
 
+    ui->lcdDSLRNextExposureIn->display(0);
     if (ui->sbDSLRRepeat->value() > 0) {
         qsrand((uint)(UTTime->currentTime().second())); // initialize the random number generator
         ui->cbExpSeriesDone->setChecked(false);
@@ -4606,6 +4640,7 @@ void MainWindow::startDSLRSeries(void) {
         ui->sbDSLRRepeat->setEnabled(false);
         ui->lcdDSLRExpsTaken->display("1");
         this->handleDSLRSingleExposure();
+        ui->sbPauseInExpSeries->setEnabled(false);
     }
 }
 
@@ -4613,10 +4648,11 @@ void MainWindow::startDSLRSeries(void) {
 // slot that is called once an exposure was taken; also takes care of dithering if checkbox is set
 void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
-    int expsTaken;
+    int expsTaken, secondsRemaining;
     float tempDiff; // difference between temperature at series start and next exposure
     long pauseBetweenExpsInMS; // time as read from the GUI between single exposures
 
+    ui->lcdDSLRNextExposureIn->display(0);
     if (this->dslrStates.noOfExposuresLeft > 0) {
         this->getTemperature(); // read the temperature sensor
         tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
@@ -4630,11 +4666,15 @@ void MainWindow::takeNextExposureInSeries(void) {
         ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
         this->carryOutDitheringStep();
         pauseBetweenExpsInMS = ui->sbPauseInExpSeries->value()*1000;
+        secondsRemaining = ui->sbPauseInExpSeries->value();
         wait = new QElapsedTimer();
         wait->start();
         do {
+            secondsRemaining = round(ui->sbPauseInExpSeries->value()-(wait->elapsed()/1000));
+            ui->lcdDSLRNextExposureIn->display(secondsRemaining);
             QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
         } while (wait->elapsed() < pauseBetweenExpsInMS); // just wait for a given # of seconds until next exposure is taken
+        ui->lcdDSLRNextExposureIn->display(0);
         ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
         delete wait;
         if (this->dslrStates.noOfExposuresLeft > 0) { // it is possible to terminate the series in a pause ... this has to be taken care of ...
@@ -4764,6 +4804,8 @@ void MainWindow::undoLastDithering(void) {
 // this slot is called when all exposures of a series are taken
 void MainWindow::stopDSLRExposureSeries(void) {
 
+    ui->sbPauseInExpSeries->setEnabled(true);
+    ui->lcdDSLRNextExposureIn->display(0);
     ui->pbDSLRSingleShot->setEnabled(true);
     ui->sbDSLRDuration->setEnabled(true);
     ui->cbExpSeriesDone->setChecked(true);
@@ -4784,6 +4826,8 @@ void MainWindow::stopDSLRExposureSeries(void) {
 // this slot terminates a series of exposures prematurely
 void MainWindow::terminateDSLRSeries(void) {
 
+    ui->sbPauseInExpSeries->setEnabled(true);
+    ui->lcdDSLRNextExposureIn->display(0);
     this->dslrStates.dslrSeriesRunning = false;
     this->dslrStates.noOfExposuresLeft = 0;
     this->stopDSLRExposureSeries();

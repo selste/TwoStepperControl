@@ -1,3 +1,19 @@
+// this code is part of "TSC", a free control software for astronomical telescopes
+// Copyright (C)  2016-18, wolfgang birkfellner
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//---------------------------------------------------
+// this class handles reading FITS files from an INDI server for autoguiding
+
 #include <indidevapi.h>
 #include <indicom.h>
 #include <baseclient.h>
@@ -39,24 +55,24 @@ protected:
 
 private:
    QString *ccdINDIName; // name of the camera in INDI lingo
-   INDI::BaseDevice *ccd;
-   double pixSizeX;
-   double pixSizeY;
-   double frameSizeX;
-   double frameSizeY;
-   double bitsPerPixel;
-   QImage* fitsqimage;
-   QPixmap* displayPMap;
-   bool newCameraImageAvailable;  
-   QVector<QRgb> *myVec;
-   QString *serverMessage;
-   INumberVectorProperty *ccd_exposure = NULL;
-   INumberVectorProperty *ccd_gain = NULL;
-   long expcounter;
-   bool storeCamImages;
+   INDI::BaseDevice *ccd; // the camera device
+   double pixSizeX; // physical size of one pixel in x-direction
+   double pixSizeY; // physical size of one pixel in y-direction
+   double frameSizeX; // number of pixels in x-direction
+   double frameSizeY; // number of pixles in y-direction
+   double bitsPerPixel; // depth of the camera
+   QImage* fitsqimage; // a qimage, generated form raw FITS data
+   QPixmap* displayPMap; // a qpixmap, generated for GUI display form the qimage
+   bool newCameraImageAvailable; // name says it all
+   QVector<QRgb> *myVec; // a vector for grayscale conversion
+   QString *serverMessage; // a string for holding data non-image data from the INDI server
+   INumberVectorProperty *ccd_exposure = NULL; // an INDI data structure on exposure time
+   INumberVectorProperty *ccd_gain = NULL; // an INDI data structure on camera gain
+   long expcounter; // a counter for exposures
+   bool storeCamImages; // a boolean for handling storage of images to the SD card
    short simulatorCounter; // a helper for debugging
 
 signals:
-   void imageAvailable(QPixmap*);
-   void messageFromINDIAvailable(void);
+   void imageAvailable(QPixmap*); // emitted when an image is available
+   void messageFromINDIAvailable(void); // emitted when a message form INDI is available
 };

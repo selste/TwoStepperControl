@@ -1,7 +1,26 @@
+// this code is part of "TSC", a free control software for astronomical telescopes
+// Copyright (C)  2016-18, wolfgang birkfellner
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//---------------------------------------------------
+// this class handles serial bluetooth communications for the BT-handbox
+
 #include "bt_serialcomm.h"
 #include <QDebug>
 
 //---------------------------------------------------
+// constructor, starts up a standard serial port for the
+// MAC address of the handbox ...
+
 bt_serialcomm::bt_serialcomm(QString bt_MACaddr) {
     QString startupRFPort;
     this->portIsUp=false;
@@ -20,7 +39,7 @@ bt_serialcomm::bt_serialcomm(QString bt_MACaddr) {
 }
 
 //---------------------------------------------------
-
+// tries to re-open a serial port
 void bt_serialcomm::bt_serialcommTryRestart(QString bt_MACaddr) {
     QString startupRFPort;
     this->portIsUp=false;
@@ -38,6 +57,7 @@ void bt_serialcomm::bt_serialcommTryRestart(QString bt_MACaddr) {
 }
 
 //----------------------------------------------------
+// desctructor; closes the serial port
 bt_serialcomm::~bt_serialcomm(void) {
     if (portIsUp == 1) {
         rfcommport.setBreakEnabled(true);
@@ -49,6 +69,7 @@ bt_serialcomm::~bt_serialcomm(void) {
 }
 
 //---------------------------------------------------
+// closes the serial port
 void bt_serialcomm::shutDownPort(void) {
     rfcommport.setBreakEnabled(true);
     portIsUp = 0;
@@ -57,6 +78,7 @@ void bt_serialcomm::shutDownPort(void) {
 }
 
 //---------------------------------------------------
+// opens a serial port for BT-communicaition
 void bt_serialcomm::openPort(void) {
     portIsUp = 1;
     if (!rfcommport.open(QIODevice::ReadWrite)) {
@@ -69,11 +91,13 @@ void bt_serialcomm::openPort(void) {
 }
 
 //---------------------------------------------------
+// returns the state of the port
 bool bt_serialcomm::getPortState(void) {
     return this->portIsUp;
 }
 
 //---------------------------------------------------
+// reads max 1064 byte from the serial port and emits a signal that data are available
 qint64 bt_serialcomm::getDataFromSerialPort(void) {
     char buf[1024];
     qint64 lineLength=0;
@@ -94,6 +118,7 @@ qint64 bt_serialcomm::getDataFromSerialPort(void) {
 }
 
 //---------------------------------------------------
+// returns the received string
 QString* bt_serialcomm::getTSCcommand(void) {
     return this->incomingCommand;
 }

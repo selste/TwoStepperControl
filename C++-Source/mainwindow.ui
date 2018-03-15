@@ -3022,7 +3022,7 @@
         <item row="0" column="0">
          <widget class="QRadioButton" name="rbApogee">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Apogee</string>
@@ -3032,7 +3032,7 @@
         <item row="0" column="1">
          <widget class="QRadioButton" name="rbMeadeDSI">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Meade DSI</string>
@@ -3042,7 +3042,7 @@
         <item row="0" column="2">
          <widget class="QRadioButton" name="rbSBIG">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>SBIG</string>
@@ -3052,7 +3052,7 @@
         <item row="1" column="0">
          <widget class="QRadioButton" name="rbATIK">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>ATIK</string>
@@ -3082,7 +3082,7 @@
         <item row="2" column="0">
          <widget class="QRadioButton" name="rbFLI">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>FLI</string>
@@ -3115,7 +3115,7 @@
         <item row="3" column="0">
          <widget class="QRadioButton" name="rbINova">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>I-Nova</string>
@@ -3125,7 +3125,7 @@
         <item row="3" column="1">
          <widget class="QRadioButton" name="rbQSI">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>QSI</string>
@@ -5827,7 +5827,7 @@ drives</string>
          <x>162</x>
          <y>30</y>
          <width>16</width>
-         <height>271</height>
+         <height>301</height>
         </rect>
        </property>
        <property name="orientation">
@@ -5893,21 +5893,21 @@ drives</string>
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>260</y>
+         <y>300</y>
          <width>151</width>
-         <height>41</height>
+         <height>30</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
          <width>60</width>
-         <height>25</height>
+         <height>30</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>1000</width>
-         <height>1000</height>
+         <height>30</height>
         </size>
        </property>
        <property name="text">
@@ -5918,21 +5918,21 @@ drives</string>
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>210</y>
+         <y>270</y>
          <width>151</width>
-         <height>41</height>
+         <height>30</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
          <width>60</width>
-         <height>0</height>
+         <height>30</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>1000</width>
-         <height>1000</height>
+         <height>30</height>
         </size>
        </property>
        <property name="text">
@@ -5946,46 +5946,46 @@ drives</string>
        <property name="geometry">
         <rect>
          <x>180</x>
-         <y>260</y>
+         <y>300</y>
          <width>171</width>
-         <height>41</height>
+         <height>30</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
          <width>60</width>
-         <height>0</height>
+         <height>30</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>200</width>
-         <height>200</height>
+         <height>30</height>
         </size>
        </property>
        <property name="text">
-        <string>Stop Series</string>
+        <string>Cancel Series</string>
        </property>
       </widget>
       <widget class="QPushButton" name="pbDSLRStartSeries">
        <property name="geometry">
         <rect>
          <x>180</x>
-         <y>210</y>
+         <y>270</y>
          <width>171</width>
-         <height>41</height>
+         <height>30</height>
         </rect>
        </property>
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>25</height>
+         <height>30</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>200</width>
-         <height>200</height>
+         <height>30</height>
         </size>
        </property>
        <property name="text">
@@ -6157,7 +6157,7 @@ drives</string>
        <property name="geometry">
         <rect>
          <x>180</x>
-         <y>180</y>
+         <y>210</y>
          <width>168</width>
          <height>20</height>
         </rect>
@@ -6232,7 +6232,7 @@ drives</string>
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>303</y>
+         <y>330</y>
          <width>351</width>
          <height>16</height>
         </rect>
@@ -6244,8 +6244,8 @@ drives</string>
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>0</x>
-         <y>387</y>
+         <x>180</x>
+         <y>240</y>
          <width>164</width>
          <height>22</height>
         </rect>
@@ -6314,7 +6314,7 @@ drives</string>
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>322</y>
+         <y>350</y>
          <width>331</width>
          <height>58</height>
         </rect>
@@ -6444,6 +6444,54 @@ drives</string>
           </property>
           <property name="text">
            <string> [s]</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>175</y>
+         <width>165</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_22">
+        <item>
+         <widget class="QLabel" name="lNextExp">
+          <property name="text">
+           <string>Next exp. in:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLCDNumber" name="lcdDSLRNextExposureIn">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>25</height>
+           </size>
+          </property>
+          <property name="digitCount">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lSecs">
+          <property name="text">
+           <string>[s]</string>
           </property>
          </widget>
         </item>
