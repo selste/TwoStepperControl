@@ -19,6 +19,7 @@ TSC currently provides the following functionality
 
 ## Documentation
 Because we - not intentionally - messed this up a bit in the past we're setting up a dedicated repository/site for documentation:
-[TwoStepperControl Documentation](https://selste.github.io/tsc-site/)
+[TwoStepperControl Documentation](https://tscatm.wordpress.com/)
+Please also take a closer look at the manual, which covers all aspects of usage and assembly.
 
 The [Wiki](https://github.com/selste/TwoStepperControl/wiki) in this repository will henceforth only deal with information regarding compilation (and the setup required) and related stuff.
