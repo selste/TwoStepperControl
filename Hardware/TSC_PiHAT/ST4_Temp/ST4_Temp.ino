@@ -1,5 +1,18 @@
-
+// this code is part of "TSC", a free control software for astronomical telescopes
+// Copyright (C)  2016-18, wolfgang birkfellner
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//---------------------------------------------------
 // arduino sketch for monitoring ST4 and reading the temperature sensor
+
 #include <SPI.h>
 #include <stdlib.h>
 
@@ -12,7 +25,7 @@ int wSwitch = 1;
 int northIsUp, westIsUp, eastIsUp, southIsUp; 
 int switchStateChanged = 0, tempDeg;
 char tempDeg1, tempDeg2, isPositive, st4state = '0';
-bool debuggingIsOn = true, readTemp = true;
+bool debuggingIsOn = false, readTemp = true;
 char reply, readCommand;
 String dHelper, sHelper;
 char buf[32];
@@ -32,6 +45,9 @@ void setup() {
   SPI.attachInterrupt();   // now turn on interrupts
   process_it = false;
   temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
+  if (debuggingIsOn) {
+    Serial.println("TSC HAT Arduino Mini Pro is up...");
+  }
 }
 
 //-----------------------------------------------------------------------
@@ -41,6 +57,10 @@ void loop() {
   if (readTemp == true) { // read analog sensor only if temperature is not read out
     temp += (analogRead(4)*VRef*0.9765625-500)*0.1;
     temp = temp*0.5; // compute a running average
+    if (debuggingIsOn) {
+      Serial.print("Temperature: ");
+      Serial.println(temp);
+    }
   }
   
   if (analogRead(1) < 200) { // if the voltage drops below 1 V, the switch is closed ...
