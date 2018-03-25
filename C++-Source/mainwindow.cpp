@@ -1563,8 +1563,9 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
             this->guidingState.calibrationImageReceived=true; // in calibration, this camera image is to be used
         } // we only take a single shot here
         if ((this->ccdCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
+            this->waitForNMSecs(250);
             this->takeSingleCamShot(); // ... request another one from INDI
-            this->waitForNMSecs(50);
+            this->waitForNMSecs(250);
         } else {
             ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
         }
@@ -1694,8 +1695,12 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
         }
+        this->waitForNMSecs(250);
         this->takeSingleCamShot(); // poll a new image
         this->waitForNMSecs(250);
+        this->guidingState.rmsDevInArcSec = 0;
+        this->guidingState.maxDevInArcSec = 0;
+        ui->leMaxGuideErr->setText("0/0");
         return 0.0;
     } // when called for the first time, make the current centroid the reference ...
     if (ui->cbLogGuidingData->isChecked()==true) {
@@ -1713,18 +1718,19 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     devVector[1]=-(this->guideStarPosition.centrY - cy); // this is the deviation in pixel from the last position
     errx=devVector[0]*this->guiding->getArcSecsPerPix(0);
     erry=devVector[1]*this->guiding->getArcSecsPerPix(1);
-    err=sqrt(errx*errx+erry*erry);
-    this->guidingState.rmsDevInArcSec += err;
-    if (err > this->guidingState.maxDevInArcSec) {
-        this->guidingState.maxDevInArcSec = err;
-    }
-    runningRMS=sqrt(1/((float)(this->guidingState.noOfGuidingSteps))*this->guidingState.rmsDevInArcSec);
-    errString.clear();
-    errString.append(QString::number(this->guidingState.maxDevInArcSec,'g',2));
-    errString.append("/");
-    errString.append(QString::number(runningRMS,'g',2));
-    ui->leMaxGuideErr->setText(errString);
-    if (ui->cbLogGuidingData->isChecked()==true) {
+    if (this->guidingState.noOfGuidingSteps > 2) {
+        err=sqrt(errx*errx+erry*erry);
+        this->guidingState.rmsDevInArcSec += err;
+        if (err > this->guidingState.maxDevInArcSec) {
+            this->guidingState.maxDevInArcSec = err;
+        }
+        runningRMS=sqrt(1/((float)(this->guidingState.noOfGuidingSteps))*this->guidingState.rmsDevInArcSec);
+        errString.clear();
+        errString.append(QString::number(this->guidingState.maxDevInArcSec,'g',2));
+        errString.append("/");
+        errString.append(QString::number(runningRMS,'g',2));
+        ui->leMaxGuideErr->setText(errString);
+        if (ui->cbLogGuidingData->isChecked()==true) {
             logString.append("Current deviation:\t");
             logString.append(QString::number((double)devVector[0],'g',3));
             logString.append("\t");
@@ -1733,6 +1739,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
         }
+    }
     devVectorRotated[0]=(this->rotMatrixGuidingXToRA[0][0]*devVector[0]+this->rotMatrixGuidingXToRA[0][1]*devVector[1]);
     devVectorRotated[1]=(this->rotMatrixGuidingXToRA[1][0]*devVector[0]+this->rotMatrixGuidingXToRA[1][1]*devVector[1]);
     // the deviation vector is rotated to the ra/decl coordinate system and inverted as we want to move in the other direction
@@ -1859,7 +1866,9 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         ui->lePulseDeclMS->setText("0");
     }
     this->waitForDriveStop(false,false);
+    this->waitForNMSecs(250);
     this->takeSingleCamShot(); // poll a new image
+    this->waitForNMSecs(250);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
     return 0.0;
 }
@@ -1964,7 +1973,7 @@ void MainWindow::calibrateAutoGuider(void) {
     // calibration starts here
     this->waitForCalibrationImage(); // small subroutine - waits for 2 images
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+    this->waitForNMSecs(250);
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
     ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
@@ -1993,7 +2002,7 @@ void MainWindow::calibrateAutoGuider(void) {
         return;
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 250); // try to force screen updates as "doGuideStarImageProcesing" emits a signal ...
+    this->waitForNMSecs(250);
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
     currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
     slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -2036,7 +2045,7 @@ void MainWindow::calibrateAutoGuider(void) {
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        this->waitForNMSecs(250);
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
         if (this->calibrationToBeTerminated == true) {
@@ -2052,7 +2061,7 @@ void MainWindow::calibrateAutoGuider(void) {
         ui->pbPGRAPlus->setEnabled(false);
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        this->waitForNMSecs(250);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
@@ -2112,15 +2121,14 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Taking new image...");
     this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+    this->waitForNMSecs(250);
 
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
         this->displayCalibrationStatus("Backlash calibration run: ", (float)(slewCounter+1), "/4 ...");
         QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
         this->waitForCalibrationImage(); // small subroutine - waits for image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
-            // now get a position
+    this->waitForNMSecs(250);            // now get a position
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew
         if (this->calibrationToBeTerminated == true) {
@@ -2148,7 +2156,7 @@ void MainWindow::calibrateAutoGuider(void) {
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        this->waitForNMSecs(250);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -2182,7 +2190,7 @@ void MainWindow::calibrateAutoGuider(void) {
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        this->waitForNMSecs(250);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -2303,19 +2311,15 @@ void MainWindow::waitForDriveStop(bool isRA, bool isVerbose) {
 // a subroutine that acquires a single image during calibration. needed in
 // "calibrateAutoGuider"
 void MainWindow::waitForCalibrationImage(void) {
-    QElapsedTimer *lTim;
 
     this->displayCalibrationStatus("Waiting for image...");
-    lTim = new QElapsedTimer();
-    lTim->start();
-    do {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
-    } while (lTim->elapsed() < 250); // wait for 250 ms
-    delete lTim;
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.calibrationImageReceived=false;
+    this->waitForNMSecs(250);
     this->takeSingleCamShot();
-    this->waitForNMSecs(50);
+    this->waitForNMSecs(250);
+    this->takeSingleCamShot();
+    this->waitForNMSecs(250);
     while (this->guidingState.calibrationImageReceived == false) {
         QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
         if (this->calibrationToBeTerminated == true) { // if the "Terminate calibration" button is pressed, this one is set to true ...
@@ -2405,6 +2409,7 @@ void MainWindow::doAutoGuiding(void) {
         this->guidingState.noOfGuidingSteps = 0; // guiding starts from ground zero, so the steps are reset ...
         this->waitForCalibrationImage(); // wait to get a stable image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->waitForNMSecs(250);
     } else {
         this->guidingState.guidingIsOn = false;
         this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
@@ -2442,12 +2447,12 @@ void MainWindow::selectGuideStar(void) {
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        this->waitForNMSecs(250);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        this->waitForNMSecs(250);
         ui->tabCCDCal->setEnabled(true);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
     }
 }
 
@@ -2532,7 +2537,7 @@ void MainWindow::setHalfFOV(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    this->waitForNMSecs(250);
 }
 
 //------------------------------------------------------------------
@@ -2548,7 +2553,7 @@ void MainWindow::setDoubleFOV(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    this->waitForNMSecs(250);
 }
 
 //------------------------------------------------------------------
@@ -2564,7 +2569,7 @@ void MainWindow::setRegularFOV(void) {
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    this->waitForNMSecs(250);
 }
 
 //------------------------------------------------------------------
