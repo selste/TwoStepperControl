@@ -458,10 +458,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbDisableTCP, SIGNAL(clicked()), this, SLOT(disconnectFromIPSocket())); // disconnect from LX 200 socket
     connect(ui->pbTCPHBEnable, SIGNAL(clicked()), this, SLOT(connectHandboxToIPSocket())); // connect to a IP socket for the handbox
     connect(ui->pbTCPHBDisable, SIGNAL(clicked()), this, SLOT(disconnectHandboxFromIPSocket())); // disconnect the TCP/IP handbox und shut down server
-    connect(ui->pbPGDecPlus, SIGNAL(clicked()), this, SLOT(declPGPlus())); // pulse guide for a given amount of time defined in a spinbox
-    connect(ui->pbPGDecMinus, SIGNAL(clicked()), this, SLOT(declPGMinus())); // pulse guide for a given amount of time defined in a spinbox
-    connect(ui->pbPGRAPlus, SIGNAL(clicked()), this, SLOT(raPGFwd())); // pulse guide for a given amount of time defined in a spinbox
-    connect(ui->pbPGRAMinus, SIGNAL(clicked()), this, SLOT(raPGBwd())); // pulse guide for a given amount of time defined in a spinbox
     connect(ui->pbClearLXLog, SIGNAL(clicked()), this, SLOT(clearLXLog())); // delete the log of LX200 commands
     connect(ui->pbSelectGuideStar, SIGNAL(clicked()), this, SLOT(selectGuideStar())); // select a guide star defined by crosshair in the QDisplay - widget
     connect(ui->pbConfirmGuideStar, SIGNAL(clicked()), this, SLOT(confirmGuideStar())); // just disables the follwing GUI elements in the autoguiding process
@@ -620,10 +616,6 @@ void MainWindow::updateReadings() {
             ui->pbRAPlus->setEnabled(1);
             ui->rbCorrSpeed->setEnabled(true);
             ui->rbMoveSpeed->setEnabled(true);
-            ui->pbPGRAMinus->setEnabled(true);
-            ui->pbPGRAPlus->setEnabled(true);
-            ui->pbPGDecMinus->setEnabled(true);
-            ui->pbPGDecPlus->setEnabled(true);
             if (ui->rbMoveSpeed->isChecked()==false) {
                 ui->sbMoveSpeed->setEnabled(true);
             }
@@ -644,10 +636,6 @@ void MainWindow::updateReadings() {
             while (!futureStepperBehaviourDecl.isFinished()) {
                     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
             }
-            ui->pbPGDecMinus->setEnabled(true);
-            ui->pbPGDecPlus->setEnabled(true);
-            ui->pbPGRAMinus->setEnabled(true);
-            ui->pbPGRAPlus->setEnabled(true);
             ui->pbDeclUp->setEnabled(true);
             ui->pbDeclDown->setEnabled(true);
             this->setControlsForDeclTravel(true);
@@ -1581,9 +1569,12 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         }
         if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
             this->guidingState.noOfGuidingSteps++; // every odd one, corrections are applied ...
+            ui->lcdGuidesteps->display((int)(this->guidingState.noOfGuidingSteps));
             this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
             newX = g_AllData->getInitialStarPosition(2);
             newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
+            this->waitForNMSecs(2000);
+            usleep(500); // just give the system time to breathe ...
             correctGuideStarPosition(newX,newY); // ... and is used to correct the position
         }
     }
@@ -1766,8 +1757,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         this->guidingState.raCorrSteps[0] = this->guidingState.raCorrSteps[1];
         this->guidingState.raCorrSteps[1] = this->guidingState.raCorrSteps[2];
         this->guidingState.raCorrSteps[2] = devVectorRotated[0]; // compute a runing average of the two past motions and the current one to dampen guiding motion
-        devRA=(0.45*this->guidingState.raCorrSteps[0]+0.45*this->guidingState.raCorrSteps[1]+
-               0.1*this->guidingState.raCorrSteps[2]); // this is the moving average
+        devRA=(0.1*this->guidingState.raCorrSteps[0]+0.1*this->guidingState.raCorrSteps[1]+
+               0.8*this->guidingState.raCorrSteps[2]); // this is the moving average
         pgduration=round(aggressiveness*this->guidingState.travelTime_ms_RA*fabs(devRA)); // pulse guide duration in ra
         if (pgduration > 2000) {
             pgduration = 2000;
@@ -1810,7 +1801,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         this->guidingState.declCorrSteps[0] = this->guidingState.declCorrSteps[1];
         this->guidingState.declCorrSteps[1] = this->guidingState.declCorrSteps[2];
         this->guidingState.declCorrSteps[2] = devVectorRotated[1]; // now compute a running average for declination
-        devDecl = (0.45*this->guidingState.declCorrSteps[0]+0.45*this->guidingState.declCorrSteps[1]+0.1*this->guidingState.declCorrSteps[2])/3.0;
+        devDecl = (0.1*this->guidingState.declCorrSteps[0]+0.1*this->guidingState.declCorrSteps[1]+0.8*this->guidingState.declCorrSteps[2]);
         pgduration=round(aggressiveness*this->guidingState.travelTime_ms_Decl*fabs(devDecl)); // pulse guide duration in decl
         if (pgduration > 2000) {
             pgduration = 2000;
@@ -1823,10 +1814,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                 logString.clear();
         }
         if (devDecl < 0) {
-            ui->cbDeclinationInverted->setChecked(false); // indicate that decl-direction indicator to false
             if (this->guidingState.declinationDriveDirection < 0) {
                 this->guidingState.declinationDriveDirection = +1; // switch state to positive travel
-                ui->cbDeclinationInverted->setChecked(true); // indicate that decl-direction is switched
                 if (ui->cbDeclBacklashComp->isChecked()==true) { // carry out compensation if checkbox is activated
                     this->compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
                     if (ui->cbLogGuidingData->isChecked()==true) {
@@ -1851,10 +1840,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                 logString.clear();
             }
         } else {
-            ui->cbDeclinationInverted->setChecked(false);
             if (this->guidingState.declinationDriveDirection > 0) {
                 this->guidingState.declinationDriveDirection = -1; // switch state to negative travel
-                ui->cbDeclinationInverted->setChecked(true);
                 if (ui->cbDeclBacklashComp->isChecked()==true) {
                     this->compensateDeclBacklashPG(-this->guidingState.declinationDriveDirection); // trying to invert the correction direction ... hopefully correct
                 if (ui->cbLogGuidingData->isChecked()==true) {
@@ -2006,8 +1993,6 @@ void MainWindow::calibrateAutoGuider(void) {
         return;
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     this->waitForDriveStop(true, true);
-    ui->pbPGRAMinus->setEnabled(false);
-    ui->pbPGRAPlus->setEnabled(false);
     this->waitForCalibrationImage();
     if (this->calibrationToBeTerminated == true) {
         this->calibrationTerminationStuffToBeDone();
@@ -2038,8 +2023,6 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Slewing back...");
     this->raPGBwd(); // going back to initial position
     this->waitForDriveStop(true, true);
-    ui->pbPGRAMinus->setEnabled(false);
-    ui->pbPGRAPlus->setEnabled(false);
     if (this->calibrationToBeTerminated == true) {
         this->calibrationTerminationStuffToBeDone();
         this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -2071,8 +2054,6 @@ void MainWindow::calibrateAutoGuider(void) {
         this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
         this->raPGFwd(); // carry out travel
         this->waitForDriveStop(true,true);
-        ui->pbPGRAMinus->setEnabled(false);
-        ui->pbPGRAPlus->setEnabled(false);
         this->waitForCalibrationImage();
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);
@@ -2094,8 +2075,6 @@ void MainWindow::calibrateAutoGuider(void) {
         this->displayCalibrationStatus("Slewing back...");
         this->raPGBwd(); // going back to initial position
         this->waitForDriveStop(true,true);
-        ui->pbPGRAMinus->setEnabled(false);
-        ui->pbPGRAPlus->setEnabled(false);
     }
     travelTimeInMSForOnePixRA+=tTimeOnePix[0]+tTimeOnePix[1]+tTimeOnePix[2]+tTimeOnePix[3];
     travelTimeInMSForOnePixRA/=5.0; // compute the average travel time
@@ -2242,6 +2221,11 @@ void MainWindow::calibrateAutoGuider(void) {
 // a few things to be done when calibration is terminated - just to keep the code more compact
 void MainWindow::calibrationTerminationStuffToBeDone(void) {
 
+    if (this->abortCCDAcquisition() == true) {
+        this->displayCalibrationStatus("CCD acquisition stopped...");
+    } else {
+        this->displayCalibrationStatus("CCD acquisition timeout - image acquired ...");
+    } // stopping the stream of images from the ccd ...
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     this->guidingState.systemIsCalibrated=false; // "systemIsCalibrated" - flag set to true
     this->guidingState.rotationAngle=0.0;
@@ -2264,7 +2248,11 @@ void MainWindow::skipCalibration(void) {
 
     ui->teCalibrationStatus->clear();
     this->displayCalibrationStatus("Skipping the calibration...");
-
+    if (this->abortCCDAcquisition() == true) {
+        this->displayCalibrationStatus("CCD acquisition stopped...");
+    } else {
+        this->displayCalibrationStatus("CCD acquisition timeout - image acquired ...");
+    } // stopping the stream of images from the ccd ...
     this->guidingState.travelTime_ms_RA=75;
     this->guidingState.travelTime_ms_Decl=75;
     this->displayCalibrationStatus("Time for 1 pix in RA: ",this->guidingState.travelTime_ms_RA," ms");
@@ -2284,13 +2272,12 @@ void MainWindow::skipCalibration(void) {
     setControlsForAutoguiderCalibration(true);
     this->guidingState.rotationAngle=avrgAngle;
     this->displayCalibrationStatus("Fake calibration is finished...");
-    this->startCCDAcquisition(); // starting ccd acquisition again in a permanent mode ...
     this->waitForNMSecs(1000);
     ui->pbTerminateCal->setEnabled(false);
     this->calibrationToBeTerminated = false;
     ui->pbGuiding->setEnabled(true);
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
 }
 
 //------------------------------------------------------------------
@@ -2359,6 +2346,7 @@ void MainWindow::displayCalibrationStatus(QString str1) {
 // resets all calibration parameters
 void MainWindow::resetGuidingCalibration(void) {
     if ((this->guidingState.systemIsCalibrated==true) && (this->guidingState.guidingIsOn==false)) {
+        ui->lcdGuidesteps->display(0);
         this->abortCCDAcquisition();
         ui->teCalibrationStatus->clear();
         this->guidingState.guideStarSelected=false;
@@ -2390,9 +2378,6 @@ void MainWindow::resetGuidingCalibration(void) {
 // prepare the GUI and the flags for autoguiding; the actual work is done
 // in "displayGuideCamImage" and "correctGuideStarPosition" ...
 void MainWindow::doAutoGuiding(void) {
-    float alpha;
-    int thrshld,beta;
-    bool medianOn;
 
     if (this->guidingState.guidingIsOn == false) {
         this->guidingState.raCorrSteps[0] = this->guidingState.raCorrSteps[1] =
@@ -2413,14 +2398,11 @@ void MainWindow::doAutoGuiding(void) {
         // take care of disabling the gui here ...
         ui->pbGuiding->setText("Stop");
         // now get a starting position and store it in the global data struct
-        thrshld = ui->hsThreshold->value();
-        alpha = ui->hsIContrast->value()/100.0;
-        beta = ui->hsIBrightness->value();
-        medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
         this->guidingState.noOfGuidingSteps = 0; // guiding starts from ground zero, so the steps are reset ...
         this->abortCCDAcquisition(); // stop the stream
         this->waitForCalibrationImage(); // wait to get a stable image
     } else {
+        this->abortCCDAcquisition();
         this->guidingState.guidingIsOn = false;
         this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
         if (ui->cbLogGuidingData->isChecked()==true) {
@@ -2431,7 +2413,7 @@ void MainWindow::doAutoGuiding(void) {
         g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
-        ui->pbExpose->setEnabled(false);
+        ui->pbExpose->setEnabled(true);
         // enable the GUI here again ...
     }
 }
@@ -3250,10 +3232,6 @@ void MainWindow::declinationMoveHandboxUp(void) {
 
     if (this->mountMotion.DeclDriveIsMoving==false){
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
-        ui->pbPGDecMinus->setEnabled(false);
-        ui->pbPGDecPlus->setEnabled(false);
-        ui->pbPGRAMinus->setEnabled(false);
-        ui->pbPGRAPlus->setEnabled(false);
         ui->pbDeclDown->setEnabled(0);
         this->setControlsForDeclTravel(false);
         this->mountMotion.DeclDriveIsMoving=true;
@@ -3275,10 +3253,6 @@ void MainWindow::declinationMoveHandboxUp(void) {
         }
         ui->pbDeclDown->setEnabled(1);
         this->setControlsForDeclTravel(true);
-        ui->pbPGDecMinus->setEnabled(true);
-        ui->pbPGDecPlus->setEnabled(true);
-        ui->pbPGRAMinus->setEnabled(true);
-        ui->pbPGRAPlus->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         } else {
@@ -3292,10 +3266,6 @@ void MainWindow::declinationMoveHandboxDown(void) {
     long maxDeclSteps;
 
     if (this->mountMotion.DeclDriveIsMoving==false){
-        ui->pbPGDecMinus->setEnabled(false);
-        ui->pbPGDecPlus->setEnabled(false);
-        ui->pbPGRAMinus->setEnabled(false);
-        ui->pbPGRAPlus->setEnabled(false);
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbDeclUp->setEnabled(0);
         this->setControlsForDeclTravel(false);
@@ -3318,10 +3288,6 @@ void MainWindow::declinationMoveHandboxDown(void) {
         while (!futureStepperBehaviourDecl.isFinished()) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         }
-        ui->pbPGDecMinus->setEnabled(true);
-        ui->pbPGDecPlus->setEnabled(true);
-        ui->pbPGRAMinus->setEnabled(true);
-        ui->pbPGRAPlus->setEnabled(true);
         ui->pbDeclUp->setEnabled(1);
         this->setControlsForDeclTravel(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -3342,10 +3308,6 @@ void MainWindow::RAMoveHandboxFwd(void) {
     ui->rbCorrSpeed->setEnabled(false);
     ui->rbMoveSpeed->setEnabled(false);
     ui->sbMoveSpeed->setEnabled(false);
-    ui->pbPGRAMinus->setEnabled(false);
-    ui->pbPGRAPlus->setEnabled(false);
-    ui->pbPGDecMinus->setEnabled(false);
-    ui->pbPGDecPlus->setEnabled(false);
     if (this->mountMotion.RADriveIsMoving ==false){
         this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbRAMinus->setEnabled(0);
@@ -3380,10 +3342,6 @@ void MainWindow::RAMoveHandboxFwd(void) {
         ui->pbRAMinus->setEnabled(1);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
-        ui->pbPGRAMinus->setEnabled(true);
-        ui->pbPGRAPlus->setEnabled(true);
-        ui->pbPGDecMinus->setEnabled(true);
-        ui->pbPGDecPlus->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         }
@@ -3401,10 +3359,6 @@ void MainWindow::RAMoveHandboxBwd(void) {
     ui->rbCorrSpeed->setEnabled(false);
     ui->rbMoveSpeed->setEnabled(false);
     ui->sbMoveSpeed->setEnabled(false);
-    ui->pbPGRAMinus->setEnabled(false);
-    ui->pbPGRAPlus->setEnabled(false);
-    ui->pbPGDecMinus->setEnabled(false);
-    ui->pbPGDecPlus->setEnabled(false);
     if (this->mountMotion.RADriveIsMoving ==false){
         this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbRAPlus->setEnabled(0);
@@ -3437,10 +3391,6 @@ void MainWindow::RAMoveHandboxBwd(void) {
         ui->pbRAPlus->setEnabled(1);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
-        ui->pbPGRAMinus->setEnabled(true);
-        ui->pbPGRAPlus->setEnabled(true);
-        ui->pbPGDecMinus->setEnabled(true);
-        ui->pbPGDecPlus->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         }
@@ -3897,10 +3847,6 @@ void MainWindow::compensateDeclBacklashPG(short ddir) {
 void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbTrainAxes->setEnabled(isEnabled);
     ui->sbPulseGuideDuration->setEnabled(isEnabled);
-    ui->pbPGDecMinus->setEnabled(isEnabled);
-    ui->pbPGDecPlus->setEnabled(isEnabled);
-    ui->pbPGRAMinus->setEnabled(isEnabled);
-    ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->pbSelectGuideStar->setEnabled(isEnabled);
     ui->sbExposureTime->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
@@ -3953,10 +3899,6 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->pbStoreDrive->setEnabled(isEnabled);
     ui->pbStoreGears->setEnabled(isEnabled);
     ui->pbLX200Active->setEnabled(isEnabled);
-    ui->pbPGDecMinus->setEnabled(isEnabled);
-    ui->pbPGDecPlus->setEnabled(isEnabled);
-    ui->pbPGRAMinus->setEnabled(isEnabled);
-    ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->LX200Tab->setEnabled(isEnabled);
     ui->INDITab->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
@@ -4010,8 +3952,6 @@ void MainWindow::setControlsForRATravel(bool isEnabled) {
     ui->leRAStepsize->setEnabled(isEnabled);
     ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
-    ui->pbPGRAMinus->setEnabled(isEnabled);
-    ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->listWidgetCatalog->setEnabled(isEnabled);
     ui->listWidgetObject->setEnabled(isEnabled);
     ui->pbSync->setEnabled(isEnabled);
@@ -4031,8 +3971,6 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
     ui->leDeclWorm->setEnabled(isEnabled);
     ui->leDeclStepSize->setEnabled(isEnabled);
     ui->lcdMicrosteps->setEnabled(isEnabled);
-    ui->pbPGDecMinus->setEnabled(isEnabled);
-    ui->pbPGDecPlus->setEnabled(isEnabled);
     ui->listWidgetCatalog->setEnabled(isEnabled);
     ui->listWidgetObject->setEnabled(isEnabled);
     ui->pbSync->setEnabled(isEnabled);
@@ -4056,10 +3994,6 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->tabImageProc->setEnabled(isEnabled);
     ui->pbTrainAxes->setEnabled(isEnabled);
     ui->sbPulseGuideDuration->setEnabled(isEnabled);
-    ui->pbPGDecPlus->setEnabled(isEnabled);
-    ui->pbPGDecMinus->setEnabled(isEnabled);
-    ui->pbPGRAMinus->setEnabled(isEnabled);
-    ui->pbPGRAPlus->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->teCalibrationStatus->setEnabled(true);
     if (isEnabled == true) {
