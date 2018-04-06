@@ -224,6 +224,7 @@ private:
         double rotationAngle; // relative angle between mount and camera coordinate system
         double maxDevInArcSec; // maximum error in seconds of arc duign guiding
         double rmsDevInArcSec; // rms error in " during guiding
+        double rmsDevInArcSecSum; // running sum of squared errors for RMS computation
         double backlashCompensationInMS; // additional pulse to be issued if declination travel is inverted
         long noOfGuidingSteps; // number of acquired autoguider images
         bool st4IsActive; // true if ST4 is active

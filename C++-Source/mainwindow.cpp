@@ -147,6 +147,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.rotationAngle=0.0;
     this->guidingState.maxDevInArcSec=0.0;
     this->guidingState.rmsDevInArcSec=0.0;
+    this->guidingState.rmsDevInArcSecSum = 0.0;
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
     this->guidingState.st4IsActive = false;
@@ -409,6 +410,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
     connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
     connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc())); // apply a 3x3 median filter to the guidestar - image
+    connect(ui->cbLowPass, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc())); // apply a 3x3 median filter to the guidestar - image
     connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
@@ -1542,12 +1544,13 @@ void MainWindow::changeCCDGain(void) {
 void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
     int thrshld,beta;
     float newX, newY,alpha;
-    bool medianOn;
+    bool medianOn, lpOn;
 
     this->camImageWasReceived= true;
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
+    lpOn = ui->cbLowPass->isChecked();
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
        // now cope with different states and images needed ...
 
@@ -1570,11 +1573,11 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         if ((this->guidingState.guidingIsOn==true) && (this->guidingState.systemIsCalibrated==true)) { // if autoguiding is active and system is calibrated
             this->guidingState.noOfGuidingSteps++; // every odd one, corrections are applied ...
             ui->lcdGuidesteps->display((int)(this->guidingState.noOfGuidingSteps));
-            this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+            this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
             newX = g_AllData->getInitialStarPosition(2);
             newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
-            this->waitForNMSecs(2000);
-            usleep(500); // just give the system time to breathe ...
+            this->waitForNMSecs(2500);
+            usleep(750); // just give the system time to breathe ...
             correctGuideStarPosition(newX,newY); // ... and is used to correct the position
         }
     }
@@ -1695,7 +1698,8 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
         }
-        this->guidingState.rmsDevInArcSec = 0;
+        this->guidingState.rmsDevInArcSec = 0.0;
+        this->guidingState.rmsDevInArcSecSum = 0.0;
         this->guidingState.maxDevInArcSec = 0;
         ui->leMaxGuideErr->setText("0/0");
         this->takeSingleCamShot();
@@ -1719,11 +1723,11 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     erry=devVector[1]*this->guiding->getArcSecsPerPix(1);
     if (this->guidingState.noOfGuidingSteps > 2) {
         err=sqrt(errx*errx+erry*erry);
-        this->guidingState.rmsDevInArcSec += err;
+        this->guidingState.rmsDevInArcSecSum += err*err;
         if (err > this->guidingState.maxDevInArcSec) {
             this->guidingState.maxDevInArcSec = err;
         }
-        runningRMS=sqrt(1/((float)(this->guidingState.noOfGuidingSteps))*this->guidingState.rmsDevInArcSec);
+        runningRMS=sqrt(1/((float)(this->guidingState.noOfGuidingSteps-1))*this->guidingState.rmsDevInArcSecSum);
         errString.clear();
         errString.append(QString::number(this->guidingState.maxDevInArcSec,'g',2));
         errString.append("/");
@@ -1882,6 +1886,7 @@ void MainWindow::resetGuidingError(void) {
     if (this->guidingState.guidingIsOn==false) {
         this->guidingState.maxDevInArcSec=0.0;
         this->guidingState.rmsDevInArcSec=0.0;
+        this->guidingState.rmsDevInArcSecSum = 0.0;
         ui->leMaxGuideErr->setText(textEntry->number(this->guidingState.maxDevInArcSec));
         ui->leDevRaPix->setText("0");
         ui->leDevDeclPix->setText("0");
@@ -1916,7 +1921,7 @@ void MainWindow::calibrateAutoGuider(void) {
         avrgDeclBacklashInPixel, sdevBacklashPix, declBacklashInPixel[4];
     float alpha;
     int thrshld,beta,imgProcWindowSize;
-    bool medianOn;
+    bool medianOn, lpOn;
     short slewCounter;
 
     this->guidingState.calibrationIsRunning=true;
@@ -1935,6 +1940,7 @@ void MainWindow::calibrateAutoGuider(void) {
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
+    lpOn = ui->cbLowPass->isChecked();
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
     arcsecPPix[0] = this->guiding->getArcSecsPerPix(0);
     arcsecPPix[1] = this->guiding->getArcSecsPerPix(1); // get the ratio "/pixel from the guiding class
@@ -1973,7 +1979,7 @@ void MainWindow::calibrateAutoGuider(void) {
 
     // calibration starts here
     this->waitForCalibrationImage(); // small subroutine - waits for 2 images
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     this->waitForNMSecs(250);
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
@@ -2000,7 +2006,7 @@ void MainWindow::calibrateAutoGuider(void) {
         this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
         return;
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     this->waitForNMSecs(250);
     currentCentroid[0] = g_AllData->getInitialStarPosition(2);
     currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
@@ -2041,7 +2047,7 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
@@ -2055,7 +2061,7 @@ void MainWindow::calibrateAutoGuider(void) {
         this->raPGFwd(); // carry out travel
         this->waitForDriveStop(true,true);
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
@@ -2109,7 +2115,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
     this->waitForDriveStop(false,true);
     this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     this->waitForNMSecs(250);
 
     for (slewCounter = 0; slewCounter < 5; slewCounter++) {
@@ -2120,7 +2126,7 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
         this->waitForCalibrationImage(); // small subroutine - waits for image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);            // now get a position
         initialCentroid[0] = g_AllData->getInitialStarPosition(2);
         initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew
@@ -2143,7 +2149,7 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
@@ -2174,7 +2180,7 @@ void MainWindow::calibrateAutoGuider(void) {
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
@@ -2361,6 +2367,7 @@ void MainWindow::resetGuidingCalibration(void) {
         this->guidingState.rotationAngle=0.0;
         this->guidingState.maxDevInArcSec=0.0;
         this->guidingState.rmsDevInArcSec=0.0;
+        this->guidingState.rmsDevInArcSecSum = 0.0;
         this->guidingState.backlashCompensationInMS=0.0;
         this->guidingState.noOfGuidingSteps = 0;
         this->guidingState.st4IsActive=false;
@@ -2423,7 +2430,7 @@ void MainWindow::doAutoGuiding(void) {
 // from the crosshair position stored in g_AllData.
 void MainWindow::selectGuideStar(void) {
     int thrshld,beta;
-    bool medianOn;
+    bool medianOn, lpOn;
     float alpha;
 
     if ((this->ccdCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
@@ -2434,15 +2441,16 @@ void MainWindow::selectGuideStar(void) {
         ui->hsIContrast->setEnabled(true);
         ui->hsIBrightness->setEnabled(true); // enable image processing controls
         medianOn=ui->cbMedianFilter->isChecked();
+        lpOn = ui->cbLowPass->isChecked();
         thrshld = ui->hsThreshold->value();
         alpha = ui->hsIContrast->value()/100.0;
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         this->waitForNMSecs(250);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         this->waitForNMSecs(250);
         ui->tabCCDCal->setEnabled(true);
     }
@@ -2453,7 +2461,7 @@ void MainWindow::selectGuideStar(void) {
 // element; everything is just the same as in "selectGuideStar()"
 void MainWindow::confirmGuideStar(void) {
     int thrshld,beta;
-    bool medianOn;
+    bool medianOn, lpOn;
     float alpha;
 
     if ((this->ccdCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
@@ -2461,15 +2469,16 @@ void MainWindow::confirmGuideStar(void) {
             this->startRATracking();
         } // turn on tracking if it is not running when a guide star is selected
         medianOn=ui->cbMedianFilter->isChecked();
+        lpOn = ui->cbLowPass->isChecked();
         thrshld = ui->hsThreshold->value();
         alpha = ui->hsIContrast->value()/100.0;
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         ui->tabCCDCal->setEnabled(true);
         ui->pbTrainAxes->setEnabled(true);
         QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
@@ -2480,14 +2489,15 @@ void MainWindow::confirmGuideStar(void) {
 // slot for changing the image processing controls
 void MainWindow::changePrevImgProc(void) {
     int thrshld,beta;
-    bool medianOn;
+    bool medianOn, lpOn;
     float alpha;
 
     thrshld = ui->hsThreshold->value();
     medianOn=ui->cbMedianFilter->isChecked();
+    lpOn = ui->cbLowPass->isChecked();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta, this->guidingFOVFactor,this->guidingState.guideStarSelected, false);
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta, this->guidingFOVFactor,this->guidingState.guideStarSelected, false);
     QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
@@ -2521,14 +2531,15 @@ void MainWindow::storeGuideScopeFL(void) {
 void MainWindow::setHalfFOV(void) {
     int thrshld,beta;
     float alpha;
-    bool medianOn;
+    bool medianOn, lpOn;
 
     this->guidingFOVFactor=0.5;
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+    lpOn = ui->cbLowPass->isChecked();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
     this->waitForNMSecs(250);
 }
 
@@ -2537,14 +2548,15 @@ void MainWindow::setHalfFOV(void) {
 void MainWindow::setDoubleFOV(void) {
     int thrshld,beta;
     float alpha;
-    bool medianOn;
+    bool medianOn, lpOn;
 
     this->guidingFOVFactor=2.0;
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+    lpOn = ui->cbLowPass->isChecked();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
     this->waitForNMSecs(250);
 }
 
@@ -2553,14 +2565,15 @@ void MainWindow::setDoubleFOV(void) {
 void MainWindow::setRegularFOV(void) {
     int thrshld,beta;
     float alpha;
-    bool medianOn;
+    bool medianOn, lpOn;
 
     this->guidingFOVFactor=1.0;
     thrshld = ui->hsThreshold->value();
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     medianOn=ui->cbMedianFilter->isChecked();
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
+    lpOn = ui->cbLowPass->isChecked();
+    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
     this->waitForNMSecs(250);
 }
 

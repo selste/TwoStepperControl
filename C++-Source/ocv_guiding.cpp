@@ -93,7 +93,7 @@ double ocv_guiding::getArcSecsPerPix(short what) {
 }
 
 //---------------------------------------------------
-void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float cntrst,int briteness,float FOVfact,bool starSelected, bool updateCentroid) {
+void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool lpOn, float cntrst,int briteness,float FOVfact,bool starSelected, bool updateCentroid) {
     int clicx,clicy;
     Point tLeft, bRight;
     float centroidX, centroidY;
@@ -131,6 +131,9 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn,float c
         if (medianOn== true) {
             cv::medianBlur(this->currentImageOCVMat,this->currentImageOCVMat, 3);
         } // run a 3x3 median filter if desired
+        if (lpOn == true) {
+            cv::GaussianBlur(this->currentImageOCVMat,this->currentImageOCVMat, Size(5,5), 0, BORDER_DEFAULT);
+        }
         convertMatToQImg(); 
         prevImg = new QImage(processedImage->scaled(180,180,Qt::KeepAspectRatio,Qt::FastTransformation));
         prevPMap->convertFromImage(*prevImg,0);

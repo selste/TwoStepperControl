@@ -3917,7 +3917,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>350</y>
+          <y>370</y>
           <width>100</width>
           <height>25</height>
          </rect>
@@ -3942,7 +3942,7 @@
         <property name="geometry">
          <rect>
           <x>20</x>
-          <y>160</y>
+          <y>187</y>
           <width>180</width>
           <height>180</height>
          </rect>
@@ -3969,9 +3969,9 @@
        <widget class="QCheckBox" name="cbMedianFilter">
         <property name="geometry">
          <rect>
-          <x>0</x>
+          <x>10</x>
           <y>100</y>
-          <width>121</width>
+          <width>151</width>
           <height>25</height>
          </rect>
         </property>
@@ -3988,7 +3988,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Median Filter</string>
+         <string>3x3 Median Filter</string>
         </property>
         <property name="checked">
          <bool>true</bool>
@@ -4082,9 +4082,9 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>130</y>
+          <y>165</y>
           <width>201</width>
-          <height>29</height>
+          <height>19</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_9">
@@ -4125,7 +4125,7 @@
         <property name="geometry">
          <rect>
           <x>110</x>
-          <y>350</y>
+          <y>370</y>
           <width>100</width>
           <height>25</height>
          </rect>
@@ -4144,6 +4144,25 @@
         </property>
         <property name="text">
          <string>Confirm</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="cbLowPass">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>128</y>
+          <width>131</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>5x5 Low Pass</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </widget>
