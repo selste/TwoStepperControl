@@ -1646,6 +1646,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     double aggressiveness, runningRMS;
     QString logString, errString;
 
+    ui->cbMoveRejected->setChecked(false);
     aggressiveness = ui->sbGuideAggressiveness->value(); // a value that dampens the response - values between 0.7 and 1.3
     if (this->guidingState.noOfGuidingSteps == 1) {
         ui->leDevRaPix->setText("0");
@@ -1723,6 +1724,12 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     erry=devVector[1]*this->guiding->getArcSecsPerPix(1);
     if (this->guidingState.noOfGuidingSteps > 2) {
         err=sqrt(errx*errx+erry*erry);
+        if ((err > 3*ui->sbMaxDevInGuiding->value()) && (err > 3*runningRMS)) {
+            ui->cbMoveRejected->setChecked(true);
+            this->takeSingleCamShot();
+            this->waitForNMSecs(250);
+            return 0.0; // reject outliers, for instance du to camera readout latency
+        }
         this->guidingState.rmsDevInArcSecSum += err*err;
         if (err > this->guidingState.maxDevInArcSec) {
             this->guidingState.maxDevInArcSec = err;
