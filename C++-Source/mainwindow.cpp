@@ -1724,12 +1724,14 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     erry=devVector[1]*this->guiding->getArcSecsPerPix(1);
     if (this->guidingState.noOfGuidingSteps > 2) {
         err=sqrt(errx*errx+erry*erry);
-        if ((err > 3*ui->sbMaxDevInGuiding->value()) && (err > 3*runningRMS)) {
-            ui->cbMoveRejected->setChecked(true);
-            this->takeSingleCamShot();
-            this->waitForNMSecs(250);
-            return 0.0; // reject outliers, for instance du to camera readout latency
-        }
+     //   if (err > 15) {
+     //       if (err > 3*runningRMS) {
+     //           ui->cbMoveRejected->setChecked(true);
+     //           this->takeSingleCamShot();
+     //           this->waitForNMSecs(250);
+     //           return 0.0; // reject outliers, for instance du to camera readout latency
+     //       }
+     //   }
         this->guidingState.rmsDevInArcSecSum += err*err;
         if (err > this->guidingState.maxDevInArcSec) {
             this->guidingState.maxDevInArcSec = err;
@@ -2161,7 +2163,7 @@ void MainWindow::calibrateAutoGuider(void) {
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
+            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixRA;
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -2192,7 +2194,7 @@ void MainWindow::calibrateAutoGuider(void) {
         if (this->calibrationToBeTerminated == true) {
             this->calibrationTerminationStuffToBeDone();
             this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
+            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixRA;
             return;
         } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
@@ -2218,7 +2220,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
     setControlsForAutoguiderCalibration(true);
     this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-    this->guidingState.travelTime_ms_Decl=this->pulseGuideDuration/((lengthOfTravelDeclMinus+lengthOfTravelDeclPlus)/2.0);
+    this->guidingState.travelTime_ms_Decl=this->guidingState.travelTime_ms_RA;
     this->guidingState.rotationAngle=avrgAngle;
     this->displayCalibrationStatus("Calibration is finished...");
     this->displayCalibrationStatus("Travel time RA: ", this->guidingState.travelTime_ms_RA, "[ms/pix]");
