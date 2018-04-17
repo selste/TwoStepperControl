@@ -228,8 +228,8 @@ private:
         double backlashCompensationInMS; // additional pulse to be issued if declination travel is inverted
         long noOfGuidingSteps; // number of acquired autoguider images
         bool st4IsActive; // true if ST4 is active
-        int raCorrSteps[3];
-        int declCorrSteps[3];
+        float raErrs[3];
+        float declErrs[3];
     };
 
     struct DSLRStateStruct {
@@ -325,7 +325,7 @@ private:
     float guidingFOVFactor;
     double rotMatrixGuidingXToRA[2][2];
     float temperature;
-    long pulseGuideDuration;
+    int pulseGuideDuration;
     QString *textEntry;
     QString *bt_HandboxCommand;
     QFile *guidingLog;

@@ -151,8 +151,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.backlashCompensationInMS = 0.0;
     this->guidingState.noOfGuidingSteps = 0;
     this->guidingState.st4IsActive = false;
-    this->guidingState.raCorrSteps[0] = this->guidingState.raCorrSteps[1] = this->guidingState.raCorrSteps[2] = 0;
-    this->guidingState.declCorrSteps[0] = this->guidingState.declCorrSteps[1] = this->guidingState.declCorrSteps[2] = 0;
+    this->guidingState.raErrs[0] = this->guidingState.raErrs[1] = this->guidingState.raErrs[2] = 0;
+    this->guidingState.declErrs[0] = this->guidingState.declErrs[1] = this->guidingState.declErrs[2] = 0;
     this->pulseGuideDuration = 500;
     this->dslrStates.dslrExposureIsRunning = false;
     this->dslrStates.dslrSeriesRunning = false;
@@ -544,7 +544,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 
     ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
-    ui->sbPulseGuideDuration->setValue(pulseGuideDuration);
+    ui->lcdPulseGuideDuration->display(pulseGuideDuration);
+    ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
@@ -1642,11 +1643,12 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
 // correct guide star position here. called from "displayGuideCamImage".
 double MainWindow::correctGuideStarPosition(float cx, float cy) {
     float devVector[2], devVectorRotated[2],errx,erry,err, devRA, devDecl;
-    long pgduration;
-    double aggressiveness, runningRMS;
+    int pgduration;
+    double aggressiveness, runningRMS, hysteresisWeight, prevWeights;
     QString logString, errString;
 
-    ui->cbMoveRejected->setChecked(false);
+    hysteresisWeight = ui->sbHysteresisWeight->value(); // the weight for the last error ...
+    prevWeights = (1.0-hysteresisWeight)/2.0;
     aggressiveness = ui->sbGuideAggressiveness->value(); // a value that dampens the response - values between 0.7 and 1.3
     if (this->guidingState.noOfGuidingSteps == 1) {
         ui->leDevRaPix->setText("0");
@@ -1724,14 +1726,6 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     erry=devVector[1]*this->guiding->getArcSecsPerPix(1);
     if (this->guidingState.noOfGuidingSteps > 2) {
         err=sqrt(errx*errx+erry*erry);
-     //   if (err > 15) {
-     //       if (err > 3*runningRMS) {
-     //           ui->cbMoveRejected->setChecked(true);
-     //           this->takeSingleCamShot();
-     //           this->waitForNMSecs(250);
-     //           return 0.0; // reject outliers, for instance du to camera readout latency
-     //       }
-     //   }
         this->guidingState.rmsDevInArcSecSum += err*err;
         if (err > this->guidingState.maxDevInArcSec) {
             this->guidingState.maxDevInArcSec = err;
@@ -1765,13 +1759,14 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             logString.clear();
     }
 
+    this->guidingState.raErrs[0] = this->guidingState.raErrs[1];
+    this->guidingState.raErrs[1] = this->guidingState.raErrs[2];
+    this->guidingState.raErrs[2] = devVectorRotated[0]; // compute a runing average of the two past errors and the current one to dampen guiding motion
+    devRA=(prevWeights*this->guidingState.raErrs[0]+prevWeights*this->guidingState.raErrs[1]+
+           hysteresisWeight*this->guidingState.raErrs[2]); // this is the moving average
     // carry out the correction in RA
+
     if (fabs(devVectorRotated[0]) > ui->sbMaxDevInGuiding->value()) {
-        this->guidingState.raCorrSteps[0] = this->guidingState.raCorrSteps[1];
-        this->guidingState.raCorrSteps[1] = this->guidingState.raCorrSteps[2];
-        this->guidingState.raCorrSteps[2] = devVectorRotated[0]; // compute a runing average of the two past motions and the current one to dampen guiding motion
-        devRA=(0.1*this->guidingState.raCorrSteps[0]+0.1*this->guidingState.raCorrSteps[1]+
-               0.8*this->guidingState.raCorrSteps[2]); // this is the moving average
         pgduration=round(aggressiveness*this->guidingState.travelTime_ms_RA*fabs(devRA)); // pulse guide duration in ra
         if (pgduration > 2000) {
             pgduration = 2000;
@@ -1783,10 +1778,10 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
         }
-        ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
+        ui->lcdPulseGuideDuration->display(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
         this->pulseGuideDuration=pgduration;
         ui->lePulseRAMS->setText(textEntry->number(pgduration));
-        if (devRA>0) {
+        if (devRA > 0) {
             ui->leDevRaPix->setText(textEntry->number(-devRA,'g',2));
             this->raPGBwdGd(pgduration);
             if (ui->cbLogGuidingData->isChecked()==true) {
@@ -1810,11 +1805,13 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
     QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
     this->waitForNMSecs(250);
     // carry out the correction in decl
+
+    this->guidingState.declErrs[0] = this->guidingState.declErrs[1];
+    this->guidingState.declErrs[1] = this->guidingState.declErrs[2];
+    this->guidingState.declErrs[2] = devVectorRotated[1]; // now compute a running average for declination
+    devDecl = (prevWeights*this->guidingState.declErrs[0]+prevWeights*this->guidingState.declErrs[1]+hysteresisWeight*this->guidingState.declErrs[2]);
+
     if (fabs(devVectorRotated[1]) > ui->sbMaxDevInGuiding->value()) {
-        this->guidingState.declCorrSteps[0] = this->guidingState.declCorrSteps[1];
-        this->guidingState.declCorrSteps[1] = this->guidingState.declCorrSteps[2];
-        this->guidingState.declCorrSteps[2] = devVectorRotated[1]; // now compute a running average for declination
-        devDecl = (0.1*this->guidingState.declCorrSteps[0]+0.1*this->guidingState.declCorrSteps[1]+0.8*this->guidingState.declCorrSteps[2]);
         pgduration=round(aggressiveness*this->guidingState.travelTime_ms_Decl*fabs(devDecl)); // pulse guide duration in decl
         if (pgduration > 2000) {
             pgduration = 2000;
@@ -1837,7 +1834,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                             logString.clear();
                         }
                 }
-                ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                ui->lcdPulseGuideDuration->display(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 this->pulseGuideDuration=pgduration;
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
@@ -1863,7 +1860,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                             logString.clear();
                         }
                 }
-                ui->sbPulseGuideDuration->setValue(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
+                ui->lcdPulseGuideDuration->display(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 this->pulseGuideDuration=pgduration;
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
@@ -1992,7 +1989,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->waitForNMSecs(250);
     initialCentroid[0] = g_AllData->getInitialStarPosition(2);
     initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew
     this->pulseGuideDuration=pulseDuration;
     if (this->calibrationToBeTerminated == true) {
         this->calibrationTerminationStuffToBeDone();
@@ -2027,7 +2024,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
     this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl; // speeds are now stored in the global struct
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixRA; // that gives the pulse duration
-    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew in RA
+    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew in RA
     this->pulseGuideDuration=pulseDuration;
     if (this->calibrationToBeTerminated == true) {
         this->calibrationTerminationStuffToBeDone();
@@ -2118,7 +2115,7 @@ void MainWindow::calibrateAutoGuider(void) {
     //-------------------------------------------------------------------------------------------------
     // now do declination travel to compensate for backlash when reversing declination travel direction
     pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixDecl; // that gives the pulse duration in decl
-    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew
     this->pulseGuideDuration=pulseDuration;
     this->displayCalibrationStatus("Backlash calibration");
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
@@ -2274,7 +2271,7 @@ void MainWindow::skipCalibration(void) {
         this->displayCalibrationStatus("Time for 1 pix in Decl: ",this->guidingState.travelTime_ms_Decl," ms");
     imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
     pulseDuration = imgProcWindowSize*this->guidingState.travelTime_ms_RA; // that gives the pulse duration
-    ui->sbPulseGuideDuration->setValue(pulseDuration); // set the duration for the slew
+    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew
     this->pulseGuideDuration=pulseDuration;
     avrgAngle=0.0;
     this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
@@ -2396,10 +2393,10 @@ void MainWindow::resetGuidingCalibration(void) {
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingState.guidingIsOn == false) {
-        this->guidingState.raCorrSteps[0] = this->guidingState.raCorrSteps[1] =
-        this->guidingState.raCorrSteps[2] = 0;
-        this->guidingState.declCorrSteps[0] = this->guidingState.declCorrSteps[1] =
-        this->guidingState.declCorrSteps[2] = 0;
+        this->guidingState.raErrs[0] = this->guidingState.raErrs[1] =
+        this->guidingState.raErrs[2] = 0;
+        this->guidingState.declErrs[0] = this->guidingState.declErrs[1] =
+        this->guidingState.declErrs[2] = 0;
         ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
         this->setTrackingRate();
         this->guidingState.maxDevInArcSec=0.0;
@@ -3868,7 +3865,6 @@ void MainWindow::compensateDeclBacklashPG(short ddir) {
 //-----------------------------------------------------------------------
 void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->pbTrainAxes->setEnabled(isEnabled);
-    ui->sbPulseGuideDuration->setEnabled(isEnabled);
     ui->pbSelectGuideStar->setEnabled(isEnabled);
     ui->sbExposureTime->setEnabled(isEnabled);
     ui->tabCCDAcq->setEnabled(isEnabled);
@@ -3877,6 +3873,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
     ui->hsIContrast->setEnabled(isEnabled);
     ui->hsIBrightness->setEnabled(isEnabled);
     ui->cbMedianFilter->setEnabled(isEnabled);
+    ui->cbLowPass->setEnabled(isEnabled);
     ui->rbFOVDbl->setEnabled(isEnabled);
     ui->rbFOVHalf->setEnabled(isEnabled);
     ui->rbFOVStd->setEnabled(isEnabled);
@@ -4015,7 +4012,6 @@ void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->tabGuide->setEnabled(isEnabled);
     ui->tabImageProc->setEnabled(isEnabled);
     ui->pbTrainAxes->setEnabled(isEnabled);
-    ui->sbPulseGuideDuration->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
     ui->teCalibrationStatus->setEnabled(true);
     if (isEnabled == true) {

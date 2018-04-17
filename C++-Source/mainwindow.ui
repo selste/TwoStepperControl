@@ -3429,6 +3429,12 @@
         <height>431</height>
        </rect>
       </property>
+      <property name="toolTip">
+       <string extracomment="The minimum deviation in arcseconds tolerated by the autoguider"/>
+      </property>
+      <property name="toolTipDuration">
+       <number>3</number>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -4328,20 +4334,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="sbPulseGuideDuration">
-           <property name="minimum">
-            <number>0</number>
-           </property>
-           <property name="maximum">
-            <number>10000</number>
-           </property>
-           <property name="singleStep">
-            <number>50</number>
-           </property>
-           <property name="value">
-            <number>500</number>
-           </property>
-          </widget>
+          <widget class="QLCDNumber" name="lcdPulseGuideDuration"/>
          </item>
         </layout>
        </widget>
@@ -4357,7 +4350,7 @@
         <property name="geometry">
          <rect>
           <x>2</x>
-          <y>63</y>
+          <y>97</y>
           <width>204</width>
           <height>27</height>
          </rect>
@@ -4425,26 +4418,13 @@
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>3</x>
-          <y>91</y>
-          <width>209</width>
+          <x>1</x>
+          <y>126</y>
+          <width>211</width>
           <height>58</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_4">
-         <item row="0" column="0">
-          <widget class="QLabel" name="lRAPulse">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Pulse RA [ms]:</string>
-           </property>
-          </widget>
-         </item>
          <item row="0" column="1">
           <widget class="QLineEdit" name="lePulseRAMS">
            <property name="enabled">
@@ -4461,6 +4441,19 @@
              <width>90</width>
              <height>25</height>
             </size>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="lRAPulse">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Pulse RA [ms]:</string>
            </property>
           </widget>
          </item>
@@ -4508,9 +4501,9 @@
         <property name="geometry">
          <rect>
           <x>3</x>
-          <y>240</y>
+          <y>277</y>
           <width>119</width>
-          <height>32</height>
+          <height>30</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_17">
@@ -4543,7 +4536,7 @@
         <property name="geometry">
          <rect>
           <x>3</x>
-          <y>273</y>
+          <y>308</y>
           <width>194</width>
           <height>32</height>
          </rect>
@@ -4598,11 +4591,11 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>3</x>
-          <y>150</y>
+          <y>186</y>
           <width>184</width>
           <height>89</height>
          </rect>
@@ -4670,13 +4663,91 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QPushButton" name="pbGuiding">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
-          <x>5</x>
-          <y>2</y>
-          <width>181</width>
-          <height>60</height>
+          <x>3</x>
+          <y>341</y>
+          <width>210</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>210</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>210</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Guide</string>
+        </property>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>3</x>
+          <y>367</y>
+          <width>208</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_25">
+         <item>
+          <widget class="QPushButton" name="pbResetGdErr">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Reset Err</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pbResetGuiding">
+           <property name="minimumSize">
+            <size>
+             <width>100</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Reset Guide</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>2</x>
+          <y>3</y>
+          <width>184</width>
+          <height>92</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_8">
@@ -4706,6 +4777,15 @@
              <width>60</width>
              <height>26</height>
             </size>
+           </property>
+           <property name="whatsThis">
+            <string extracomment="Minimum deviation in seconds of arc tolerated by the guider."/>
+           </property>
+           <property name="accessibleDescription">
+            <string>Minimum deviation in seconds of arc tolerated by the guider.</string>
+           </property>
+           <property name="autoFillBackground">
+            <bool>true</bool>
            </property>
            <property name="minimum">
             <double>0.100000000000000</double>
@@ -4768,107 +4848,38 @@
            </property>
           </widget>
          </item>
-        </layout>
-       </widget>
-       <widget class="QPushButton" name="pbGuiding">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>3</x>
-          <y>341</y>
-          <width>210</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>210</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>210</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Guide</string>
-        </property>
-       </widget>
-       <widget class="QWidget" name="">
-        <property name="geometry">
-         <rect>
-          <x>3</x>
-          <y>367</y>
-          <width>208</width>
-          <height>27</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_25">
-         <item>
-          <widget class="QPushButton" name="pbResetGdErr">
+         <item row="2" column="0">
+          <widget class="QLabel" name="lHysteresisWeight">
+           <property name="text">
+            <string>Hyst. Weight:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="sbHysteresisWeight">
            <property name="minimumSize">
             <size>
-             <width>100</width>
-             <height>25</height>
+             <width>0</width>
+             <height>26</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>100</width>
-             <height>25</height>
+             <width>16777215</width>
+             <height>26</height>
             </size>
            </property>
-           <property name="text">
-            <string>Reset Err</string>
+           <property name="minimum">
+            <double>0.300000000000000</double>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pbResetGuiding">
-           <property name="minimumSize">
-            <size>
-             <width>100</width>
-             <height>25</height>
-            </size>
+           <property name="maximum">
+            <double>1.000000000000000</double>
            </property>
-           <property name="maximumSize">
-            <size>
-             <width>100</width>
-             <height>25</height>
-            </size>
+           <property name="singleStep">
+            <double>0.050000000000000</double>
            </property>
-           <property name="text">
-            <string>Reset Guide</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="">
-        <property name="geometry">
-         <rect>
-          <x>4</x>
-          <y>306</y>
-          <width>175</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_27">
-         <item>
-          <widget class="QCheckBox" name="cbMoveRejected">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Outlier- move rejected</string>
+           <property name="value">
+            <double>0.500000000000000</double>
            </property>
           </widget>
          </item>
