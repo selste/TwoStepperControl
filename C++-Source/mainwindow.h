@@ -329,6 +329,7 @@ private:
     QString *textEntry;
     QString *bt_HandboxCommand;
     QFile *guidingLog;
+    void connectLX200Events(bool);
     void updateTimeAndDate(void);
     void declinationPulseGuide(long, short,bool);
     void raPulseGuide(long, short,bool);

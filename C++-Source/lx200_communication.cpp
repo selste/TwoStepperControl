@@ -215,7 +215,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 waitTimer = new QElapsedTimer();
                 waitTimer->start();
                 do {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
                 } while (waitTimer->elapsed() < 25);
                 delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
@@ -231,7 +231,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 waitTimer = new QElapsedTimer();
                 waitTimer->start();
                 do {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
                 } while (waitTimer->elapsed() < 25);
                 delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;

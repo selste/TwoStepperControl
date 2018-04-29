@@ -509,39 +509,16 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
     connect(ui->pbSyncToPark, SIGNAL(clicked()), this, SLOT(syncParkPosition())); // if the scope is parked, sync it to the known parking position
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
-    connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232moveSouth()), this, SLOT(LXmoveSouth()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232stopMoveEast()), this, SLOT(LXstopMoveEast()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232stopMoveWest()), this, SLOT(LXstopMoveWest()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232stopMoveNorth()), this, SLOT(LXstopMoveNorth()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232stopMoveSouth()), this, SLOT(LXstopMoveSouth()),Qt::QueuedConnection); // LX 200 handbox commands
-    connect(this->lx200Comm,SIGNAL(RS232stopMotion()), this, SLOT(LXstopMotion()),Qt::QueuedConnection); // total stop of all motion by LX 200
-    connect(this->lx200Comm,SIGNAL(RS232guideSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232centerSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232findSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
-    connect(this->lx200Comm,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
-    connect(this->lx200Comm,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
-    connect(this->lx200Comm,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
-    connect(this->lx200Comm,SIGNAL(logRASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
-    connect(this->lx200Comm,SIGNAL(logDeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
-    connect(this->lx200Comm,SIGNAL(logCommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
-    connect(this->lx200Comm,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommand()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
-    connect(this->lx200Comm,SIGNAL(clientRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(clientDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
-    connect(this->lx200Comm,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
-    connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*)),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
+    connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*))); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
     connect(this, SIGNAL(tcpHandboxDataReceived()), this, SLOT(handleHandbox()),Qt::QueuedConnection); // handle data comming from the TCP/IP handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
-
+    connectLX200Events(true); // call all connects for LX200 functions
     ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     ui->lcdPulseGuideDuration->display(pulseGuideDuration);
@@ -551,6 +528,38 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
 
 }
+
+//------------------------------------------------------------------
+// a function to call all connects for the LX200 class; mainly inserted for convenience. first called in
+// the constructor.
+void MainWindow::connectLX200Events(bool doConnect) {
+    if (doConnect == true) {
+        connect(this->lx200Comm,SIGNAL(RS232moveEast()), this, SLOT(LXmoveEast()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232moveWest()), this, SLOT(LXmoveWest()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232moveNorth()), this, SLOT(LXmoveNorth()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232moveSouth()), this, SLOT(LXmoveSouth()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232stopMoveEast()), this, SLOT(LXstopMoveEast()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232stopMoveWest()), this, SLOT(LXstopMoveWest()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232stopMoveNorth()), this, SLOT(LXstopMoveNorth()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232stopMoveSouth()), this, SLOT(LXstopMoveSouth()),Qt::QueuedConnection); // LX 200 handbox commands
+        connect(this->lx200Comm,SIGNAL(RS232stopMotion()), this, SLOT(LXstopMotion()),Qt::QueuedConnection); // total stop of all motion by LX 200
+        connect(this->lx200Comm,SIGNAL(RS232guideSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232centerSpeed()), this, SLOT(LXslowSpeed()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232findSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(RS232gotoSpeed()), this, SLOT(LXhiSpeed()),Qt::QueuedConnection); // LX 200 knows four speeds, we only know 2 - sidereal correction and fast motion
+        connect(this->lx200Comm,SIGNAL(RS232sync()),this,SLOT(LXsyncMount()),Qt::QueuedConnection); // LX 200 sync
+        connect(this->lx200Comm,SIGNAL(RS232slew()),this,SLOT(LXslewMount()),Qt::QueuedConnection); // LX 200 slew
+        connect(this->lx200Comm,SIGNAL(RS232CommandReceived()),this, SLOT(logLX200IncomingCmds()),Qt::QueuedConnection); // write incoming command from LX 200 to log
+        connect(this->lx200Comm,SIGNAL(logRASent()),this, SLOT(logLX200OutgoingCmdsRA()),Qt::QueuedConnection); // receive RA from LX 200 and log it
+        connect(this->lx200Comm,SIGNAL(logDeclSent()),this, SLOT(logLX200OutgoingCmdsDecl()),Qt::QueuedConnection); // receive decl from LX 200 and log it
+        connect(this->lx200Comm,SIGNAL(logCommandSent()),this, SLOT(logLX200OutgoingCmds()),Qt::QueuedConnection); // write outgoing command from LX 200 to log
+        connect(this->lx200Comm,SIGNAL(polarAlignmentSignal()), this, SLOT(sendPolarAlignmentCommand()),Qt::QueuedConnection); // send a "P#" upon establishing conntact via classic LX200 over the TCP/IP socket ...
+        connect(this->lx200Comm,SIGNAL(clientRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(clientDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
+    }
+}
+
 //------------------------------------------------------------------
 // destructor - hopefully kills all local and global instances
 MainWindow::~MainWindow() {
@@ -565,7 +574,7 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
 
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
     if (this->guidingState.systemIsCalibrated == true) {
         ui->cbAutoguiderIsCalibrated->setChecked(true);
     } else {
@@ -609,7 +618,7 @@ void MainWindow::updateReadings() {
             // it has to be handled like pressing the stop button
             this->mountMotion.RADriveIsMoving = false;
             while (!futureStepperBehaviourRA.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
             }
             if (this->mountMotion.RATrackingIsOn == false) {
                 this->setControlsForRATravel(true);
@@ -637,7 +646,7 @@ void MainWindow::updateReadings() {
             // same as above; end of handbox slew of 180 degrees has to be handled like pressing a stop button
             this->mountMotion.DeclDriveIsMoving = false;
             while (!futureStepperBehaviourDecl.isFinished()) {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
             }
             ui->pbDeclUp->setEnabled(true);
             ui->pbDeclDown->setEnabled(true);
@@ -769,7 +778,7 @@ void MainWindow::syncMount(void) {
         this->mountMotion.DeclDriveIsMoving=false;
         this->StepperDriveDecl->stopDrive();
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     } // stop the declination drive as well ...
     g_AllData->setSyncPosition(this->ra, this->decl);
@@ -793,18 +802,16 @@ void MainWindow::startGoToObject(void) {
     int timeForProcessingEventQueue = 100; // should be the same as the time for the event queue given in this->timer
     bool RAtakesLonger, shortSlew; // two flags. RAtakes longer = true: RAtravel longer than Decl travel. short sles of a few seconds are carried out one after another to avaid timing problems
     bool RARideIsDone; // a flag set to true when slew in RA is done
-    QElapsedTimer *waitState;
 
     g_AllData->setCelestialSpeed(0); // make sure that the drive speed is sidereal
     ui->rbSiderealSpeed->setChecked(true);
-    waitState = new QElapsedTimer(); // a timer to give the muproc a little time to breathe ...
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
     this->setControlsForGoto(false); // set some controls on disabled
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
     if (this->ccdCameraIsAcquiring == true) { // slewing and transfer of FITS images at the same time cause erratic behaviour,
-        this->stopCCDAcquisition();           // thereguding camer acquisition is terminated if active
+        this->stopCCDAcquisition();           // the guiding camera acquisition is terminated if active
     }
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
     shortSlew=false; // we do not know how long the slew takes, so this flag is false
     timeDifference=0; // difference between estimated travel and real travel in RA - needed for correction after slew
         // determine the travel to be taken based on steps, acceleration and end velocity
@@ -890,9 +897,10 @@ void MainWindow::startGoToObject(void) {
     this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0)*0.95; // same as above
     gotoETA *= 1.05; // just overerestimate the time in order to avoid negative times ...
     ui->lcdGotoTime->display(round(gotoETA/1000.0)); // determined the estimated duration of the GoTo - Process and display it in the GUI. it is reduced in the event queue
-    QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue); // just make sure that events are processed ...
+    QCoreApplication::processEvents(QEventLoop::AllEvents); // just make sure that events are processed ...
 
         // let the games begin ... GOTO is ready to start ...
+        //.................................................................................
     RARideIsDone = false; // RA slew not finished yet ...
     this->terminateAllMotion(); // stop the drives
     this->elapsedGoToTime->start(); // a second timer in the class to measure the time elapsed during goto - needed for updates in the event queue
@@ -908,11 +916,9 @@ void MainWindow::startGoToObject(void) {
         this->mountMotion.GoToIsActiveInDecl=true;
         timestampGOTOStarted = g_AllData->getTimeSinceLastSync(); // set a global timestamp
         this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
-        waitState->start();
-        do {
-        } while (waitState->elapsed() < 100);
+        this->waitForNMSecs(500);
         while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
             if (this->mountMotion.emergencyStopTriggered==true) { // if the emergency button is pressed, terminate routine immediately
                 this->mountMotion.emergencyStopTriggered=false;
                 this->mountMotion.GoToIsActiveInRA=false;
@@ -921,9 +927,7 @@ void MainWindow::startGoToObject(void) {
             }
         }
         this->mountMotion.GoToIsActiveInDecl=false; // goto in Decl is now done, so start travel in RA. set also the flag for decl-goto ...
-        waitState->start();
-        do {
-        } while (waitState->elapsed() < 100);
+        this->waitForNMSecs(500);
         this->stopRATracking(); // now, the decl slew is done and slewing in RA starts - therefore tracking is stopped
         ui->pbStartTracking->setEnabled(false);
         if (RASteps > 50) {
@@ -933,11 +937,9 @@ void MainWindow::startGoToObject(void) {
         }
         this->mountMotion.GoToIsActiveInRA=true;
         this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync(); // set a global timestamp
-        waitState->start();
-        do {
-        } while (waitState->elapsed() < 100);
+        this->waitForNMSecs(500);
         while (!futureStepperBehaviourRA_GOTO.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
             if (this->mountMotion.emergencyStopTriggered==true) { // if the emergency button is pressed, terminate routine immediately
                 this->mountMotion.emergencyStopTriggered=false;
                 this->mountMotion.GoToIsActiveInRA=false; // flag on RA-GOTO set to false - important for event queue
@@ -958,20 +960,16 @@ void MainWindow::startGoToObject(void) {
         this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
         timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
         ui->pbStartTracking->setEnabled(false);
-        waitState->start();
-        do {
-        } while (waitState->elapsed() < 100);
+        this->waitForNMSecs(500);
         futureStepperBehaviourDecl_GOTO =QtConcurrent::run(this->StepperDriveDecl,&QtKineticStepper::travelForNSteps,DeclSteps,this->mountMotion.DeclDriveDirection,speedFactorDecl,0);
         while (!futureStepperBehaviourDecl.isStarted()) {
         }
         this->mountMotion.GoToIsActiveInDecl=true;
         this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync(); // now, all drives are started and timestamps were taken
-        waitState->start();
-        do {
-        } while (waitState->elapsed() < 100);
+        this->waitForNMSecs(500);
         if (RAtakesLonger == true) { // then decl will finish earlier
             while (!futureStepperBehaviourRA_GOTO.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 if (futureStepperBehaviourDecl_GOTO.isFinished()) {
                     this->mountMotion.GoToIsActiveInDecl=false;
                 } // declination has finished here, flag is set to false
@@ -982,9 +980,7 @@ void MainWindow::startGoToObject(void) {
                     return;
                 }
             } // now, RA is done as well
-            waitState->start();
-            do {
-            } while (waitState->elapsed() < 100);
+            this->waitForNMSecs(500);
             timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
             timeDifference = timeTaken-timeEstimatedInRAInMS; // compute difference between real and estimated travel
             this->startRATracking();
@@ -992,13 +988,11 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.GoToIsActiveInRA=false; // resume standard tracking
         } else { // RA will finish earlier
             while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 if (futureStepperBehaviourRA_GOTO.isFinished()) { // ra is finished, decl still active ...
                     this->mountMotion.GoToIsActiveInRA=false;
                     if (RARideIsDone==false) { // ok - if RA is finished FOR THE FIRST TIME ...
-                        waitState->start();
-                        do {
-                        } while (waitState->elapsed() < 100);
+                        this->waitForNMSecs(500);
                         RARideIsDone=true;
                         timeTaken = g_AllData->getTimeSinceLastSync()-timestampGOTOStarted;
                         timeDifference = timeTaken-timeEstimatedInRAInMS;
@@ -1022,16 +1016,14 @@ void MainWindow::startGoToObject(void) {
             this->mountMotion.GoToIsActiveInDecl=false; // declination is now done
         }
     }
-    waitState->start();
-    do {
-    } while (waitState->elapsed() < 100); // just a little rest
+    this->waitForNMSecs(500);
     this->stopRATracking(); // stop tracking, either for correction of for sync
-    if (abs(timeDifference)>100) { // if the error in goto time estimation is bigger than 0.1 s, correcct in RA
+    if (abs(timeDifference) > 100) { // if the error in goto time estimation is bigger than 0.1 s, correct in RA
         corrsteps=(g_AllData->getCelestialSpeed()*((double)(timeDifference))/1000.0)*convertDegreesToMicrostepsRA; // number of correction steps
         futureStepperBehaviourRA_Corr = QtConcurrent::run(this->StepperDriveRA,
                 &QtContinuousStepper::travelForNSteps,corrsteps, 1,10,false);
         while (!futureStepperBehaviourRA_Corr.isFinished()) {
-           QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+           QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
         if (this->mountMotion.emergencyStopTriggered==true) { // emergency stop handling
             this->mountMotion.emergencyStopTriggered=false;
@@ -1044,7 +1036,7 @@ void MainWindow::startGoToObject(void) {
     this->decl=targetDecl;
     this->syncMount(); // sync the mount
     while (!futureStepperBehaviourRATracking.isStarted()) {
-       QCoreApplication::processEvents(QEventLoop::AllEvents, timeForProcessingEventQueue);
+       QCoreApplication::processEvents(QEventLoop::AllEvents);
     }
     ui->lcdGotoTime->display(0); // set the LCD counter to zero again
     ui->pbStopTracking->setDisabled(false);
@@ -1053,7 +1045,7 @@ void MainWindow::startGoToObject(void) {
     this->setControlsForRATracking(false);
     this->mountMotion.GoToIsActiveInRA=false;
     this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
-    delete waitState;
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
     return;
 }
 
@@ -1101,7 +1093,7 @@ void MainWindow::syncParkPosition(void) {
 // handles shutdown of the program
 void MainWindow::shutDownProgram() {
     this->ccdCameraIsAcquiring=false;
-    sleep(ui->sbExposureTime->value());
+    this->waitForNMSecs((ui->sbExposureTime->value())*1000);
     camera_client->sayGoodbyeToINDIServer();
     delete camera_client;
     this->StepperDriveRA->stopDrive();
@@ -1144,14 +1136,14 @@ void MainWindow::terminateAllMotion(void) {
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
         while (!futureStepperBehaviourRA.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     }
     if (this->mountMotion.DeclDriveIsMoving == true) {
         this->mountMotion.DeclDriveIsMoving=false;
         this->StepperDriveDecl->stopDrive();
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     }
     if (this->mountMotion.RATrackingIsOn == true) {
@@ -1171,25 +1163,25 @@ void MainWindow::emergencyStop(void) {
     this->mountMotion.GoToIsActiveInRA = false;
     this->mountMotion.GoToIsActiveInDecl = false;
     while (!futureStepperBehaviourRATracking.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     while (!futureStepperBehaviourRA.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     while (!futureStepperBehaviourDecl.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     while (!futureStepperBehaviourRA_GOTO.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     while (!futureStepperBehaviourDecl_GOTO.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     while (!futureStepperBehaviourRA_Corr.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     while (!futureStepperBehaviourDecl_Corr.isFinished()) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     };
     ui->pbStartTracking->setEnabled(true);
     ui->pbStopTracking->setEnabled(false);
@@ -1312,7 +1304,7 @@ void MainWindow::setINDISAddrAndPort(void) {
         ui->pbExpose->setEnabled(true);
         ui->cbIndiIsUp->setChecked(true);
         ui->cbStoreGuideCamImgs->setEnabled(true);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);   // process events before sleeping for a second
+        QCoreApplication::processEvents(QEventLoop::AllEvents);   // process events before sleeping for a second
         sleep(1);
         this->getCCDParameters();
         storeCCDData();
@@ -1434,7 +1426,7 @@ void MainWindow::deployINDICommand(void) {
         ui->pbKillINDIServer->setEnabled(true);
         ui->pbConnectToServer->setEnabled(true);
         this->setINDIrbuttons(false);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);   // process events before sleeping for a second
+        QCoreApplication::processEvents(QEventLoop::AllEvents);   // process events before sleeping for a second
     }
     sleep(1);
     this->findOutAboutINDIServerPID(); // store the PID in a file
@@ -1457,9 +1449,9 @@ void MainWindow::clearINDILog(void) {
 // an event is triggered once these data were received
 void MainWindow::takeSingleCamShot(void) {
    int exptime;
-
    exptime = ui->sbExposureTime->value();
    camera_client->takeExposure(exptime);
+   this->waitForNMSecs(250);
 
 }
 //------------------------------------------------------------------
@@ -1469,8 +1461,8 @@ void MainWindow::startCCDAcquisition(void) {
     this->ccdCameraIsAcquiring=true;
     ui->pbExpose->setEnabled(false);
     ui->pbStopExposure->setEnabled(true);
-    takeSingleCamShot();
-    this->waitForNMSecs(50);
+    this->takeSingleCamShot();
+    this->waitForNMSecs(200);
     ui->pbSelectGuideStar->setEnabled(true);
     ui->pbDisconnectFromServer->setEnabled(false);
     ui->tabImageProc->setEnabled(true);
@@ -1508,7 +1500,7 @@ bool MainWindow::abortCCDAcquisition(void) {
     timeElapsedLocal->start();
     maxTime = ui->sbExposureTime->value()*5000; // wait for a maximum of 5* the exposure time for a last image
     while (this->camImageWasReceived==false) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);   // process events while waiting for the last image
+        QCoreApplication::processEvents(QEventLoop::AllEvents);   // process events while waiting for the last image
         if (timeElapsedLocal->elapsed() > maxTime) {
             delete timeElapsedLocal;
             return false;
@@ -1563,11 +1555,13 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
             this->guidingState.calibrationImageReceived=true; // in calibration, this camera image is to be used
         } // we only take a single shot here
         if ((this->ccdCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
-            this->waitForNMSecs(250);
+            this->waitForNMSecs(100);
             this->takeSingleCamShot(); // ... request another one from INDI
-            while (this->guidingState.calibrationImageReceived == false) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
-            } // wait for the next image
+            this->waitForNMSecs(100);
+       //     while (this->guidingState.calibrationImageReceived == false) {
+       //         QCoreApplication::processEvents(QEventLoop::AllEvents);
+       //     } // wait for the next image
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         } else {
             ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
         }
@@ -1578,7 +1572,7 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
             newX = g_AllData->getInitialStarPosition(2);
             newY = g_AllData->getInitialStarPosition(3); // the star centroid found in "doGuideStarImgProcessing" was stored in the global struct ...
             this->waitForNMSecs(2500);
-            usleep(750); // just give the system time to breathe ...
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
             correctGuideStarPosition(newX,newY); // ... and is used to correct the position
         }
     }
@@ -1802,7 +1796,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         ui->lePulseRAMS->setText("0");
     }
     this->waitForDriveStop(true,false); // just to make sure that drive has stopped moving, should not be an issue as guiding is unthreaded
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
     this->waitForNMSecs(250);
     // carry out the correction in decl
 
@@ -1908,7 +1902,7 @@ void MainWindow::terminateGuiderCalibration(void) {
     this->emergencyStop();
     this->calibrationToBeTerminated = true;
     this->displayCalibrationStatus("Termination in process...");
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2130,7 +2124,7 @@ void MainWindow::calibrateAutoGuider(void) {
         } else {
             this->displayCalibrationStatus("Putting tension on drive");
         }
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         this->waitForCalibrationImage(); // small subroutine - waits for image
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);            // now get a position
@@ -2226,7 +2220,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->calibrationToBeTerminated = false;
     ui->pbGuiding->setEnabled(true);
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2248,7 +2242,7 @@ void MainWindow::calibrationTerminationStuffToBeDone(void) {
     this->calibrationToBeTerminated = false;
     this->displayCalibrationStatus("Calibration was terminated...");
     ui->tabGuide->setEnabled(false);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2289,7 +2283,7 @@ void MainWindow::skipCalibration(void) {
     this->calibrationToBeTerminated = false;
     ui->pbGuiding->setEnabled(true);
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2299,14 +2293,14 @@ void MainWindow::waitForDriveStop(bool isRA, bool isVerbose) {
 
     if (isRA) {
         do {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         } while (this->mountMotion.RADriveIsMoving == true);
         if (isVerbose) {
             this->displayCalibrationStatus("RA motion stopped..."); // just make sure that the program continues once the drive is down
         }
     } else {
         do {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         } while (this->mountMotion.DeclDriveIsMoving == true);
         if (isVerbose) {
             this->displayCalibrationStatus("Decl motion stopped..."); // just make sure that the program continues once the drive is down
@@ -2327,7 +2321,7 @@ void MainWindow::waitForCalibrationImage(void) {
     this->waitForNMSecs(500);
     this->takeSingleCamShot();
     while (this->guidingState.calibrationImageReceived == false) {
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 250);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         if (this->calibrationToBeTerminated == true) { // if the "Terminate calibration" button is pressed, this one is set to true ...
             return;
         }
@@ -2481,13 +2475,13 @@ void MainWindow::confirmGuideStar(void) {
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         ui->tabCCDCal->setEnabled(true);
         ui->pbTrainAxes->setEnabled(true);
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
     }
 }
 
@@ -2504,7 +2498,7 @@ void MainWindow::changePrevImgProc(void) {
     alpha = ui->hsIContrast->value()/100.0;
     beta = ui->hsIBrightness->value();
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta, this->guidingFOVFactor,this->guidingState.guideStarSelected, false);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2827,19 +2821,14 @@ void MainWindow::establishLX200IPLink(void) {
 void MainWindow::readLX200Port(void) {
     qint64 charsToBeRead;
     QString *command;
-    QElapsedTimer *waitTimer;
 
     if (this->lx200IsOn) {
         command = new QString();
         if (this->LX200SerialPortIsUp == 1) {
             charsToBeRead=this->lx200SerialPort->bytesAvailable();
             if (charsToBeRead > 0) {
-                waitTimer = new QElapsedTimer();
-                waitTimer->start();
-                do {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-                } while (waitTimer->elapsed() < 25);
-                delete waitTimer; // just wait for 25 ms if more data come in ...
+                this->waitForNMSecs(100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 this->lx200SerialData->clear();
                 this->lx200SerialData->append(this->lx200SerialPort->readAll());
                 command->append(this->lx200SerialData->data());
@@ -2847,12 +2836,8 @@ void MainWindow::readLX200Port(void) {
         } else {
             charsToBeRead = this->LXSocket->bytesAvailable();
             if (charsToBeRead > 0) {
-                waitTimer = new QElapsedTimer();
-                waitTimer->start();
-                do {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
-                } while (waitTimer->elapsed() < 25);
-                delete waitTimer; // just wait for 25 ms if more data come in ... and to process the queued events :/
+                this->waitForNMSecs(100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 this->tcpLXdata->clear();
                 this->tcpLXdata->append(this->LXSocket->readAll());
                 command->append(this->tcpLXdata->data());
@@ -2920,7 +2905,7 @@ void MainWindow::logLX200IncomingCmds(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2934,7 +2919,7 @@ void MainWindow::logLX200OutgoingCmdsRA(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2948,7 +2933,7 @@ void MainWindow::logLX200OutgoingCmdsDecl(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 //------------------------------------------------------------------
 // log outgoing commands from LX 200
@@ -2961,7 +2946,7 @@ void MainWindow::logLX200OutgoingCmds(void) {
         ui->teLX200Data->appendPlainText(lx200msg->toLatin1());
         delete lx200msg;
     }
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
 }
 
 //------------------------------------------------------------------
@@ -2984,12 +2969,12 @@ void MainWindow::LXsyncMount(void) {
             this->mountMotion.DeclDriveIsMoving=false;
             this->StepperDriveDecl->stopDrive();
             while (!futureStepperBehaviourDecl.isFinished()) {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
             }
         }
         this->ra = (float)(this->lx200Comm->getReceivedCoordinates(0));
         this->decl = (float)(this->lx200Comm->getReceivedCoordinates(1));
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         g_AllData->setSyncPosition(this->ra, this->decl);
         // convey right ascension and declination to the global parameters;
         // a microtimer starts ...
@@ -3031,7 +3016,7 @@ void MainWindow::LXslewMount(void) {
              && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
             if (g_AllData->wasMountSynced() == true) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 this->ra = (float)(this->lx200Comm->getReceivedCoordinates(0));
                 this->decl = (float)(this->lx200Comm->getReceivedCoordinates(1));
                 lestr = QString::number(this->ra, 'g', 8);
@@ -3262,13 +3247,13 @@ void MainWindow::declinationMoveHandboxUp(void) {
                 &QtKineticStepper::travelForNSteps,maxDeclSteps,
                 this->mountMotion.DeclDriveDirection, this->mountMotion.DeclSpeedFactor,1);
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     } else {
         this->mountMotion.DeclDriveIsMoving=false;
         this->StepperDriveDecl->stopDrive();
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
         ui->pbDeclDown->setEnabled(1);
         this->setControlsForDeclTravel(true);
@@ -3299,13 +3284,13 @@ void MainWindow::declinationMoveHandboxDown(void) {
                                   this->mountMotion.DeclDriveDirection,
                                   this->mountMotion.DeclSpeedFactor,1);
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     } else {
         this->mountMotion.DeclDriveIsMoving=false;
         this->StepperDriveDecl->stopDrive();
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
         ui->pbDeclUp->setEnabled(1);
         this->setControlsForDeclTravel(true);
@@ -3346,13 +3331,13 @@ void MainWindow::RAMoveHandboxFwd(void) {
                                   this->mountMotion.RADriveDirection,
                                   fwdFactor,true);
         while (!futureStepperBehaviourRA.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     } else {
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
         while (!futureStepperBehaviourRA.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
@@ -3395,13 +3380,13 @@ void MainWindow::RAMoveHandboxBwd(void) {
                 &QtContinuousStepper::travelForNSteps,maxRASteps, this->mountMotion.RADriveDirection,
                 bwdFactor,true);
         while (!futureStepperBehaviourRA.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     } else {
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
         while (!futureStepperBehaviourRA.isFinished()) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
@@ -3545,7 +3530,7 @@ void MainWindow::handleST4State(void) {
         this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
         this->waitForNMSecs(20);
         stateCharFromSPI = this->spiDrOnChan0->getResponse();
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         switch(stateCharFromSPI) { // translate the character from the HAT arduino into a ST4 state
             case '0':   nUp=false; eUp=false; sUp=false; wUp=false;
                         break;
@@ -3573,7 +3558,7 @@ void MainWindow::handleST4State(void) {
         ui->cbST4South->setChecked(sUp);
         ui->cbST4West->setChecked(wUp);
 
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         if (nUp != this->st4State.nActive) { // now compare the actual state of ST4 to the earlier states. start or stop a
                                              // timer if necessary
             if (nUp == true) { // north has become active
@@ -3623,7 +3608,7 @@ void MainWindow::handleST4State(void) {
                 }
             }
         }
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        QCoreApplication::processEvents(QEventLoop::AllEvents);
         this->st4State.nActive = nUp;  // now update the ST4 states
         this->st4State.eActive = eUp;
         this->st4State.sActive = sUp;
@@ -3693,7 +3678,7 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, 
         this->mountMotion.DeclDriveIsMoving=false;
         this->StepperDriveDecl->stopDrive();
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     } // if the decl drive was moving, it is now set to stop
     this->setCorrectionSpeed();
@@ -3718,14 +3703,14 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, 
                 &QtKineticStepper::travelForNSteps,steps,
                 this->mountMotion.DeclDriveDirection,this->mountMotion.DeclSpeedFactor,0);
             while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
             }
         } else {
             if (pulseDurationInMS < 2000) { // don't do corrections > 2 s in guiding
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 this->StepperDriveDecl->travelForNSteps(steps,this->mountMotion.DeclDriveDirection,
                     this->mountMotion.DeclSpeedFactor,0);
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
             }
         }
     }
@@ -3777,7 +3762,7 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isTh
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
         while (!futureStepperBehaviourDecl.isFinished()) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
         }
     }
     this->setControlsForRATravel(false);
@@ -3812,14 +3797,14 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isTh
                     QtConcurrent::run(this->StepperDriveRA, &QtContinuousStepper::travelForNSteps,steps,
                         this->mountMotion.RADriveDirection,pgFactor,false);
                 while (!futureStepperBehaviourRA.isFinished()) {
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
                 }
             } else {
                 if (pulseDurationInMS < 2000) { // in guiding, do less that 2 s corrections
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
                     this->StepperDriveRA->travelForNSteps(steps,this->mountMotion.RADriveDirection,
                         pgFactor,false);
-                    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                    QCoreApplication::processEvents(QEventLoop::AllEvents);
                 }
             }
         }
@@ -3827,7 +3812,7 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isTh
         localTimer = new QElapsedTimer();
         localTimer->start();
         while (localTimer->elapsed() < pulseDurationInMS) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
             // that one is easy - just stop the drive for a given amount of time
         }
         delete localTimer;
@@ -4314,7 +4299,7 @@ void MainWindow::doMeridianFlip(void) {
              && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
         if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
             if (g_AllData->wasMountSynced() == true) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+                QCoreApplication::processEvents(QEventLoop::AllEvents);
                 targetRA=g_AllData->getActualScopePosition(0)-180.0;
                 if (targetRA < 0.0) {
                     targetRA+=360.0;
@@ -4404,11 +4389,16 @@ void MainWindow::handleHandbox(void) {
     QString *dirCommand; // the first 5 characters give the directions and the speed
     QString *focuserCommand; // the next 5 characters are commands for the focuser drives
     short speedSwitchState; // set to 1 or 0 concerning the motion speed
-    QElapsedTimer *wait;
-    bool isFocuser1, isForward;
+    bool isFocuser1, isForward, CCDWasOn;
     QChar focuserValue;
 
-    wait = new QElapsedTimer();
+    if (this->ccdCameraIsAcquiring == true) {
+        CCDWasOn = true;
+        this->stopCCDAcquisition();
+    } else {
+        CCDWasOn = false;
+    } // handling motion with INDI does not really work in the event queue - so the cam is turned off
+    this->waitForNMSecs(100); // just to let the transmission finish
     if (this->tcpHandboxIsConnected == false) { // in this case, the command comes from the BT-handbox
         this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
         localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
@@ -4422,7 +4412,6 @@ void MainWindow::handleHandbox(void) {
             (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA==false) &&
             (this->guidingState.st4IsActive==false)) {
         // ignore this if system is in guiding or autoguider calibration
-
         speedSwitchState=(dirCommand->right(1)).toInt(); // the last digit is the motion state
         dirCommand->chop(1); // remove the last character
         if (speedSwitchState == 1) {
@@ -4438,20 +4427,21 @@ void MainWindow::handleHandbox(void) {
             ui->fHBSpeeds->setEnabled(false);
             ui->pbMeridianFlip->setEnabled(false);
             this->repaint();
-            wait->start();
-            do {
-                QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
-            } while (wait->elapsed() < 500);
+            this->waitForNMSecs(500);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
             if (dirCommand->compare("1000") == 0) { // start motions according the first 4 digits.
                 this->mountMotion.btMoveNorth = 1;
                 this->declinationMoveHandboxUp();
-            } else if (dirCommand->compare("0001") == 0) {
+            }
+            if (dirCommand->compare("0001") == 0) {
                 this->mountMotion.btMoveWest = 1;
                 this->RAMoveHandboxFwd();
-            } else if (dirCommand->compare("0010") == 0) {
+            }
+            if (dirCommand->compare("0010") == 0) {
                 this->mountMotion.btMoveSouth = 1;
                 this->declinationMoveHandboxDown();
-            } else if (dirCommand->compare("0100") == 0) {
+            }
+            if (dirCommand->compare("0100") == 0) {
                 this->mountMotion.btMoveEast = 1;
                 this->RAMoveHandboxBwd();
             }
@@ -4539,7 +4529,9 @@ void MainWindow::handleHandbox(void) {
     } // decoded the 5 integers indicating the number of the focuser, the direction, and the amount of the step
     delete dirCommand; // delete the string containing the first 5 characters for handbox control
     delete focuserCommand; // delete the last 5 characters for the focuser
-    delete wait;
+    if (CCDWasOn == true) {
+        this->startCCDAcquisition();
+    } // if the ccd was stopped - start it again
 }
 
 //-----------------------------------------------------------------
@@ -4646,7 +4638,7 @@ void MainWindow::takeNextExposureInSeries(void) {
         do {
             secondsRemaining = round(ui->sbPauseInExpSeries->value()-(wait->elapsed()/1000));
             ui->lcdDSLRNextExposureIn->display(secondsRemaining);
-            QCoreApplication::processEvents(QEventLoop::AllEvents, 500);
+            QCoreApplication::processEvents(QEventLoop::AllEvents);
         } while (wait->elapsed() < pauseBetweenExpsInMS); // just wait for a given # of seconds until next exposure is taken
         ui->lcdDSLRNextExposureIn->display(0);
         ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
@@ -5137,7 +5129,7 @@ void MainWindow::moveAuxPBSlot(short whichDrive, bool isInverted, short dist) {
 
     this->setAuxDriveControls(false);
     this->auxDriveIsStartingUp=true;  // a flag that suppresses GUI updates in the respective method
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
     this->enableAuxDrives(whichDrive,true);
     this->storeAuxBoardParams();
     this->sendStepsToAuxController(whichDrive, isInverted, dist);
@@ -5151,7 +5143,7 @@ void MainWindow::moveGuiderAuxPBSlot(short whichDrive, bool isInverted, short di
 
     this->setAuxDriveControls(false);
     this->auxDriveIsStartingUp=true;  // a flag that suppresses GUI updates in the respective method
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    QCoreApplication::processEvents(QEventLoop::AllEvents);
     this->enableAuxDrives(whichDrive,true);
     this->sendStepsToAuxController(whichDrive, isInverted, dist);
     this->moveAuxDrive(whichDrive);
