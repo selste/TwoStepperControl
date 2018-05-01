@@ -37,6 +37,7 @@ ocv_guiding::ocv_guiding(void) {
     this->gScopeFL = 1000;
     this->arcsecPerPixX=1.07276;
     this->arcsecPerPixY=1.07276;
+    this->maxGrayVal = 0;
 }
 
 //---------------------------------------------------
@@ -93,6 +94,20 @@ double ocv_guiding::getArcSecsPerPix(short what) {
 }
 
 //---------------------------------------------------
+// reports whether pixels in the analysed picture are at
+// saturation - this is to be avoided. an alarm can be set if this
+// function return true
+bool ocv_guiding::isPixelAtSaturation(void) {
+    if (this->maxGrayVal < 250) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+//---------------------------------------------------
+// computes the centroid of a star in a subimage and
+// does all the image processing for guiding
 void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool lpOn, float cntrst,int briteness,float FOVfact,bool starSelected, bool updateCentroid) {
     int clicx,clicy;
     Point tLeft, bRight;
@@ -101,6 +116,7 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool l
     cv::Mat mask;
     cv::Moments cvmoms;
     float scaleFact;
+    double minPixVal, maxPixVal;
 
     if (starSelected==true) {
         delete currentImageQImg;
@@ -134,6 +150,8 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool l
         if (lpOn == true) {
             cv::GaussianBlur(this->currentImageOCVMat,this->currentImageOCVMat, Size(5,5), 0, BORDER_DEFAULT);
         }
+        cv::minMaxLoc(this->currentImageOCVMat, &minPixVal, &maxPixVal);
+        this->maxGrayVal = maxPixVal; // the subimage should not contain pixels with a saturated value; this is checked ...
         convertMatToQImg(); 
         prevImg = new QImage(processedImage->scaled(180,180,Qt::KeepAspectRatio,Qt::FastTransformation));
         prevPMap->convertFromImage(*prevImg,0);

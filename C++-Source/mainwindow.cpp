@@ -519,14 +519,13 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
     connectLX200Events(true); // call all connects for LX200 functions
-    ui->rbV4L2INDI->setChecked(true); // set a default type of INDI server
+    ui->rbZWOINDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     ui->lcdPulseGuideDuration->display(pulseGuideDuration);
     ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
-
 }
 
 //------------------------------------------------------------------
@@ -593,6 +592,9 @@ void MainWindow::updateReadings() {
         if (this->HBSocket->bytesAvailable()) {
             this->readTCPHandboxData();
         }
+    }
+    if (this->ccdCameraIsAcquiring == true) { // the to be analysed by the opencv in guiding is checked for saturated pixels
+        ui->cbSaturation->setChecked(this->guiding->isPixelAtSaturation());
     }
     if (this->dslrStates.dslrExposureIsRunning == true) { // check a timer and update display of the remaining time ...
         this->updateDSLRGUIAndCountdown();
@@ -1478,6 +1480,7 @@ void MainWindow::stopCCDAcquisition(void) {
     ui->tabImageProc->setEnabled(false);
     ui->tabCCDCal->setEnabled(false);
     ui->tabGuide->setEnabled(false);
+    ui->cbSaturation->setChecked(false);
 }
 
 //------------------------------------------------------------------

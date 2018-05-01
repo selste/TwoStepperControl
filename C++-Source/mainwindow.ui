@@ -3108,7 +3108,7 @@
            <string>V4L2</string>
           </property>
           <property name="checked">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -3139,6 +3139,9 @@
           </property>
           <property name="text">
            <string>ZWO ASI</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -3972,41 +3975,13 @@
          <string/>
         </property>
        </widget>
-       <widget class="QCheckBox" name="cbMedianFilter">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>100</y>
-          <width>151</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>3x3 Median Filter</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>10</x>
           <y>0</y>
           <width>201</width>
-          <height>92</height>
+          <height>81</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
@@ -4088,7 +4063,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>165</y>
+          <y>157</y>
           <width>201</width>
           <height>29</height>
          </rect>
@@ -4152,24 +4127,83 @@
          <string>Confirm</string>
         </property>
        </widget>
-       <widget class="QCheckBox" name="cbLowPass">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+       <widget class="QWidget" name="">
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>128</y>
-          <width>131</width>
-          <height>27</height>
+          <y>83</y>
+          <width>185</width>
+          <height>71</height>
          </rect>
         </property>
-        <property name="text">
-         <string>5x5 Low Pass</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_33">
+           <item>
+            <widget class="QCheckBox" name="cbSaturation">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lPixSaturation">
+             <property name="text">
+              <string>Saturated Pixels</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cbMedianFilter">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>3x3 Median Filter</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cbLowPass">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>5x5 Low Pass</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QWidget" name="tabCCDCal">
@@ -4179,39 +4213,11 @@
        <attribute name="title">
         <string>CCD</string>
        </attribute>
-       <widget class="QPushButton" name="pbTerminateCal">
-        <property name="geometry">
-         <rect>
-          <x>120</x>
-          <y>370</y>
-          <width>90</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>90</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>90</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="toolTipDuration">
-         <number>1</number>
-        </property>
-        <property name="text">
-         <string>Terminate </string>
-        </property>
-       </widget>
        <widget class="QPlainTextEdit" name="teCalibrationStatus">
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>110</y>
+          <y>80</y>
           <width>211</width>
           <height>251</height>
          </rect>
@@ -4231,35 +4237,6 @@
          <bool>true</bool>
         </property>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>370</y>
-          <width>114</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_45">
-         <item>
-          <widget class="QCheckBox" name="cbAutoguiderIsCalibrated">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="checkable">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>is calibrated</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
        <widget class="QPushButton" name="pbTrainAxes">
         <property name="enabled">
          <bool>false</bool>
@@ -4267,7 +4244,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>40</y>
+          <y>10</y>
           <width>210</width>
           <height>25</height>
          </rect>
@@ -4288,11 +4265,36 @@
          <string>Train axes</string>
         </property>
        </widget>
-       <widget class="QPushButton" name="pbSkipCalibration">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>10</y>
+          <y>40</y>
+          <width>162</width>
+          <height>33</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_16">
+         <item>
+          <widget class="QLabel" name="lmspg">
+           <property name="text">
+            <string>Pulse [ms]:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdPulseGuideDuration"/>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QPushButton" name="pbSkipCalibration">
+        <property name="geometry">
+         <rect>
+          <x>3</x>
+          <y>366</y>
           <width>210</width>
           <height>25</height>
          </rect>
@@ -4316,25 +4318,55 @@
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>0</x>
-          <y>70</y>
-          <width>162</width>
-          <height>33</height>
+          <x>5</x>
+          <y>334</y>
+          <width>206</width>
+          <height>30</height>
          </rect>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_16">
+        <layout class="QHBoxLayout" name="horizontalLayout_27">
          <item>
-          <widget class="QLabel" name="lmspg">
-           <property name="text">
-            <string>Pulse [ms]:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout_45">
+           <item>
+            <widget class="QCheckBox" name="cbAutoguiderIsCalibrated">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>is calibrated</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QLCDNumber" name="lcdPulseGuideDuration"/>
+          <widget class="QPushButton" name="pbTerminateCal">
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>90</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="toolTipDuration">
+            <number>1</number>
+           </property>
+           <property name="text">
+            <string>Terminate </string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

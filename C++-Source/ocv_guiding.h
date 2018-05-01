@@ -33,6 +33,7 @@ Q_OBJECT
         ~ocv_guiding();
         QPoint* getGuideStarCentroid(void);
         void doGuideStarImgProcessing(int,bool, bool, float,int,float,bool, bool);
+        bool isPixelAtSaturation(void);
         QPixmap* getGuideStarPreview(void);
         double getArcSecsPerPix(short);
         void setFocalLengthOfGuidescope(int);
@@ -52,6 +53,7 @@ Q_OBJECT
         double gScopeFL;
         double arcsecPerPixX;
         double arcsecPerPixY;
+        int maxGrayVal;
 
     signals:
         void guideImagePreviewAvailable(void);
