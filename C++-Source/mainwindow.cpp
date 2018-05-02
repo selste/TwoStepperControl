@@ -2703,9 +2703,9 @@ void MainWindow::sendDataToTCPHandboxSlot(void) {
                 stateString->append(" [s]\r");
                 sendDataToTCPHandbox(*stateString);
                 stateString->clear();
-                stateString->append("Max/RMS Err.: ");
+                stateString->append("Max/RMS: ");
                 stateString->append(ui->leMaxGuideErr->text());
-                stateString->append(" ['']\r");
+                stateString->append("\"\r");
                 sendDataToTCPHandbox(*stateString);
                 stateString->clear();
             } else {
@@ -2730,9 +2730,9 @@ void MainWindow::sendDataToTCPHandboxSlot(void) {
                     stateString->append(" [s]\r");
                     sendDataToTCPHandbox(*stateString);
                     stateString->clear();
-                    stateString->append("Max/RMS Err.: ");
+                    stateString->append("Max/RMS: ");
                     stateString->append(ui->leMaxGuideErr->text());
-                    stateString->append(" ['']\r");
+                    stateString->append("\"\r");
                     sendDataToTCPHandbox(*stateString);
                     stateString->clear();
                 } else {
@@ -2748,9 +2748,9 @@ void MainWindow::sendDataToTCPHandboxSlot(void) {
         }
         if ((this->guidingState.guidingIsOn == true) && (this->dslrStates.dslrSeriesRunning == false) &&
             (this->dslrStates.dslrExposureIsRunning == false)) {
-            stateString->append("Max/RMS Err.: ");
+            stateString->append("Max/RMS: ");
             stateString->append(ui->leMaxGuideErr->text());
-            stateString->append(" ['']\r");
+            stateString->append("\"\r");
             sendDataToTCPHandbox(*stateString);
             stateString->clear();
         }
