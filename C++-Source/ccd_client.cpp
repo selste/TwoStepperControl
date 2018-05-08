@@ -97,12 +97,12 @@ void ccd_client::takeExposure(int expTime) {
         localTimer->start();
         fexpt=(float)expTime;
         while (localTimer->elapsed() < 100) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents);
+            QCoreApplication::processEvents(QEventLoop::AllEvents,100);
         }
         localTimer->restart();
         ccd_exposure->np[0].value = fexpt;
         while (localTimer->elapsed() < 100) {
-            QCoreApplication::processEvents(QEventLoop::AllEvents);
+            QCoreApplication::processEvents(QEventLoop::AllEvents,100);
         }
         delete localTimer;
         if ((fexpt > 0.001) && (fexpt < 3600)) {

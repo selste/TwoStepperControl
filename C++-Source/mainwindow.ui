@@ -4127,13 +4127,13 @@
          <string>Confirm</string>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>10</x>
           <y>83</y>
           <width>185</width>
-          <height>71</height>
+          <height>89</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -6052,167 +6052,6 @@ drives</string>
         <string>Start Series</string>
        </property>
       </widget>
-      <widget class="QLabel" name="ldslrTimeRem">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>113</y>
-         <width>113</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Time remaining:</string>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>3</x>
-         <y>137</y>
-         <width>104</width>
-         <height>30</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_7">
-        <item>
-         <widget class="QLCDNumber" name="lcdDSLRTimeRemaining">
-          <property name="minimumSize">
-           <size>
-            <width>80</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>80</width>
-            <height>25</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="ldslrMS">
-          <property name="text">
-           <string>[s]</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>180</x>
-         <y>72</y>
-         <width>151</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <item>
-         <widget class="QLabel" name="lDSLRRep">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Repetitions:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSpinBox" name="sbDSLRRepeat">
-          <property name="minimumSize">
-           <size>
-            <width>60</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>60</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>180</x>
-         <y>110</y>
-         <width>164</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_35">
-        <item>
-         <widget class="QLabel" name="ldslrExpNo">
-          <property name="minimumSize">
-           <size>
-            <width>60</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>60</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Exp. #:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLCDNumber" name="lcdDSLRExpsTaken">
-          <property name="minimumSize">
-           <size>
-            <width>50</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>50</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="digitCount">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
       <widget class="QCheckBox" name="cbDither">
        <property name="geometry">
         <rect>
@@ -6237,56 +6076,6 @@ drives</string>
        <property name="text">
         <string>Dither in Guiding</string>
        </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>180</x>
-         <y>140</y>
-         <width>135</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_10">
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Pause [s]:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSpinBox" name="sbPauseInExpSeries">
-          <property name="minimumSize">
-           <size>
-            <width>60</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>60</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="minimum">
-           <number>5</number>
-          </property>
-          <property name="maximum">
-           <number>30</number>
-          </property>
-          <property name="value">
-           <number>10</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </widget>
       <widget class="Line" name="line_9">
        <property name="geometry">
@@ -6446,114 +6235,254 @@ drives</string>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
-         <x>3</x>
-         <y>72</y>
-         <width>163</width>
-         <height>32</height>
+         <x>0</x>
+         <y>76</y>
+         <width>159</width>
+         <height>94</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <layout class="QVBoxLayout" name="verticalLayout_10">
         <item>
-         <widget class="QLabel" name="lDuration">
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QLabel" name="lDuration">
+            <property name="text">
+             <string>Duration [s]:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="sbDSLRDuration">
+            <property name="minimumSize">
+             <size>
+              <width>65</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>65</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <property name="maximum">
+             <number>7200</number>
+            </property>
+            <property name="value">
+             <number>1</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="ldslrTimeRem">
           <property name="text">
-           <string>Duration:</string>
+           <string>Time remaining [s]:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="sbDSLRDuration">
-          <property name="minimumSize">
-           <size>
-            <width>65</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>65</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="maximum">
-           <number>7200</number>
-          </property>
-          <property name="value">
-           <number>1</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="ldslrSecs">
-          <property name="minimumSize">
-           <size>
-            <width>20</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>20</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string> [s]</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QLCDNumber" name="lcdDSLRTimeRemaining">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>25</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
-         <x>180</x>
-         <y>175</y>
-         <width>165</width>
-         <height>27</height>
+         <x>182</x>
+         <y>74</y>
+         <width>177</width>
+         <height>132</height>
         </rect>
        </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_22">
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
         <item>
-         <widget class="QLabel" name="lNextExp">
-          <property name="text">
-           <string>Next exp. in:</string>
-          </property>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_13">
+          <item>
+           <widget class="QLabel" name="lDSLRRep">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Repetitions:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="ldslrExpNo">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Exp. #:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Pause [s]:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lNextExp">
+            <property name="text">
+             <string>Next exp. in [s]:</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
-         <widget class="QLCDNumber" name="lcdDSLRNextExposureIn">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>50</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>50</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="digitCount">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lSecs">
-          <property name="text">
-           <string>[s]</string>
-          </property>
-         </widget>
+         <layout class="QVBoxLayout" name="verticalLayout_11">
+          <item>
+           <widget class="QSpinBox" name="sbDSLRRepeat">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLCDNumber" name="lcdDSLRExpsTaken">
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="digitCount">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="sbPauseInExpSeries">
+            <property name="minimumSize">
+             <size>
+              <width>60</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>60</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <property name="minimum">
+             <number>5</number>
+            </property>
+            <property name="maximum">
+             <number>30</number>
+            </property>
+            <property name="value">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLCDNumber" name="lcdDSLRNextExposureIn">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="digitCount">
+             <number>3</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
