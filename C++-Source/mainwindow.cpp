@@ -573,7 +573,6 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
 
-    QCoreApplication::processEvents(QEventLoop::AllEvents,2000);
     if (this->guidingState.systemIsCalibrated == true) {
         ui->cbAutoguiderIsCalibrated->setChecked(true);
     } else {
@@ -813,7 +812,7 @@ void MainWindow::startGoToObject(void) {
     if (this->ccdCameraIsAcquiring == true) { // slewing and transfer of FITS images at the same time cause erratic behaviour,
         this->stopCCDAcquisition();           // the guiding camera acquisition is terminated if active
     }
-    QCoreApplication::processEvents(QEventLoop::AllEvents,2000);
+    QCoreApplication::processEvents(QEventLoop::AllEvents,200);
     shortSlew=false; // we do not know how long the slew takes, so this flag is false
     timeDifference=0; // difference between estimated travel and real travel in RA - needed for correction after slew
         // determine the travel to be taken based on steps, acceleration and end velocity
@@ -1047,7 +1046,7 @@ void MainWindow::startGoToObject(void) {
     this->setControlsForRATracking(false);
     this->mountMotion.GoToIsActiveInRA=false;
     this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
-    QCoreApplication::processEvents(QEventLoop::AllEvents,2000);
+    QCoreApplication::processEvents(QEventLoop::AllEvents,200);
     return;
 }
 
@@ -4532,7 +4531,7 @@ void MainWindow::handleHandbox(void) {
 void MainWindow::handleDSLRSingleExposure(void) {
     int duration;
 
-    duration = ui->sbDSLRDuration->value()+0.5; // add the 2000 ms for pre-release on pin 27 ...
+    duration = ui->sbDSLRDuration->value()+0.25;
     dslrStates.dslrExpTime=duration;
     dslrStates.dslrExposureIsRunning=true;
     dslrStates.dslrExpElapsed.start();
@@ -4576,7 +4575,6 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
 // slot that starts a series of exposures ...
 void MainWindow::startDSLRSeries(void) {
 
-    ui->lcdDSLRNextExposureIn->display(0);
     if (ui->sbDSLRRepeat->value() > 0) {
         qsrand((uint)(UTTime->currentTime().second())); // initialize the random number generator
         ui->cbExpSeriesDone->setChecked(false);
@@ -4592,6 +4590,7 @@ void MainWindow::startDSLRSeries(void) {
         this->dslrStates.tempAtSeriesStart=this->temperature;
         ui->sbDSLRRepeat->setEnabled(false);
         ui->lcdDSLRExpsTaken->display("1");
+        this->dslrStates.dslrExpElapsed.restart();
         this->handleDSLRSingleExposure();
         ui->sbPauseInExpSeries->setEnabled(false);
     }
@@ -4601,11 +4600,11 @@ void MainWindow::startDSLRSeries(void) {
 // slot that is called once an exposure was taken; also takes care of dithering if checkbox is set
 void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
-    int expsTaken, secondsRemaining;
+    int expsTaken, msecondsRemaining;
+    bool waitMore = false;
     float tempDiff; // difference between temperature at series start and next exposure
     long pauseBetweenExpsInMS; // time as read from the GUI between single exposures
 
-    ui->lcdDSLRNextExposureIn->display(0);
     if (this->dslrStates.noOfExposuresLeft > 0) {
         this->getTemperature(); // read the temperature sensor
         tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
@@ -4617,26 +4616,34 @@ void MainWindow::takeNextExposureInSeries(void) {
         this->dslrStates.noOfExposuresLeft--;
         expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
         ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
-        this->carryOutDitheringStep();
-        pauseBetweenExpsInMS = ui->sbPauseInExpSeries->value()*1000;
-        secondsRemaining = ui->sbPauseInExpSeries->value();
         wait = new QElapsedTimer();
         wait->start();
+        this->carryOutDitheringStep();
         do {
-            secondsRemaining = round(ui->sbPauseInExpSeries->value()-(wait->elapsed()/1000));
-            ui->lcdDSLRNextExposureIn->display(secondsRemaining);
-            QCoreApplication::processEvents(QEventLoop::AllEvents,500);
-        } while (wait->elapsed() < pauseBetweenExpsInMS); // just wait for a given # of seconds until next exposure is taken
-        ui->lcdDSLRNextExposureIn->display(0);
-        ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
+            qDebug() << "Guiding is off ...";
+        } while (this->guidingState.guidingIsOn == false);
+        // wait until guiding starts again ...
+        do {
+            this->waitForNMSecs(1000);
+        } while (ui->lcdGuidesteps->value() < 3);
+        if (wait->elapsed() < pauseBetweenExpsInMS) {
+            msecondsRemaining = pauseBetweenExpsInMS-wait->elapsed();
+            waitMore = true; // just wait for a given # of seconds until next exposure is taken
+        }
+        if (waitMore == true) {
+            this->waitForNMSecs(msecondsRemaining);
+        }
         delete wait;
+        ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
         if (this->dslrStates.noOfExposuresLeft > 0) { // it is possible to terminate the series in a pause ... this has to be taken care of ...
             this->handleDSLRSingleExposure();
         } else {
             this->stopDSLRExposureSeries();
+            this->waitForNMSecs(500);
         }
     } else {
         this->stopDSLRExposureSeries();
+        this->waitForNMSecs(500);
     }
 }
 
@@ -4757,8 +4764,16 @@ void MainWindow::undoLastDithering(void) {
 // this slot is called when all exposures of a series are taken
 void MainWindow::stopDSLRExposureSeries(void) {
 
+    if (this->dslrStates.dslrExposureIsRunning == true) {
+        this->terminateDSLRSingleShot(); // if an exposure ius running - terminate it ...
+    } else {
+        dslrStates.dslrExpElapsed.invalidate(); // otherwise just kill the timer for the series ...
+    }
+    this->undoLastDithering();
+    this->dslrStates.ditherTravelInMSRA = 0;
+    this->dslrStates.ditherTravelInMSDecl = 0;
+    this->dslrStates.dslrSeriesRunning = false;
     ui->sbPauseInExpSeries->setEnabled(true);
-    ui->lcdDSLRNextExposureIn->display(0);
     ui->pbDSLRSingleShot->setEnabled(true);
     ui->sbDSLRDuration->setEnabled(true);
     ui->cbExpSeriesDone->setChecked(true);
@@ -4769,10 +4784,6 @@ void MainWindow::stopDSLRExposureSeries(void) {
     ui->sbDSLRRepeat->setValue(0);
     ui->lcdDitherStep->display(0);
     ui->lcdDSLRExpsTaken->display(0);
-    this->undoLastDithering();
-    this->dslrStates.ditherTravelInMSRA = 0;
-    this->dslrStates.ditherTravelInMSDecl = 0;
-    this->dslrStates.dslrSeriesRunning = false;
 }
 
 //--------------------------------------------------------------------
@@ -4780,7 +4791,6 @@ void MainWindow::stopDSLRExposureSeries(void) {
 void MainWindow::terminateDSLRSeries(void) {
 
     ui->sbPauseInExpSeries->setEnabled(true);
-    ui->lcdDSLRNextExposureIn->display(0);
     this->dslrStates.dslrSeriesRunning = false;
     this->dslrStates.noOfExposuresLeft = 0;
     this->stopDSLRExposureSeries();
