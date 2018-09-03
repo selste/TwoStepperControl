@@ -481,6 +481,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     ui->lcdPulseGuideDuration->display(pulseGuideDuration);
     ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
+    ui->pbSyncToPark->setEnabled(true); // same as above
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
@@ -804,6 +805,8 @@ void MainWindow::syncMount(void) {
     this->startRATracking(); // start tracking again
     ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
     ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
+    ui->pbGoToPark->setEnabled(true);
+    ui->pbStorePark->setEnabled(true);
 }
 //---------------------------------------------------------------------
 // that one handles GOTO-commands. it leaves when the destination is reached ...
