@@ -43,9 +43,7 @@ TSC_GlobalData *g_AllData; // a global class that holds system specific paramete
 //------------------------------------------------------------------
 // constructor of the GUI - takes care of everything....
 MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWindow) {
-    int serNo; // serial number of the phidgets boards
-    double val,draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
-    QtContinuousStepper *dummyDrive; // a helper to determine the right order of drives
+    double val; //local values for setting up stuff
     QDir *catalogDir; // the directory holding the local .tsc catalogs
     QFileInfoList catFiles; // a list of available .tsc files
     QFileInfo catFileInfo; // a helper on the file list of catalogs
@@ -79,47 +77,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbEpoch->setValue(currentYear->toInt());
     delete currentYear;
 
-    draccRA= g_AllData->getDriveParams(0,1);
-    draccDecl= g_AllData->getDriveParams(1,1);
-    drcurrRA= g_AllData->getDriveParams(0,2);
-    drcurrDecl= g_AllData->getDriveParams(1,2); // retrieving acceleration and maximum current for the phidget boards
-
-    // start searching for the right boards for the drives ...
-    dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
-    serNo = dummyDrive->retrieveKineticStepperData(1);
-    delete dummyDrive;
-    if ((g_AllData->getDriveID(0) != serNo) && (g_AllData->getDriveID(1) != serNo)) { //no driver boards are assigned to drives
-        StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
-        serNo = StepperDriveRA->retrieveKineticStepperData(1);     // get the serial number of the phidget board
-        g_AllData->setDriveData(0,serNo); // remember the ID of the RA-drive in the global class
-        StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
-        serNo = StepperDriveDecl->retrieveKineticStepperData(1); // get the serial number of the phidget board
-        g_AllData->setDriveData(1,serNo); // remember the ID of the Decl-drive in the global class
-    } else { // IDs are written in the "TSC_Preferences.tsc" file
-        dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
-        serNo = dummyDrive->retrieveKineticStepperData(1);
-        if (serNo != g_AllData->getDriveID(0)) { // dummy drive is NOT the designatedRA Drive
-            StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
-            serNo =StepperDriveRA->retrieveKineticStepperData(1);
-            g_AllData->setDriveData(0,serNo);
-            delete dummyDrive; // set the other board to RA
-            StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
-            serNo = StepperDriveDecl->retrieveKineticStepperData(1);
-            g_AllData->setDriveData(1,serNo);
-        } else {
-            StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
-            serNo = StepperDriveDecl->retrieveKineticStepperData(1);
-            g_AllData->setDriveData(1,serNo);
-            delete dummyDrive; // set the other board to Decl
-            StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
-            serNo =StepperDriveRA->retrieveKineticStepperData(1);
-            g_AllData->setDriveData(0,serNo);
-        }
-    }
-    this->StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2)/g_AllData->getGearData(3),g_AllData->getGearData(8));
-    this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed(draccRA,drcurrRA); // setting initial parameters for the ra drive
-    this->StepperDriveDecl->setGearRatioAndMicrosteps(g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6)/g_AllData->getGearData(7),g_AllData->getGearData(8));
-    this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(draccDecl,drcurrDecl); // setting initial parameters for the declination drive
+    this->initiateStepperDrivers(phidget); // initialise the driver boards
 
         // set a bunch of flags and factors
     this->mountMotion.RATrackingIsOn=false;   // sidereal tracking is on if true
@@ -508,10 +466,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStorePark, SIGNAL(clicked()), this, SLOT(determineParkingPosition())); // store the actual position as parking position
     connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
     connect(ui->pbSyncToPark, SIGNAL(clicked()), this, SLOT(syncParkPosition())); // if the scope is parked, sync it to the known parking position
-    connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries())); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
+    connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries()),Qt::QueuedConnection); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
-    connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*))); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
+    connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*)),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
     connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
@@ -528,6 +486,64 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
 }
 
+//------------------------------------------------------------------
+// initialisation of the stepper driver hardware
+short MainWindow::initiateStepperDrivers(stepperDriverTypes whatDrvr) {
+    double draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
+    QtContinuousStepper *dummyDrive; // a helper to determine the right order of phidget drives
+    int serNo; // serial number of the phidgets boards
+
+    draccRA = g_AllData->getDriveParams(0,1);
+    draccDecl = g_AllData->getDriveParams(1,1);
+    drcurrRA = g_AllData->getDriveParams(0,2);
+    drcurrDecl = g_AllData->getDriveParams(1,2); // retrieving acceleration and maximum current for the phidget boards
+
+    switch (whatDrvr) {
+    case phidget:
+        // start searching for the right boards for the drives ...
+        dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
+        serNo = dummyDrive->retrieveKineticStepperData(1);
+        delete dummyDrive;
+        if ((g_AllData->getDriveID(0) != serNo) && (g_AllData->getDriveID(1) != serNo)) { //no driver boards are assigned to drives
+            StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
+            serNo = StepperDriveRA->retrieveKineticStepperData(1);     // get the serial number of the phidget board
+            g_AllData->setDriveData(0,serNo); // remember the ID of the RA-drive in the global class
+            StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
+            serNo = StepperDriveDecl->retrieveKineticStepperData(1); // get the serial number of the phidget board
+            g_AllData->setDriveData(1,serNo); // remember the ID of the Decl-drive in the global class
+        } else { // IDs are written in the "TSC_Preferences.tsc" file
+            dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
+            serNo = dummyDrive->retrieveKineticStepperData(1);
+            if (serNo != g_AllData->getDriveID(0)) { // dummy drive is NOT the designatedRA Drive
+                StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
+                serNo =StepperDriveRA->retrieveKineticStepperData(1);
+                g_AllData->setDriveData(0,serNo);
+                delete dummyDrive; // set the other board to RA
+                StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
+                serNo = StepperDriveDecl->retrieveKineticStepperData(1);
+                g_AllData->setDriveData(1,serNo);
+            } else {
+                StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
+                serNo = StepperDriveDecl->retrieveKineticStepperData(1);
+                g_AllData->setDriveData(1,serNo);
+                delete dummyDrive; // set the other board to Decl
+                StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
+                serNo =StepperDriveRA->retrieveKineticStepperData(1);
+                g_AllData->setDriveData(0,serNo);
+            }
+        }
+        this->StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2)/g_AllData->getGearData(3),g_AllData->getGearData(8));
+        this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed(draccRA,drcurrRA); // setting initial parameters for the ra drive
+        this->StepperDriveDecl->setGearRatioAndMicrosteps(g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6)/g_AllData->getGearData(7),g_AllData->getGearData(8));
+        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(draccDecl,drcurrDecl); // setting initial parameters for the declination drive
+        break; // initialisation routine for the phidget 1067 boards
+    case amisM4:
+        break;
+    case quadStepper:
+        break;
+    }
+    return 0;
+}
 //------------------------------------------------------------------
 // a function to call all connects for the LX200 class; mainly inserted for convenience. first called in
 // the constructor.
@@ -2687,7 +2703,7 @@ void MainWindow::sendDataToTCPHandboxSlot(void) {
         if (this->dslrStates.dslrSeriesRunning == true) {
             if (this->guidingState.guidingIsOn == true) {
                 // send # of exposure, time elapsed and guiding error
-                dslrNums = (int)ui->lcdDSLRExpsTaken->value();
+                dslrNums = (int)ui->lcdDSLRExpsDone->value();
                 stateString->append("Exp.#: ");
                 stateString->append(QString::number(dslrNums));
                 dslrNums = (int)(ui->lcdDSLRTimeRemaining->value());
@@ -2703,7 +2719,7 @@ void MainWindow::sendDataToTCPHandboxSlot(void) {
                 stateString->clear();
             } else {
                 // send # of exposure and time elapsed
-                dslrNums = (int)ui->lcdDSLRExpsTaken->value();
+                dslrNums = (int)ui->lcdDSLRExpsDone->value();
                 stateString->append("Exp.#: ");
                 stateString->append(QString::number(dslrNums));
                 dslrNums = (int)ui->lcdDSLRTimeRemaining->value();
@@ -3868,7 +3884,7 @@ void MainWindow::setControlsForGuiding(bool isEnabled) {
             ui->pbLX200Active->setEnabled(false);
         }
     }
-    ui->gbDSLR->setEnabled(true); // DSLR needs to be controlled during autoguiding
+    ui->tablDSLRTimer->setEnabled(true); // DSLR needs to be controlled during autoguiding
     ui->pbTerminateCal->setEnabled(false); // this one is only active when the system calibrates the autoguider
 }
 
@@ -4575,24 +4591,24 @@ void MainWindow::updateDSLRGUIAndCountdown(void) {
 // slot that starts a series of exposures ...
 void MainWindow::startDSLRSeries(void) {
 
-    if (ui->sbDSLRRepeat->value() > 0) {
+    if (ui->sbDSLRRepetitions->value() > 0) {
         qsrand((uint)(UTTime->currentTime().second())); // initialize the random number generator
         ui->cbExpSeriesDone->setChecked(false);
-        ui->sbDSLRRepeat->setEnabled(false);
+        ui->sbDSLRRepetitions->setEnabled(false);
         ui->pbDSLRStartSeries->setEnabled(false);
         ui->pbDSLRStopSeries->setEnabled(true);
         ui->pbDSLRTerminateExposure->setEnabled(false);
         ui->cbDither->setEnabled(false);
         ui->lcdTempSeriesDiff->display(0);
         this->dslrStates.dslrSeriesRunning = true;
-        this->dslrStates.noOfExposures = ui->sbDSLRRepeat->value();
+        this->dslrStates.noOfExposures = ui->sbDSLRRepetitions->value();
         this->dslrStates.noOfExposuresLeft=this->dslrStates.noOfExposures;
         this->dslrStates.tempAtSeriesStart=this->temperature;
-        ui->sbDSLRRepeat->setEnabled(false);
-        ui->lcdDSLRExpsTaken->display("1");
+        ui->sbDSLRRepetitions->setEnabled(false);
+        ui->lcdDSLRExpsDone->display("1");
         this->dslrStates.dslrExpElapsed.restart();
         this->handleDSLRSingleExposure();
-        ui->sbPauseInExpSeries->setEnabled(false);
+        ui->sbPauseBetweenExpSeries->setEnabled(false);
     }
 }
 
@@ -4602,10 +4618,11 @@ void MainWindow::takeNextExposureInSeries(void) {
     QElapsedTimer *wait;
     int expsTaken, msecondsRemaining;
     bool waitMore = false;
+    bool inGuiding = false;
     float tempDiff; // difference between temperature at series start and next exposure
-    long pauseBetweenExpsInMS; // time as read from the GUI between single exposures
+    long pauseBetweenExpsInMS = 5000; // time as read from the GUI between single exposures
 
-    if (this->dslrStates.noOfExposuresLeft > 0) {
+    if (this->dslrStates.noOfExposuresLeft > 1) {
         this->getTemperature(); // read the temperature sensor
         tempDiff = this->temperature - this->dslrStates.tempAtSeriesStart;
         ui->lcdTempSeriesDiff->display(round(tempDiff));
@@ -4615,17 +4632,23 @@ void MainWindow::takeNextExposureInSeries(void) {
         ui->cbDither->setEnabled(false);
         this->dslrStates.noOfExposuresLeft--;
         expsTaken=this->dslrStates.noOfExposures-this->dslrStates.noOfExposuresLeft;
-        ui->lcdDSLRExpsTaken->display(QString::number(expsTaken));
+
+        if (this->guidingState.guidingIsOn == true) {
+            inGuiding = true; // dithering turns guiding off; after that, the routine waits until guiding is on again.
+            // this variable keeps track whether guiding was on ...
+        }
+        if (inGuiding == true) {
+            this->carryOutDitheringStep();
+            do {
+                this->waitForNMSecs(1000);
+            } while (this->guidingState.guidingIsOn == false);
+            // wait until guiding starts again ...
+            do {
+                this->waitForNMSecs(1000);
+            } while (this->guidingState.noOfGuidingSteps < 4); // wait for guiding to stabilize
+        }
         wait = new QElapsedTimer();
-        wait->start();
-        this->carryOutDitheringStep();
-        do {
-            qDebug() << "Guiding is off ...";
-        } while (this->guidingState.guidingIsOn == false);
-        // wait until guiding starts again ...
-        do {
-            this->waitForNMSecs(1000);
-        } while (ui->lcdGuidesteps->value() < 3);
+        wait->start(); // start the timer for waiting between exposures ...
         if (wait->elapsed() < pauseBetweenExpsInMS) {
             msecondsRemaining = pauseBetweenExpsInMS-wait->elapsed();
             waitMore = true; // just wait for a given # of seconds until next exposure is taken
@@ -4634,10 +4657,14 @@ void MainWindow::takeNextExposureInSeries(void) {
             this->waitForNMSecs(msecondsRemaining);
         }
         delete wait;
-        ui->lcdDSLRExpsTaken->display(QString::number(expsTaken+1));
         if (this->dslrStates.noOfExposuresLeft > 0) { // it is possible to terminate the series in a pause ... this has to be taken care of ...
             this->handleDSLRSingleExposure();
+            ui->lcdDSLRExpsDone->display(QString::number(expsTaken+1));
         } else {
+            this->stopDSLRExposureSeries();
+            this->waitForNMSecs(500);
+        }
+        if (this->dslrStates.noOfExposuresLeft == 0) {
             this->stopDSLRExposureSeries();
             this->waitForNMSecs(500);
         }
@@ -4731,73 +4758,42 @@ void MainWindow::carryOutDitheringStep(void) {
 }
 
 //-------------------------------------------------------------------
-// this moves back to the position before the last dithering step when the series is done
-
-void MainWindow::undoLastDithering(void) {
-    bool restartGuiding = false;
-    float raTimeMS, declTimeMS;
-
-    if (this->guidingState.guidingIsOn == true) {
-        this->doAutoGuiding();
-        restartGuiding = true;
-    } // stop autoguiding
-    raTimeMS = -this->dslrStates.ditherTravelInMSRA;
-    declTimeMS = -this->dslrStates.ditherTravelInMSDecl; // read the last dither step times and revert these
-    if (raTimeMS < 0) {
-        this->raPGBwdGd(abs(raTimeMS));
-    } else {
-        this->raPGFwdGd(abs(raTimeMS));
-    }
-    this->waitForNMSecs(250);
-    if (declTimeMS < 0) {
-        this->declPGMinusGd(abs(declTimeMS));
-    } else {
-        this->declPGPlusGd(abs(declTimeMS));
-    } // went back to old position before last dither step ...
-    if ((this->guidingState.systemIsCalibrated == true) && (restartGuiding == true)) {
-        this->doAutoGuiding();
-    // start autoguiding
-    }
-}
-
-//-------------------------------------------------------------------
 // this slot is called when all exposures of a series are taken
 void MainWindow::stopDSLRExposureSeries(void) {
 
     if (this->dslrStates.dslrExposureIsRunning == true) {
-        this->terminateDSLRSingleShot(); // if an exposure ius running - terminate it ...
+        this->terminateDSLRSingleShot(); // if an exposure is running - terminate it ...
     } else {
         dslrStates.dslrExpElapsed.invalidate(); // otherwise just kill the timer for the series ...
     }
-    this->undoLastDithering();
     this->dslrStates.ditherTravelInMSRA = 0;
     this->dslrStates.ditherTravelInMSDecl = 0;
     this->dslrStates.dslrSeriesRunning = false;
-    ui->sbPauseInExpSeries->setEnabled(true);
+    ui->sbPauseBetweenExpSeries->setEnabled(true);
     ui->pbDSLRSingleShot->setEnabled(true);
     ui->sbDSLRDuration->setEnabled(true);
     ui->cbExpSeriesDone->setChecked(true);
-    ui->sbDSLRRepeat->setEnabled(true);
+    ui->sbDSLRRepetitions->setEnabled(true);
     ui->pbDSLRStartSeries->setEnabled(true);
     ui->cbDither->setEnabled(true);
     ui->pbDSLRStopSeries->setEnabled(false);
-    ui->sbDSLRRepeat->setValue(0);
+    ui->sbDSLRRepetitions->setValue(0);
     ui->lcdDitherStep->display(0);
-    ui->lcdDSLRExpsTaken->display(0);
+    ui->lcdDSLRExpsDone->display(0);
+
 }
 
 //--------------------------------------------------------------------
 // this slot terminates a series of exposures prematurely
 void MainWindow::terminateDSLRSeries(void) {
 
-    ui->sbPauseInExpSeries->setEnabled(true);
+    ui->sbPauseBetweenExpSeries->setEnabled(true);
     this->dslrStates.dslrSeriesRunning = false;
     this->dslrStates.noOfExposuresLeft = 0;
     this->stopDSLRExposureSeries();
     this->dslrStates.noOfExposuresLeft = 0;
     this->terminateDSLRSingleShot();
-    ui->lcdDSLRExpsTaken->display(0);
-    this->undoLastDithering();
+    ui->lcdDSLRExpsDone->display(0);
     this->dslrStates.ditherTravelInMSRA = 0;
     this->dslrStates.ditherTravelInMSDecl = 0;
     ui->lcdDitherStep->display(0);

@@ -143,13 +143,13 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool l
         Rect R(tLeft,bRight); //Create a rect
         this->currentImageOCVMat = this->currentImageOCVMat(R).clone(); //Crop the region of interest using above rect
         this->currentImageOCVMat.convertTo(this->currentImageOCVMat, -1, cntrst, briteness); // do intensity operations
-        cv::threshold(this->currentImageOCVMat,this->currentImageOCVMat, gsThreshold, 255,3); // apply the selected threshold
         if (medianOn== true) {
             cv::medianBlur(this->currentImageOCVMat,this->currentImageOCVMat, 3);
         } // run a 3x3 median filter if desired
         if (lpOn == true) {
             cv::GaussianBlur(this->currentImageOCVMat,this->currentImageOCVMat, Size(5,5), 0, BORDER_DEFAULT);
         }
+        cv::threshold(this->currentImageOCVMat,this->currentImageOCVMat, gsThreshold, 255,3); // apply the selected threshold
         cv::minMaxLoc(this->currentImageOCVMat, &minPixVal, &maxPixVal);
         this->maxGrayVal = maxPixVal; // the subimage should not contain pixels with a saturated value; this is checked ...
         convertMatToQImg(); 

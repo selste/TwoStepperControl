@@ -186,6 +186,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void syncParkPosition(void);
 
 private:
+    enum stepperDriverTypes {phidget, amisM4, quadStepper};
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
         bool RATrackingIsOn;  // true when the telescope is in tracking mode
         bool RADriveIsMoving; // true when the RA drive moves but does not track
@@ -308,6 +309,8 @@ private:
     QByteArray *lx200SerialData;
     SPI_Drive *spiDrOnChan1;
     SPI_Drive *spiDrOnChan0;
+    stepperDriverTypes whatDriver;
+    short initiateStepperDrivers(stepperDriverTypes);
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
@@ -362,7 +365,6 @@ private:
     void openPort(void);
     void updateDSLRGUIAndCountdown(void);
     void carryOutDitheringStep(void);
-    void undoLastDithering(void);
     void waitForNMSecs(int);
     void checkDrivesForActivity(void);
     bool checkForController(void);
