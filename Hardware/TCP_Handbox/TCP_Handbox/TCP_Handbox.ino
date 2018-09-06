@@ -186,7 +186,7 @@ void loop(void) {
 
 //-------------------------------------------------------------------
 void handleTSCdata(void) {
-  if (lineFromTSC.charAt(0) == 'H') { // this is the hour angle
+  if (lineFromTSC.charAt(0) == 'R') { // this is the right ascension
     if (debuggingIsOn == true) {
       Serial.println(lineFromTSC.c_str());
     }
@@ -230,8 +230,8 @@ void handleTSCdata(void) {
   }
   u8g2.setFont(u8g2_font_5x8_tf);
   pSwitchState = "";
-  pSwitchState.concat("Spd:");
-  if (speedSwitch == 1) {
+  pSwitchState.concat("FDir:");
+  if (fFwd == 1) {
     pSwitchState.concat("+ "); 
   } else {
     pSwitchState.concat("- "); 
@@ -242,8 +242,8 @@ void handleTSCdata(void) {
   } else {
     pSwitchState.concat("2 ");
   }
-  pSwitchState.concat("FDir:");
-  if (fFwd == 1) {
+    pSwitchState.concat("Spd:");
+  if (speedSwitch == 1) {
     pSwitchState.concat("+"); 
   } else {
     pSwitchState.concat("-"); 
