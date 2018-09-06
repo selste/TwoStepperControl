@@ -485,6 +485,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
+    this->currentRAString = new QString();
+    this->currentDeclString = new QString();
 }
 
 //------------------------------------------------------------------
@@ -589,6 +591,10 @@ MainWindow::~MainWindow() {
 void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
+    QString *helper;
+    double currRA, remainder, RAInHours, currDecl;
+    int RAHrs, RAMin, RASec; // a few little helpers for displaying RA
+    int declDeg, declMin, declSec,sign=1; // same for Declination
 
     if (this->guidingState.systemIsCalibrated == true) {
         ui->cbAutoguiderIsCalibrated->setChecked(true);
@@ -714,8 +720,84 @@ void MainWindow::updateReadings() {
     while (hourAngleForDisplay > 360) {
         hourAngleForDisplay -= 360;
     }
+
+    this->currentRAString->clear(); // compose the right asccension as string - similar to the routine in the LX200 class
+    currRA = g_AllData->getActualScopePosition(2);
+    RAInHours = currRA/360.0*24.0;
+    if (RAInHours > 24) {
+        RAInHours -= 24;
+    }
+    RAHrs = floor(RAInHours);
+    RAMin = floor((RAInHours - RAHrs)*60.0);
+    remainder = ((RAInHours - RAHrs)*60.0) - RAMin;
+    RASec = round(remainder*60.0);
+    helper = new QString();
+    if (RAHrs < 10) {
+        this->currentRAString->append("0");
+    }
+    helper->setNum(RAHrs);
+    this->currentRAString->append(helper);
+    helper->clear();
+    this->currentRAString->append("h ");
+    if (RAMin < 10) {
+        this->currentRAString->append("0");
+    }
+    helper->setNum(RAMin);
+    this->currentRAString->append(helper);
+    helper->clear();
+    this->currentRAString->append("m ");
+    if (RASec < 10) {
+        this->currentRAString->append("0");
+    }
+    helper->setNum(RASec);
+    this->currentRAString->append(helper);
+    helper->clear();
+    this->currentRAString->append("s");
+
+    this->currentDeclString->clear();
+    currDecl = g_AllData->getActualScopePosition(1);
+    if (currDecl < 0) {
+        sign = -1;
+    } else {
+        sign = 1;
+    }
+    declDeg=(int)(sign*floor(fabs(currDecl)));
+    remainder = fabs(currDecl-((double)declDeg));
+    declMin=(int)(floor(remainder*60.0));
+    remainder = remainder*60.0-declMin;
+    declSec=round(remainder);
+    helper = new QString();
+    if (sign == 1) {
+        this->currentDeclString->insert(0,'+');
+    } else {
+        this->currentDeclString->insert(0,'-');
+    }
+
+    if ((abs(declDeg)) < 10) {
+        this->currentDeclString->insert(1,'0');
+    }
+    helper->setNum(abs(declDeg));
+    this->currentDeclString->append(helper);
+    helper->clear();
+    this->currentDeclString->append("° ");
+    if (declMin < 10) {
+        this->currentDeclString->append("0");
+    }
+    helper->setNum(declMin);
+    this->currentDeclString->append(helper);
+    helper->clear();
+    this->currentDeclString->append("' ");
+    if (declSec < 10) {
+        this->currentDeclString->append("0");
+    }
+    helper->setNum(declSec);
+    this->currentDeclString->append(helper);
+    this->currentDeclString->append("''");
+    delete helper;
+
+    ui->leRightAscension->setText(*currentRAString);
     ui->leHourAngle->setText(textEntry->number(hourAngleForDisplay,'f',5));
-    ui->leDecl->setText(textEntry->number(g_AllData->getActualScopePosition(1),'f',5));
+    ui->leDecl->setText(*currentDeclString);
     // finally, the actual scope position is updated in the GUI
 }
 
@@ -1123,6 +1205,8 @@ void MainWindow::shutDownProgram() {
     if (this->auxBoardIsAvailable == true) {
         emergencyStopAuxDrives();
     }
+    delete currentRAString;
+    delete currentDeclString;
     delete spiDrOnChan0;
     delete spiDrOnChan1;
     delete st4State.RATimeEl;
@@ -2684,8 +2768,8 @@ void MainWindow::sendDataToTCPHandboxSlot(void) {
 
     if (this->tcpHandboxIsConnected == true) {
         stateString = new QString();
-        stateString->append("Hour Angle: ");
-        stateString->append(ui->leHourAngle->text());
+        stateString->append("RA: ");
+        stateString->append(ui->leRightAscension->text());
         stateString->append("\r");
         sendDataToTCPHandbox(*stateString);
         stateString->clear();

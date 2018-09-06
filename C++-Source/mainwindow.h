@@ -331,6 +331,8 @@ private:
     int pulseGuideDuration;
     QString *textEntry;
     QString *bt_HandboxCommand;
+    QString *currentRAString;
+    QString *currentDeclString;
     QFile *guidingLog;
     void connectLX200Events(bool);
     void updateTimeAndDate(void);
