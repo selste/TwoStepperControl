@@ -32,7 +32,6 @@
 #include "lx200_communication.h"
 #include "wiringPi.h"
 #include "ocv_guiding.h"
-#include "tsc_bt_serialcomm.h"
 #include "spi_drive.h"
 
 using namespace QtConcurrent;
@@ -131,10 +130,6 @@ private slots: // callbacks for (mainly) GUI widgets
     void calibrateAutoGuider(void);
     void resetGuidingCalibration(void);
     void resetGuidingError(void);
-    void startBTComm(void);
-    void stopBTComm(void);
-    void saveBTMACAddr(void);
-    void restartBTComm(void);
     void handleHandbox(void);
     void readST4Port(void);
     void startST4Guiding(void);
@@ -282,7 +277,6 @@ private:
     QTime *UTTime;
     double julianDay;
     lx200_communication *lx200Comm;
-    tsc_bt_serialcomm *bt_Handbox;
     QPixmap *camImg;
     QPixmap *guideStarPrev;
     currentObjectCatalog *objCatalog;

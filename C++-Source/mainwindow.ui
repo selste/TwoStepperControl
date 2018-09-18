@@ -2615,294 +2615,136 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QTabWidget" name="tabHB">
+     <widget class="QGroupBox" name="gbHandbox">
       <property name="geometry">
        <rect>
         <x>410</x>
         <y>10</y>
-        <width>351</width>
+        <width>361</width>
         <height>211</height>
        </rect>
       </property>
-      <property name="currentIndex">
-       <number>0</number>
+      <property name="title">
+       <string>TCP/IP Handbox</string>
       </property>
-      <widget class="QWidget" name="TCPIPHBtab">
-       <attribute name="title">
-        <string>TCP/IP Handbox</string>
-       </attribute>
-       <widget class="QPushButton" name="pbTCPHBEnable">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>100</y>
-          <width>151</width>
-          <height>29</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Enable WLAN Hbox</string>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="pbTCPHBDisable">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>170</x>
-          <y>100</y>
-          <width>161</width>
-          <height>29</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Disable WLAN Hbox</string>
-        </property>
-       </widget>
-       <widget class="QWidget" name="layoutWidget_13">
-        <property name="geometry">
-         <rect>
-          <x>210</x>
-          <y>0</y>
-          <width>119</width>
-          <height>33</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_39">
-         <item>
-          <widget class="QLabel" name="lPortHBox">
-           <property name="text">
-            <string>Port:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="sbHBTCPIPPort">
-           <property name="minimum">
-            <number>49152</number>
-           </property>
-           <property name="maximum">
-            <number>65535</number>
-           </property>
-           <property name="value">
-            <number>49153</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QListWidget" name="listWidgetIPAddresses_2">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>10</y>
-          <width>191</width>
-          <height>81</height>
-         </rect>
-        </property>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>170</x>
-          <y>140</y>
-          <width>163</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_36">
-         <item>
-          <widget class="QCheckBox" name="cbTCPHandboxEnabled">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lHandboxConnected">
-           <property name="text">
-            <string>Handbox connected</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QPushButton" name="pbTCPHBKillMotion">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>140</y>
-          <width>151</width>
-          <height>29</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Stop HBox-Motion</string>
-        </property>
-       </widget>
+      <widget class="QWidget" name="layoutWidget_13">
+       <property name="geometry">
+        <rect>
+         <x>220</x>
+         <y>30</y>
+         <width>128</width>
+         <height>33</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_39">
+        <item>
+         <widget class="QLabel" name="lPortHBox">
+          <property name="text">
+           <string>Port:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="sbHBTCPIPPort">
+          <property name="minimum">
+           <number>49152</number>
+          </property>
+          <property name="maximum">
+           <number>65535</number>
+          </property>
+          <property name="value">
+           <number>49153</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
-      <widget class="QWidget" name="BTHBTab">
-       <attribute name="title">
-        <string>BT Handbox</string>
-       </attribute>
-       <widget class="QWidget" name="layoutWidget_12">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>0</y>
-          <width>321</width>
-          <height>81</height>
-         </rect>
-        </property>
-        <layout class="QGridLayout" name="gridLayout_10">
-         <item row="0" column="1">
-          <widget class="QPushButton" name="pbDisonnectBT">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Disconnect BT</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QPushButton" name="pbConnectBT">
-           <property name="minimumSize">
-            <size>
-             <width>180</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>180</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Connect BT</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="pbTryBTRestart">
-           <property name="text">
-            <string>Try BT restart</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="pbKillHandboxMotion">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>180</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>180</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Terminate HB-Motion</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget_3">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>80</y>
-          <width>321</width>
-          <height>47</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_28">
-         <item>
-          <widget class="QLabel" name="lMACAddrBT">
-           <property name="text">
-            <string>BT-MAC Addr:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="leBTMACAddress">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget_6">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>130</y>
-          <width>320</width>
-          <height>32</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_30">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_20">
-           <item>
-            <widget class="QCheckBox" name="cbBTIsUp">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="lBTPort">
-             <property name="text">
-              <string>BT port up</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pbSaveBTMACAddress">
-           <property name="minimumSize">
-            <size>
-             <width>210</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>210</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Save BT MAC Address</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
+      <widget class="QWidget" name="layoutWidget_2">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>170</y>
+         <width>172</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_36">
+        <item>
+         <widget class="QCheckBox" name="cbTCPHandboxEnabled">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lHandboxConnected">
+          <property name="text">
+           <string>Handbox connected</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QPushButton" name="pbTCPHBKillMotion">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>170</y>
+         <width>160</width>
+         <height>29</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Stop HBox-Motion</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbTCPHBEnable">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>130</y>
+         <width>160</width>
+         <height>29</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Enable WLAN Hbox</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbTCPHBDisable">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>130</y>
+         <width>170</width>
+         <height>29</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Disable WLAN Hbox</string>
+       </property>
+      </widget>
+      <widget class="QListWidget" name="listWidgetIPAddresses_2">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>40</y>
+         <width>200</width>
+         <height>81</height>
+        </rect>
+       </property>
       </widget>
      </widget>
     </widget>

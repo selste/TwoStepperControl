@@ -27,7 +27,6 @@ SOURCES += \
     ccd_client.cpp \
     QtKineticStepper.cpp \
     QtContinuousStepper.cpp \
-    tsc_bt_serialcomm.cpp \
     spi_drive.cpp
 
 HEADERS  += \
@@ -40,7 +39,6 @@ HEADERS  += \
     ccd_client.h \
     QtKineticStepper.h \
     QtContinuousStepper.h \
-    tsc_bt_serialcomm.h \
     spi_drive.h
 
 # INCLUDEPATH += /home/pi

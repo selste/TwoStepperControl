@@ -111,7 +111,6 @@ private:
     int mainScopeFocalLength;
     int ditherRangeMin;
     int ditherRangeMax;
-    QString *BTMACAddress;
     QString *LX200IPAddress;
     QString *HandboxIPAddress;
     double celestialSpeed;

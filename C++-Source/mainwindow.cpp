@@ -36,7 +36,6 @@
 #include <QMessageBox>
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"
-#include "tsc_bt_serialcomm.h"
 
 TSC_GlobalData *g_AllData; // a global class that holds system specific parameters on drive, current mount position, gears and so on ...
 
@@ -78,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     delete currentYear;
 
     this->initiateStepperDrivers(phidget); // initialise the driver boards
+qDebug() << "Drivers up";
 
         // set a bunch of flags and factors
     this->mountMotion.RATrackingIsOn=false;   // sidereal tracking is on if true
@@ -121,12 +121,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbGoToSpeed->setValue(g_AllData->getHandBoxSpeeds(0));
     ui->sbMoveSpeed->setValue(g_AllData->getHandBoxSpeeds(1));
     ui->rbCorrSpeed->setChecked(true); // make sure that the loaded motion speed from prefs is set, but set the system to move speed ...
+qDebug() << "variables set";
 
         // GPIO pins for DSLR control
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
     wiringPiSetup();
     pinMode (1, OUTPUT);
     pinMode (27, OUTPUT); // setting BCM-pins 18 and 16 to output mode for dslr-control
+qDebug() << "GPIO up";
 
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
@@ -187,6 +189,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbUTCOffs->setValue(g_AllData->getSiteCoords(2));
     ui->lcdHAPark->display(g_AllData->getParkingPosition(0));
     ui->lcdDecPark->display(g_AllData->getParkingPosition(1));
+qDebug() << "Parameters set";
 
         // camera and guiding class are instantiated
     camera_client = new ccd_client(); // install a camera client for guiding via INDI
@@ -198,6 +201,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbFLGuideScope->setValue(g_AllData->getGuideScopeFocalLength()); // get stored focal length for the guidescope
     this->guiding->setFocalLengthOfGuidescope(g_AllData->getGuideScopeFocalLength());
     this->guidingLog=NULL;
+qDebug() << "Camera initialized";
 
         // now read all catalog files, ending in "*.tsc"
     catalogDir = new QDir("Catalogs/");
@@ -221,6 +225,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
+qDebug() << "Catalogs read";
 
     // read all available IP addresses and make them available for LX200
     ipAddressList = QNetworkInterface::allAddresses();
@@ -241,6 +246,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->HBServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
     this->tcpHBData = new QByteArray();
     this->tcpHandboxIsConnected=false;
+qDebug() << "TCP/IP Servers up";
 
         // instantiate the class for serial communication via LX200
     this->LX200SerialPortIsUp = false;
@@ -253,13 +259,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->lx200SerialPort->setFlowControl(QSerialPort::NoFlowControl);
     this->lx200SerialData = new QByteArray();
     this->lx200Comm= new lx200_communication();
-
     this->LXSetNumberFormatToSimple(); // LX200 knows a simple and a complex number format for RA and Decl - set format to simple here ...
+qDebug() << "Serial port up";
 
         // instantiate communications with handbox
-    ui->leBTMACAddress->setText(*(g_AllData->getBTMACAddress()));
-    this->bt_Handbox = new tsc_bt_serialcomm(*(g_AllData->getBTMACAddress()));
-    this->bt_HandboxCommand=new QString(); // a string that holds the data from the bluetooth-handbox
     this->mountMotion.btMoveNorth=0;
     this->mountMotion.btMoveEast=0;
     this->mountMotion.btMoveSouth=0;
@@ -313,6 +316,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         }
         this->sendMicrostepsToController();
     }
+qDebug() << "SPI up";
 
     // ST 4 code
     if (this->commSPIParams.chan0IsOpen == true) {
@@ -330,6 +334,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4State.DeclTimeEl = new QElapsedTimer();
     this->st4State.RACorrTime = 0;
     this->st4State.DeclCorrTime = 0; // correction times for ST4
+qDebug() << "ST4 set up";
 
         // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
@@ -352,6 +357,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leDeclPlanetary->setValidator(new QDoubleValidator(-10000,10000,10,this));
     ui->leDeclStepSize->setValidator(new QDoubleValidator(0,100,10,this));
     ui->leDeclWorm->setValidator(new QIntValidator(0,10000,this));
+qDebug() << "Validators set";
 
     // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
@@ -423,16 +429,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbConfirmGuideStar, SIGNAL(clicked()), this, SLOT(confirmGuideStar())); // just disables the follwing GUI elements in the autoguiding process
     connect(ui->pbGuiding,SIGNAL(clicked()), this, SLOT(doAutoGuiding())); // instantiate all variables for autoguiding and set a flag that takes care of correction in "displayGuideCamImage" and "correctGuideStarPosition"
     connect(ui->pbStoreFL, SIGNAL(clicked()), this, SLOT(storeGuideScopeFL())); // store focal length of guidescope to preferences
-    connect(ui->pbKillHandboxMotion, SIGNAL(clicked()), this, SLOT(killHandBoxMotion())); // terminates handbox motion if handbox BT-connection is lost
     connect(ui->pbTCPHBKillMotion, SIGNAL(clicked()), this, SLOT(killHandBoxMotion())); // terminates handbox motion if handbox TCP-connection is lost
-    connect(ui->pbTryBTRestart, SIGNAL(clicked()), this, SLOT(restartBTComm())); // try restarting RF comm connection for Bluetooth
     connect(ui->pbTrainAxes, SIGNAL(clicked()),this, SLOT(calibrateAutoGuider())); // find rotation and stepwidth for autoguiding
     connect(ui->pbSkipCalibration, SIGNAL(clicked()), this, SLOT(skipCalibration(void))); // does a dummy calibration for autoguiding - for testing purposes
     connect(ui->pbResetGuiding, SIGNAL(clicked()), this, SLOT(resetGuidingCalibration())); // reset autoguider calibration
     connect(ui->pbResetGdErr, SIGNAL(clicked()), this, SLOT(resetGuidingError())); // reset autoguider guiding error
-    connect(ui->pbConnectBT, SIGNAL(clicked()),this, SLOT(startBTComm())); // stop BT communication
-    connect(ui->pbDisonnectBT, SIGNAL(clicked()),this, SLOT(stopBTComm())); // start BT communication
-    connect(ui->pbSaveBTMACAddress, SIGNAL(clicked()), this, SLOT(saveBTMACAddr())); // save the MAC address of the BT module to a ".TSC_BTMAC.tsp" file.
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
     connect(ui->pbStopST4, SIGNAL(clicked()),this, SLOT(stopST4Guiding())); // stop ST4 pulse guiding
     connect(ui->pbMeridianFlip, SIGNAL(clicked()), this, SLOT(doMeridianFlip())); // carry out meridian flip
@@ -472,21 +473,29 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*)),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
-    connect(this->bt_Handbox,SIGNAL(btDataReceived()),this,SLOT(handleHandbox()),Qt::QueuedConnection); // handle data coming from the bluetooth handbox
     connect(this, SIGNAL(tcpHandboxDataReceived()), this, SLOT(handleHandbox()),Qt::QueuedConnection); // handle data comming from the TCP/IP handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
     connectLX200Events(true); // call all connects for LX200 functions
+qDebug() << "GUI callbacks set up";
+
     ui->rbZWOINDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
+qDebug() << "INDI Server checked";
+
     ui->lcdPulseGuideDuration->display(pulseGuideDuration);
     ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
     ui->pbSyncToPark->setEnabled(true); // same as above
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
+qDebug() << "Stopped drives";
+
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
+qDebug() << "Read Temperature";
+
     this->currentRAString = new QString();
     this->currentDeclString = new QString();
+qDebug() << "Leaving constructor";
 }
 
 //------------------------------------------------------------------
@@ -607,9 +616,6 @@ void MainWindow::updateReadings() {
         ui->cbDither->setEnabled(false);
     }
     this->updateTimeAndDate();
-    if (this->bt_Handbox->getPortState() == true) { // check rfcomm0 for data from the handbox
-        this->bt_Handbox->getDataFromSerialPort();
-    }
     if (this->tcpHandboxIsConnected == true) {
         if (this->HBSocket->bytesAvailable()) {
             this->readTCPHandboxData();
@@ -1229,7 +1235,6 @@ void MainWindow::shutDownProgram() {
     delete lx200SerialData;
     delete g_AllData;
     delete timer;
-    delete bt_Handbox;
     exit(0);
 }
 
@@ -2719,7 +2724,6 @@ void MainWindow::establishHBIPLink(void) {
     this->HBSocket = this->HBServer->nextPendingConnection();
     this->tcpHandboxIsConnected = true;
     ui->pbTCPHBKillMotion->setEnabled(true);
-    ui->BTHBTab->setEnabled(false);
     ui->pbTCPHBEnable->setEnabled(false);
     ui->pbTCPHBDisable->setEnabled(true);
 }
@@ -2733,7 +2737,6 @@ void MainWindow::disconnectHandboxFromIPSocket(void) {
     ui->pbTCPHBDisable->setEnabled(false);
     ui->listWidgetIPAddresses_2->setEnabled(true);
     ui->cbTCPHandboxEnabled->setChecked(false);
-    ui->BTHBTab->setEnabled(true);
     ui->pbTCPHBEnable->setEnabled(true);
     ui->pbTCPHBDisable->setEnabled(false);
     ui->sbHBTCPIPPort->setEnabled(true);
@@ -3550,7 +3553,7 @@ void MainWindow::startST4Guiding(void) {
     ui->camTab->setEnabled(false);
     ui->gearTab->setEnabled(false);
     ui->tabLX200->setEnabled(false);
-    ui->tabHB->setEnabled(false);
+    ui->gbHandbox ->setEnabled(false);
     ui->gbINDI->setEnabled(false);
     ui->pbStartST4->setEnabled(false);
     ui->pbStopST4->setEnabled(true);
@@ -3588,7 +3591,7 @@ void MainWindow::stopST4Guiding(void) {
     ui->INDITab->setEnabled(true);
     ui->gearTab->setEnabled(true);
     ui->tabLX200->setEnabled(true);
-    ui->tabHB->setEnabled(true);
+    ui->gbHandbox->setEnabled(true);
     ui->gbINDI->setEnabled(true);
     ui->cbLXSimpleNumbers->setEnabled(true);
     ui->photoTab->setEnabled(true);
@@ -4411,63 +4414,7 @@ void MainWindow::doMeridianFlip(void) {
 }
 
 //----------------------------------------------------------------------
-//----------------------------------------------------------------------
-//----------------------------------------------------------------------
-// routines for handling bluetooth communications with the handbox
-//----------------------------------------------------------------------
-//----------------------------------------------------------------------
-//----------------------------------------------------------------------
-void MainWindow::startBTComm(void) { // start BT communications
-    this->bt_Handbox->openPort();
-    if (this->bt_Handbox->getPortState()==true) {
-        ui->cbBTIsUp->setChecked(true);
-        ui->pbConnectBT->setEnabled(false);
-        ui->pbDisonnectBT->setEnabled(true);
-        ui->pbKillHandboxMotion->setEnabled(true);
-        ui->TCPIPHBtab->setEnabled(false);
-    }
-}
-
-//----------------------------------------------------------------------
-void MainWindow::stopBTComm(void) {  // stop BT communications
-    this->bt_Handbox->shutDownPort();
-    ui->cbBTIsUp->setChecked(false);
-    ui->TCPIPHBtab->setEnabled(true);
-    ui->pbConnectBT->setEnabled(true);
-    ui->pbDisonnectBT->setEnabled(false);
-    ui->pbKillHandboxMotion->setEnabled(false);
-}
-
-//----------------------------------------------------------------------
-void MainWindow::saveBTMACAddr(void) {
-    QString *btmacaddr;
-    QFile *macfile;
-
-    btmacaddr = new QString(ui->leBTMACAddress->text());
-    macfile = new QFile(".TSC_BTMAC.tsp");
-    macfile->open((QIODevice::ReadWrite | QIODevice::Text));
-    macfile->write(btmacaddr->toLatin1(),btmacaddr->length());
-    macfile->close();
-    delete btmacaddr;
-    delete macfile;
-}
-
-//----------------------------------------------------------------------
-void MainWindow::restartBTComm(void) {  // try to open up the rfcommport if it failed in initialisation
-    ui->leBTMACAddress->setText(*(g_AllData->getBTMACAddress()));
-    this->bt_Handbox->bt_serialcommTryRestart(*(g_AllData->getBTMACAddress()));
-    this->mountMotion.btMoveNorth=0;
-    this->mountMotion.btMoveEast=0;
-    this->mountMotion.btMoveSouth=0;
-    this->mountMotion.btMoveWest=0;
-    ui->pbConnectBT->setEnabled(false);
-    ui->pbDisonnectBT->setEnabled(false);
-    this->waitForNMSecs(3000);
-    ui->pbConnectBT->setEnabled(true);
-    ui->pbDisonnectBT->setEnabled(false);
-}
-//----------------------------------------------------------------------
-// slot that responds to the strings received from the handbox via bluetooth or tcp/ip.
+// slot that responds to the strings received from the handbox  tcp/ip.
 // the arduino sends a string consisting of 5 characters. "1000" is north,
 // "0001" is east, "0010" is south and "0100" is west. the fifth value is 0
 // if the speed is single, and 1 if the speed is the "move" speed.
@@ -4489,12 +4436,7 @@ void MainWindow::handleHandbox(void) {
         CCDWasOn = false;
     } // handling motion with INDI does not really work in the event queue - so the cam is turned off
     this->waitForNMSecs(100); // just to let the transmission finish
-    if (this->tcpHandboxIsConnected == false) { // in this case, the command comes from the BT-handbox
-        this->bt_HandboxCommand=this->bt_Handbox->getTSCcommand(); // store the command from the arduino
-        localBTCommand=new QString(*bt_HandboxCommand); // make a copy of the command
-    } else {
-        localBTCommand=new QString(this->tcpHBData->data()); // in this case the data comes from the TCP handbox
-    }
+    localBTCommand=new QString(this->tcpHBData->data()); // in this case the data comes from the TCP handbox
     dirCommand = new QString(localBTCommand->left(5));
     focuserCommand = new QString(localBTCommand->right(5));
     delete localBTCommand; // delete the local deep copy of the command string

@@ -44,8 +44,6 @@ TSC_GlobalData::TSC_GlobalData() {
     this->driveData.actualRASpeed=0;
     this->driveData.actualDeclSpeed=0;
     this->guidingState=false;
-    this->BTMACAddress=new QString("00:00:00:00:00:00");
-    this->getBTMACAddress(); // if a MAC address is stored for the BT-adapter in ".TSC_BTMAC.tsp" - use it ...
     this->LX200IPAddress = new QString("127.0.0.1");
     this->HandboxIPAddress = new QString("127.0.0.1");
     this->celestialSpeed=0.0041780746; // default speed is sidereal speed
@@ -93,7 +91,6 @@ TSC_GlobalData::TSC_GlobalData() {
 TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
-    delete BTMACAddress;
     delete LX200IPAddress;
 }
 
@@ -338,24 +335,6 @@ bool TSC_GlobalData::getTrackingMode(void) {
 //-----------------------------------------------
 void TSC_GlobalData::setTrackingMode(bool isTracking) {
     this->isInTrackingMode = isTracking;
-}
-
-//-----------------------------------------------
-QString* TSC_GlobalData::getBTMACAddress(void) {
-    std::string line;
-    QString *btmacaddr;
-
-    std::ifstream infile(".TSC_BTMAC.tsp");  // read that preferences file ...
-    if (!infile.is_open()) {
-        return this->BTMACAddress;
-    }
-
-    std::getline(infile, line);
-    btmacaddr = new QString(line.data());
-    this->BTMACAddress->clear();
-    this->BTMACAddress->append(btmacaddr);
-    delete btmacaddr;
-    return this->BTMACAddress;
 }
 
 //-----------------------------------------------
