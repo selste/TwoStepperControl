@@ -93,6 +93,21 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete monotonicGlobalTimer;
     delete LX200IPAddress;
 }
+//-----------------------------------------------
+// set the driver board used; 0 for phidgets, 1 for the AMIS
+void TSC_GlobalData::setStepperDriverType(short whatBoard) {
+    switch (whatBoard) {
+        case 0: this->driverBoardType = 0; break;
+        case 1: this->driverBoardType = 1; break;
+        default:  this->driverBoardType = 0; break;
+    }
+}
+
+//-----------------------------------------------
+// get a number for the driver board used; 0 for phidgets, 1 for the AMIS
+short TSC_GlobalData::getStepperDriverType(void) {
+   return this->driverBoardType;
+}
 
 //-----------------------------------------------
 void TSC_GlobalData::setParkingPosition(float ha, float decl) {

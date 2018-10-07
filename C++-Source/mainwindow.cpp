@@ -76,7 +76,26 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbEpoch->setValue(currentYear->toInt());
     delete currentYear;
 
-    this->initiateStepperDrivers(phidget); // initialise the driver boards
+    if (this->determineDriverType() == true) {
+        qDebug() << "Found a driver";
+    } else {
+        qDebug() << "Found no driver";
+    }
+    qDebug() << "DriverType is" << this->whatDriver;
+    g_AllData->setStepperDriverType(this->whatDriver); // important - this stores the driver board type globally
+    switch (this->whatDriver) {
+        case phidget: ui->rbPhidget->setChecked(true);
+            ui->gbAMISRA->setEnabled(false);
+            ui->gbAMISDecl->setEnabled(false);
+            ui->tmstepsAMIS->setEnabled(false);
+            ui->gbTestAMISSettings->setEnabled(false);
+            break;
+        case amisM4: ui->rbAMIS->setChecked(true);
+            ui->gbRAKin->setEnabled(false);
+            ui->gbDeclKin->setEnabled(false);
+            break;
+    }
+    this->initiateStepperDrivers(this->whatDriver); // initialise the driver boards
 qDebug() << "Drivers up";
 
         // set a bunch of flags and factors
@@ -316,6 +335,7 @@ qDebug() << "Serial port up";
         }
         this->sendMicrostepsToController();
     }
+    this->waitForNMSecs(500); // give the microcontroller some time to breathe
 qDebug() << "SPI up";
 
     // ST 4 code
@@ -467,6 +487,7 @@ qDebug() << "Validators set";
     connect(ui->pbStorePark, SIGNAL(clicked()), this, SLOT(determineParkingPosition())); // store the actual position as parking position
     connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
     connect(ui->pbSyncToPark, SIGNAL(clicked()), this, SLOT(syncParkPosition())); // if the scope is parked, sync it to the known parking position
+    connect(ui->pbStoreDriver, SIGNAL(clicked()), this, SLOT(writeDriverSelectionFile())); // write the file that determines which driver is loaded
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries()),Qt::QueuedConnection); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
@@ -486,16 +507,66 @@ qDebug() << "INDI Server checked";
     ui->lcdPulseGuideDuration->display(pulseGuideDuration);
     ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
     ui->pbSyncToPark->setEnabled(true); // same as above
+qDebug() << "Setup GUI";
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
 qDebug() << "Stopped drives";
-
-    this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
-qDebug() << "Read Temperature";
-
     this->currentRAString = new QString();
     this->currentDeclString = new QString();
 qDebug() << "Leaving constructor";
+}
+
+//------------------------------------------------------------------
+// find out about the drivers used; this is stored in a file ".TSC_DriverType.tsl".
+// if the file does not exist, phidget 1067 drivers are assumed and the file is
+// generated. setting the driver type takes place in the "Settings" tab ...
+bool MainWindow::determineDriverType(void) {
+    bool driverTypeFound = false;
+
+    std::ifstream infile(".TSC_DriverType.tsl");
+    std::string line;   // define a line that is read
+    std::getline(infile, line);     // read that line
+    if (line.length() > 0) {
+        if (line.compare("phidget") == 0) {
+            this->whatDriver=phidget;
+            driverTypeFound = true;
+        }
+        if (line.compare("amisM4") == 0) {
+            this->whatDriver=amisM4;
+            driverTypeFound = true;
+        }
+        if (line.compare("quadStepper") == 0) {
+            this->whatDriver=quadStepper;
+            driverTypeFound = true;
+        }
+    } else {
+       this->whatDriver=phidget;
+        QFile *defaultDriverFile = new QFile(".TSC_DriverType.tsl");
+        defaultDriverFile->open((QIODevice::ReadWrite | QIODevice::Text));
+        defaultDriverFile->write("phidget\n",8);
+        defaultDriverFile->close();
+    }
+    infile.close();
+    return driverTypeFound;
+}
+
+
+//------------------------------------------------------------------
+// callback for setting up the driver selection file; it just writes
+// a file ".TSC_DriverType.tsl" with the strings "phidget" or "amisM4".
+void MainWindow::writeDriverSelectionFile(void) {
+    if (ui->rbAMIS->isChecked() == true) {
+        QFile *defaultDriverFile = new QFile(".TSC_DriverType.tsl");
+        defaultDriverFile->open((QIODevice::ReadWrite | QIODevice::Text));
+        defaultDriverFile->write("amisM4\n",7);
+        defaultDriverFile->close();
+    }
+    if (ui->rbPhidget->isChecked() == true) {
+        QFile *defaultDriverFile = new QFile(".TSC_DriverType.tsl");
+        defaultDriverFile->open((QIODevice::ReadWrite | QIODevice::Text));
+        defaultDriverFile->write("phidget\n",8);
+        defaultDriverFile->close();
+    }
 }
 
 //------------------------------------------------------------------
@@ -550,9 +621,10 @@ short MainWindow::initiateStepperDrivers(stepperDriverTypes whatDrvr) {
         this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(draccDecl,drcurrDecl); // setting initial parameters for the declination drive
         break; // initialisation routine for the phidget 1067 boards
     case amisM4:
+        qDebug() << "Setting up the first AMIS-Driver";
+
         break;
-    case quadStepper:
-        break;
+
     }
     return 0;
 }
@@ -4855,6 +4927,7 @@ void MainWindow::getTemperature(void) {
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("p");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    qDebug() << "received SPI cmd 1";
     this->waitForNMSecs(25);
     if (this->spiDrOnChan0->getResponse() == 'p') {
         this->commSPIParams.guiData->clear();
@@ -4893,6 +4966,9 @@ void MainWindow::getTemperature(void) {
         lastC = '0';
     }
     temp.append(lastC);
+
+    qDebug() << "read all temperature SPI data";
+
     lTmp=temp.toDouble();
     if (lTmp < 80) {
         if (lTmp > -40) {

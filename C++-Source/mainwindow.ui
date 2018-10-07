@@ -7404,7 +7404,7 @@ drives</string>
           </layout>
          </widget>
         </widget>
-        <widget class="QGroupBox" name="groupBox_2">
+        <widget class="QGroupBox" name="gbDeclKin">
          <property name="geometry">
           <rect>
            <x>200</x>
@@ -7593,7 +7593,7 @@ drives</string>
        <attribute name="title">
         <string>AMIS M4</string>
        </attribute>
-       <widget class="QGroupBox" name="groupBox">
+       <widget class="QGroupBox" name="gbAMISRA">
         <property name="geometry">
          <rect>
           <x>5</x>
@@ -7715,7 +7715,7 @@ drives</string>
          </layout>
         </widget>
        </widget>
-       <widget class="QGroupBox" name="groupBox_4">
+       <widget class="QGroupBox" name="gbAMISDecl">
         <property name="geometry">
          <rect>
           <x>200</x>
@@ -7850,7 +7850,7 @@ drives</string>
          <enum>Qt::LeftToRight</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">
@@ -8317,11 +8317,6 @@ drives</string>
         </property>
        </widget>
       </widget>
-      <widget class="QWidget" name="tabQuadStepper">
-       <attribute name="title">
-        <string>QuadStepper</string>
-       </attribute>
-      </widget>
      </widget>
      <widget class="QGroupBox" name="gbGeneralSettings">
       <property name="geometry">
@@ -8514,16 +8509,6 @@ after reset</string>
          <widget class="QRadioButton" name="rbAMIS">
           <property name="text">
            <string>AMIS</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="rbQuad">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Quad</string>
           </property>
          </widget>
         </item>

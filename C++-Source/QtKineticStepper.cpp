@@ -26,15 +26,20 @@ extern TSC_GlobalData *g_AllData;
 QtKineticStepper::QtKineticStepper(void){
     int sernum, version;
 
-    this->SH = NULL;
-    this->errorCreate = CPhidgetStepper_create(&SH);
-    this->errorOpen = CPhidget_open((CPhidgetHandle)SH, -1);
-    sleep(1);
-    CPhidget_getSerialNumber((CPhidgetHandle)SH, &sernum);
-    CPhidget_getDeviceVersion((CPhidgetHandle)SH, &version);
-    sleep(1);
-    this->snumifk=sernum;
-    this->vifk=version;    
+    if (g_AllData->getStepperDriverType() == 0 ) {
+        this->SH = NULL;
+        this->errorCreate = CPhidgetStepper_create(&SH);
+        this->errorOpen = CPhidget_open((CPhidgetHandle)SH, -1);
+        sleep(1);
+        CPhidget_getSerialNumber((CPhidgetHandle)SH, &sernum);
+        CPhidget_getDeviceVersion((CPhidgetHandle)SH, &version);
+        sleep(1);
+        this->snumifk=sernum;
+        this->vifk=version;
+    }
+    if (g_AllData->getStepperDriverType() == 1) {
+        qDebug() << "Setting up AMIS boards";
+    }
     this->hBoxSlewEnded=false;
     this->stopped=true;
     this->gearRatio = 1;

@@ -13,7 +13,6 @@
 
 //---------------------------------------------------
 
-
 #ifndef TSC_GLOBALDATA_H
 #define TSC_GLOBALDATA_H
 
@@ -98,6 +97,8 @@ public:
     int getDitherRange(bool); // the boolean indicates whether the number requested "isMinimum"
     void setParkingPosition(float, float); // store the actual position as parking position
     float getParkingPosition(short); // get the stored parking position. 0 is for the hour angle, 1 is for declination.
+    void setStepperDriverType(short); // set the driver board used; 0 for phidgets, 1 for the AMIS
+    short getStepperDriverType(void); // retrieve this parameter
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -118,6 +119,7 @@ private:
     int motionSpeed;
     float parkingHA;
     float parkingDecl;
+    short driverBoardType;
 
     struct initialStarPosStruct {
         float screenx;

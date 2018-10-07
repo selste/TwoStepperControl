@@ -179,6 +179,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void determineParkingPosition(void);
     void gotoParkPosition(void);
     void syncParkPosition(void);
+    void writeDriverSelectionFile(void);
 
 private:
     enum stepperDriverTypes {phidget, amisM4, quadStepper};
@@ -388,6 +389,7 @@ private:
     void mvAux2BwdTinyHB(void);
     void readTCPHandboxData(void);
     void sendDataToTCPHandbox(QString);
+    bool determineDriverType(void);
 
 signals:
     void dslrExposureDone(void);

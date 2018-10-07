@@ -27,7 +27,8 @@ SOURCES += \
     ccd_client.cpp \
     QtKineticStepper.cpp \
     QtContinuousStepper.cpp \
-    spi_drive.cpp
+    spi_drive.cpp \
+    usb_communications.cpp
 
 HEADERS  += \
     mainwindow.h \
@@ -39,7 +40,8 @@ HEADERS  += \
     ccd_client.h \
     QtKineticStepper.h \
     QtContinuousStepper.h \
-    spi_drive.h
+    spi_drive.h \
+    usb_communications.h
 
 # INCLUDEPATH += /home/pi
 # INCLUDEPATH += /home/pi/libindi/libs/
@@ -55,7 +57,9 @@ win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../usr/lib/release/ 
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../usr/lib/debug/ -lphidget21
 else:unix: LIBS += -L$$PWD/../../../usr/lib/ -lphidget21
 
-
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/release/ -lusb-1.0
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/debug/ -lusb-1.0
+else:unix: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lusb-1.0
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../../../../usr/lib/release/ -lindiclient
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../../../../usr/lib/debug/ -lindiclient
