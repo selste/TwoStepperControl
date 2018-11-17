@@ -180,6 +180,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void gotoParkPosition(void);
     void syncParkPosition(void);
     void writeDriverSelectionFile(void);
+    void handleSerialLXCB(void);
 
 private:
     enum stepperDriverTypes {phidget, amisM4, quadStepper};
@@ -328,6 +329,8 @@ private:
     QString *bt_HandboxCommand;
     QString *currentRAString;
     QString *currentDeclString;
+    QString *currentHAString;
+    QString *coordString;
     QFile *guidingLog;
     void connectLX200Events(bool);
     void updateTimeAndDate(void);
@@ -390,6 +393,7 @@ private:
     void readTCPHandboxData(void);
     void sendDataToTCPHandbox(QString);
     bool determineDriverType(void);
+    QString* generateCoordinateString(float, bool);
 
 signals:
     void dslrExposureDone(void);

@@ -93,6 +93,18 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete monotonicGlobalTimer;
     delete LX200IPAddress;
 }
+
+//-----------------------------------------------
+// set a flag that initializes serial LX200 upon startup
+void TSC_GlobalData::setLX200SerialFlag(bool val) {
+    this->useLX200SerialOnStartup = val;
+}
+
+//-----------------------------------------------
+bool TSC_GlobalData::getLX200SerialFlag(void) {
+    return this->useLX200SerialOnStartup;
+}
+
 //-----------------------------------------------
 // set the driver board used; 0 for phidgets, 1 for the AMIS
 void TSC_GlobalData::setStepperDriverType(short whatBoard) {
@@ -685,6 +697,7 @@ int TSC_GlobalData::getDriveID(short what) {
 
 void TSC_GlobalData::storeGlobalData(void) {
     std::ofstream outfile("TSC_Preferences.tsp");
+    short boolFlag = 0;
 
     std::string ostr = std::to_string(this->driveData.RAControllerID);
     ostr.append("// Phidget 1067 Board Serial Number for RA.\n");
@@ -846,6 +859,23 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Declination of parking position.\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr.append(this->LX200IPAddress->toLatin1());
+    ostr.append("// Default IP Address for LX200.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr.append(this->HandboxIPAddress->toLatin1());
+    ostr.append("// Default IP Address for Handbox.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    if (this->useLX200SerialOnStartup == true) {
+        boolFlag = 1;
+    } else {
+        boolFlag = 0;
+    }
+    ostr.append(std::to_string(boolFlag));
+    ostr.append("// Flag whether serial LX200 is to be used on startup.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -853,6 +883,7 @@ void TSC_GlobalData::storeGlobalData(void) {
 
 bool TSC_GlobalData::loadGlobalData(void) {
     std::string line;   // define a line that is read until \n is encountered
+    short boolFlag;
 
     char delimiter('/');    // data are separated from comments by c++ - style comments
     std::ifstream infile("TSC_Preferences.tsp");  // read that preferences file ...
@@ -1018,6 +1049,23 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isParkingDecl(line);
     isParkingDecl >> this->parkingDecl;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    this->LX200IPAddress->clear();
+    this->LX200IPAddress->append(line.data());
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    this->HandboxIPAddress->clear();
+    this->HandboxIPAddress->append(line.data());
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isLX200Startup(line);
+    isLX200Startup >> boolFlag;
+    if (boolFlag == 0) {
+        this->useLX200SerialOnStartup = false;
+    } else {
+        this->useLX200SerialOnStartup = true;
+    }
     infile.close(); // close the reading file for preferences
     return true;
 }

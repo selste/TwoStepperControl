@@ -1556,6 +1556,9 @@
         </item>
         <item row="3" column="3">
          <widget class="QDoubleSpinBox" name="doubleSpinBox">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="minimumSize">
            <size>
             <width>55</width>
@@ -1584,6 +1587,9 @@
         </item>
         <item row="3" column="0" colspan="2">
          <widget class="QRadioButton" name="rbGuideSpeed">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="minimumSize">
            <size>
             <width>80</width>
@@ -1943,26 +1949,13 @@
      <attribute name="title">
       <string>LX200/HB/ST 4</string>
      </attribute>
-     <widget class="Line" name="line">
-      <property name="geometry">
-       <rect>
-        <x>390</x>
-        <y>0</y>
-        <width>20</width>
-        <height>411</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
      <widget class="QGroupBox" name="gbST4">
       <property name="geometry">
        <rect>
         <x>410</x>
-        <y>230</y>
+        <y>250</y>
         <width>361</width>
-        <height>191</height>
+        <height>171</height>
        </rect>
       </property>
       <property name="title">
@@ -1972,9 +1965,9 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>30</y>
+         <y>27</y>
          <width>361</width>
-         <height>151</height>
+         <height>141</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -1986,8 +1979,8 @@
        <widget class="QWidget" name="layoutWidget_4">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>10</y>
+          <x>6</x>
+          <y>5</y>
           <width>151</width>
           <height>77</height>
          </rect>
@@ -2063,67 +2056,11 @@
          </item>
         </layout>
        </widget>
-       <widget class="QPushButton" name="pbStartST4">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>190</x>
-          <y>30</y>
-          <width>150</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>150</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>150</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Start ST 4</string>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="pbStopST4">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>190</x>
-          <y>60</y>
-          <width>150</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>150</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>150</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Stop ST 4</string>
-        </property>
-       </widget>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>11</x>
-          <y>91</y>
+          <x>6</x>
+          <y>89</y>
           <width>342</width>
           <height>41</height>
          </rect>
@@ -2183,6 +2120,62 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>169</x>
+          <y>23</y>
+          <width>181</width>
+          <height>58</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QPushButton" name="pbStartST4">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>24</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Start ST 4</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pbStopST4">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>150</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>150</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Stop ST 4</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
@@ -2218,9 +2211,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>230</y>
-        <width>381</width>
-        <height>181</height>
+        <y>280</y>
+        <width>391</width>
+        <height>151</height>
        </rect>
       </property>
       <property name="title">
@@ -2232,10 +2225,10 @@
       <widget class="QPlainTextEdit" name="teLX200Data">
        <property name="geometry">
         <rect>
-         <x>0</x>
-         <y>30</y>
+         <x>3</x>
+         <y>62</y>
          <width>201</width>
-         <height>141</height>
+         <height>81</height>
         </rect>
        </property>
        <property name="font">
@@ -2253,8 +2246,8 @@
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>210</x>
-         <y>110</y>
+         <x>209</x>
+         <y>72</y>
          <width>171</width>
          <height>65</height>
         </rect>
@@ -2288,106 +2281,104 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QLabel" name="lLXRecCoords">
        <property name="geometry">
         <rect>
-         <x>212</x>
-         <y>0</y>
-         <width>159</width>
-         <height>105</height>
+         <x>3</x>
+         <y>30</y>
+         <width>67</width>
+         <height>30</height>
         </rect>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>30</y>
+         <width>390</width>
+         <height>32</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_18">
         <item>
-         <widget class="QLabel" name="lLXRecCoords">
+         <widget class="QLabel" name="lLXRA">
+          <property name="minimumSize">
+           <size>
+            <width>30</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>30</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Received Coordinates:</string>
+           <string>RA:</string>
           </property>
          </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_18">
-          <item>
-           <widget class="QLabel" name="lLXRA">
-            <property name="minimumSize">
-             <size>
-              <width>40</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>40</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>RA:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="leLX200RA">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>80</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QLineEdit" name="leLX200RA">
+          <property name="minimumSize">
+           <size>
+            <width>150</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>150</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_19">
-          <item>
-           <widget class="QLabel" name="lLXDecl">
-            <property name="minimumSize">
-             <size>
-              <width>40</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>40</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Decl:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="leLX200Decl">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>100</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
+         <widget class="QLabel" name="lLXDecl">
+          <property name="minimumSize">
+           <size>
+            <width>40</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Decl:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leLX200Decl">
+          <property name="minimumSize">
+           <size>
+            <width>150</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>150</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -2400,8 +2391,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>381</width>
-        <height>181</height>
+        <width>391</width>
+        <height>231</height>
        </rect>
       </property>
       <property name="currentIndex">
@@ -2511,6 +2502,32 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>150</y>
+          <width>361</width>
+          <height>31</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_19">
+         <item>
+          <widget class="QLabel" name="lIPLX200">
+           <property name="text">
+            <string>IP chosen:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="leDefaultIPAddressLX200">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QWidget" name="tabLXSerial">
        <attribute name="title">
@@ -2597,13 +2614,26 @@
          </item>
         </layout>
        </widget>
+       <widget class="QCheckBox" name="cbSerialLX200Default">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>120</y>
+          <width>351</width>
+          <height>27</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Use serial connection on startup</string>
+        </property>
+       </widget>
       </widget>
      </widget>
      <widget class="QCheckBox" name="cbLXSimpleNumbers">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>200</y>
+        <y>250</y>
         <width>369</width>
         <height>26</height>
        </rect>
@@ -2621,7 +2651,7 @@
         <x>410</x>
         <y>10</y>
         <width>361</width>
-        <height>211</height>
+        <height>231</height>
        </rect>
       </property>
       <property name="title">
@@ -2662,9 +2692,9 @@
       <widget class="QWidget" name="layoutWidget_2">
        <property name="geometry">
         <rect>
-         <x>180</x>
-         <y>170</y>
-         <width>172</width>
+         <x>10</x>
+         <y>130</y>
+         <width>170</width>
          <height>23</height>
         </rect>
        </property>
@@ -2688,54 +2718,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QPushButton" name="pbTCPHBKillMotion">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>170</y>
-         <width>160</width>
-         <height>29</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Stop HBox-Motion</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pbTCPHBEnable">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>130</y>
-         <width>160</width>
-         <height>29</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Enable WLAN Hbox</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pbTCPHBDisable">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>180</x>
-         <y>130</y>
-         <width>170</width>
-         <height>29</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Disable WLAN Hbox</string>
-       </property>
-      </widget>
       <widget class="QListWidget" name="listWidgetIPAddresses_2">
        <property name="geometry">
         <rect>
@@ -2745,6 +2727,74 @@
          <height>81</height>
         </rect>
        </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>219</x>
+         <y>66</y>
+         <width>131</width>
+         <height>101</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QPushButton" name="pbTCPHBEnable">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Enable Handbox</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbTCPHBDisable">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Disable Handbox</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbTCPHBKillMotion">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Stop Motion</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>183</y>
+         <width>341</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_20">
+        <item>
+         <widget class="QLabel" name="lIPHBox">
+          <property name="text">
+           <string>IP chosen:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="leDefaultIPAddressHBox">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </widget>
@@ -7594,6 +7644,9 @@ drives</string>
         <string>AMIS M4</string>
        </attribute>
        <widget class="QGroupBox" name="gbAMISRA">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>5</x>
@@ -7648,6 +7701,9 @@ drives</string>
           </item>
           <item row="0" column="1">
            <widget class="QSpinBox" name="sbAMaxRA_AMIS">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="minimumSize">
              <size>
               <width>80</width>
@@ -7689,6 +7745,9 @@ drives</string>
           </item>
           <item row="1" column="1">
            <widget class="QDoubleSpinBox" name="sbCurrMaxRA_AMIS">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="minimumSize">
              <size>
               <width>80</width>
@@ -7716,6 +7775,9 @@ drives</string>
         </widget>
        </widget>
        <widget class="QGroupBox" name="gbAMISDecl">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>200</x>
@@ -7838,6 +7900,9 @@ drives</string>
         </widget>
        </widget>
        <widget class="QTabWidget" name="tmstepsAMIS">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="geometry">
          <rect>
           <x>10</x>
@@ -7850,7 +7915,7 @@ drives</string>
          <enum>Qt::LeftToRight</enum>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">
@@ -8142,6 +8207,9 @@ drives</string>
          <string>Test all settings:</string>
         </property>
         <widget class="QPushButton" name="pbTestAllSettingsAMIS">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="geometry">
           <rect>
            <x>8</x>
@@ -8507,6 +8575,9 @@ after reset</string>
         </item>
         <item>
          <widget class="QRadioButton" name="rbAMIS">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>AMIS</string>
           </property>

@@ -49,8 +49,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QStringList filter; // needed for isolating the .tsc files
     QString *catfName; // name of a .tsc catalog
     QString *currentYear; // sets the actual equinox
+    QString *helper;
     QList<QHostAddress> ipAddressList;
     int listIter;
+    bool foundDefaultIPForLX200 = false;
+    bool foundDefaultIPForHBox = false;
     short auxMicrostepDenom, guiderFocusDrive;
 
     ui->setupUi(this); // making the widget
@@ -246,20 +249,12 @@ qDebug() << "Camera initialized";
     g_AllData->setSyncPosition(0.0, 0.0); // deploy a fake sync to the mount so that the microtimer starts ...
 qDebug() << "Catalogs read";
 
-    // read all available IP addresses and make them available for LX200
-    ipAddressList = QNetworkInterface::allAddresses();
-    for(listIter = 0; listIter < ipAddressList.count(); listIter++) {
-        if ((ipAddressList[listIter].isLoopback() == false) && (ipAddressList[listIter].protocol() == QAbstractSocket::IPv4Protocol)) {
-            ui->listWidgetIPAddresses->addItem(ipAddressList[listIter].toString());
-            ui->listWidgetIPAddresses_2->addItem(ipAddressList[listIter].toString());
-        }
-    }
     this->LXServer = new QTcpServer();
     this->LXSocket = new QTcpSocket(this);
     this->LXServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
     this->tcpLXdata = new QByteArray(); // a byte array holding the data coming in from the TCP/IP socket
 
-    // repeat the above proccedure for the TCP/IP handbox
+    // repeat the above procedure for the TCP/IP handbox
     this->HBServer = new QTcpServer();
     this->HBSocket = new QTcpSocket(this);
     this->HBServerAddress = new QHostAddress(); // creating a server, a socket and a hostaddress for the LX 200 tcp/ip server
@@ -267,7 +262,22 @@ qDebug() << "Catalogs read";
     this->tcpHandboxIsConnected=false;
 qDebug() << "TCP/IP Servers up";
 
-        // instantiate the class for serial communication via LX200
+    // read all available IP addresses and make them available for LX200
+    ipAddressList = QNetworkInterface::allAddresses();
+    for(listIter = 0; listIter < ipAddressList.count(); listIter++) {
+        if ((ipAddressList[listIter].isLoopback() == false) && (ipAddressList[listIter].protocol() == QAbstractSocket::IPv4Protocol)) {
+            ui->listWidgetIPAddresses->addItem(ipAddressList[listIter].toString());
+            ui->listWidgetIPAddresses_2->addItem(ipAddressList[listIter].toString());
+            if (ipAddressList[listIter].toString() == g_AllData->getLX200IPAddress()) {
+                foundDefaultIPForLX200 = true;
+            }
+            if (ipAddressList[listIter].toString() == g_AllData->getHandboxIPAddress()) {
+                foundDefaultIPForHBox = true;
+            }
+        }
+    }
+
+    // instantiate the class for serial communication via LX200
     this->LX200SerialPortIsUp = false;
     this->lx200SerialPort = new QSerialPort();
     this->lx200SerialPort->setPortName("/dev/ttyS0");
@@ -279,7 +289,40 @@ qDebug() << "TCP/IP Servers up";
     this->lx200SerialData = new QByteArray();
     this->lx200Comm= new lx200_communication();
     this->LXSetNumberFormatToSimple(); // LX200 knows a simple and a complex number format for RA and Decl - set format to simple here ...
-qDebug() << "Serial port up";
+    qDebug() << "Serial port up";
+
+
+    // check whether LXserial is to be used by default
+    ui->cbSerialLX200Default->setChecked(g_AllData->getLX200SerialFlag());
+
+    // start either the serial port or try to start a TCP/IP server if a known address was found
+    if (g_AllData->getLX200SerialFlag() == false) {
+        helper = new QString("127.0.0.1");
+        if (foundDefaultIPForLX200 == true) {
+            qDebug() << "Found default IP Address for LX200...";
+            ui->pbEnableTCP->setEnabled(true);
+            ui->leDefaultIPAddressLX200->setText(g_AllData->getLX200IPAddress()->toLatin1());
+            this->connectToIPSocket();
+        } else {
+            g_AllData->setLX200IPAddress(*helper);
+            ui->leDefaultIPAddressLX200->setText("-");
+        }
+        delete helper;
+    } else {
+        switchToLX200();
+    }
+
+    // start the server for the handbox if a known address is available
+    helper = new QString("127.0.0.1");
+    if (foundDefaultIPForHBox == true) {
+        qDebug() << "Found default IP Address for handbox...";
+        ui->pbTCPHBEnable->setEnabled(true);
+        ui->leDefaultIPAddressHBox->setText(g_AllData->getHandboxIPAddress()->toLatin1());
+        this->connectHandboxToIPSocket();
+    } else {
+        g_AllData->setHandboxIPAddress(*helper);
+        ui->leDefaultIPAddressHBox->setText("-");
+    }
 
         // instantiate communications with handbox
     this->mountMotion.btMoveNorth=0;
@@ -395,6 +438,7 @@ qDebug() << "Validators set";
     connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
     connect(ui->cbMedianFilter, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc())); // apply a 3x3 median filter to the guidestar - image
     connect(ui->cbLowPass, SIGNAL(stateChanged(int)), this, SLOT(changePrevImgProc())); // apply a 3x3 median filter to the guidestar - image
+    connect(ui->cbSerialLX200Default, SIGNAL(stateChanged(int)), this, SLOT(handleSerialLXCB())); // store the checkbox state for serial LX200
     connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
@@ -513,6 +557,8 @@ qDebug() << "Setup GUI";
 qDebug() << "Stopped drives";
     this->currentRAString = new QString();
     this->currentDeclString = new QString();
+    this->currentHAString = new QString();
+    this->coordString = new QString();
 qDebug() << "Leaving constructor";
 }
 
@@ -672,10 +718,8 @@ MainWindow::~MainWindow() {
 void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
-    QString *helper;
-    double currRA, remainder, RAInHours, currDecl;
-    int RAHrs, RAMin, RASec; // a few little helpers for displaying RA
-    int declDeg, declMin, declSec,sign=1; // same for Declination
+
+
 
     if (this->guidingState.systemIsCalibrated == true) {
         ui->cbAutoguiderIsCalibrated->setChecked(true);
@@ -791,6 +835,12 @@ void MainWindow::updateReadings() {
         }
     } // slew has ended ...
 
+    this->currentRAString->clear(); // compose the right asccension as string - similar to the routine in the LX200 class
+    this->currentRAString->append(this->generateCoordinateString(g_AllData->getActualScopePosition(2),true));
+    this->currentDeclString->clear();
+    this->currentDeclString->append(this->generateCoordinateString(g_AllData->getActualScopePosition(1), false));
+    ui->leRightAscension->setText(*currentRAString);
+    ui->leDecl->setText(*currentDeclString);
     hourAngleForDisplay=(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
     while (hourAngleForDisplay < 0) {
         hourAngleForDisplay += 360;
@@ -798,86 +848,96 @@ void MainWindow::updateReadings() {
     while (hourAngleForDisplay > 360) {
         hourAngleForDisplay -= 360;
     }
-
-    this->currentRAString->clear(); // compose the right asccension as string - similar to the routine in the LX200 class
-    currRA = g_AllData->getActualScopePosition(2);
-    RAInHours = currRA/360.0*24.0;
-    if (RAInHours > 24) {
-        RAInHours -= 24;
-    }
-    RAHrs = floor(RAInHours);
-    RAMin = floor((RAInHours - RAHrs)*60.0);
-    remainder = ((RAInHours - RAHrs)*60.0) - RAMin;
-    RASec = round(remainder*60.0);
-    helper = new QString();
-    if (RAHrs < 10) {
-        this->currentRAString->append("0");
-    }
-    helper->setNum(RAHrs);
-    this->currentRAString->append(helper);
-    helper->clear();
-    this->currentRAString->append("h ");
-    if (RAMin < 10) {
-        this->currentRAString->append("0");
-    }
-    helper->setNum(RAMin);
-    this->currentRAString->append(helper);
-    helper->clear();
-    this->currentRAString->append("m ");
-    if (RASec < 10) {
-        this->currentRAString->append("0");
-    }
-    helper->setNum(RASec);
-    this->currentRAString->append(helper);
-    helper->clear();
-    this->currentRAString->append("s");
-
-    this->currentDeclString->clear();
-    currDecl = g_AllData->getActualScopePosition(1);
-    if (currDecl < 0) {
-        sign = -1;
-    } else {
-        sign = 1;
-    }
-    declDeg=(int)(sign*floor(fabs(currDecl)));
-    remainder = fabs(currDecl-((double)declDeg));
-    declMin=(int)(floor(remainder*60.0));
-    remainder = remainder*60.0-declMin;
-    declSec=round(remainder);
-    helper = new QString();
-    if (sign == 1) {
-        this->currentDeclString->insert(0,'+');
-    } else {
-        this->currentDeclString->insert(0,'-');
-    }
-
-    if ((abs(declDeg)) < 10) {
-        this->currentDeclString->insert(1,'0');
-    }
-    helper->setNum(abs(declDeg));
-    this->currentDeclString->append(helper);
-    helper->clear();
-    this->currentDeclString->append("° ");
-    if (declMin < 10) {
-        this->currentDeclString->append("0");
-    }
-    helper->setNum(declMin);
-    this->currentDeclString->append(helper);
-    helper->clear();
-    this->currentDeclString->append("' ");
-    if (declSec < 10) {
-        this->currentDeclString->append("0");
-    }
-    helper->setNum(declSec);
-    this->currentDeclString->append(helper);
-    this->currentDeclString->append("''");
-    delete helper;
-
-    ui->leRightAscension->setText(*currentRAString);
-    ui->leHourAngle->setText(textEntry->number(hourAngleForDisplay,'f',5));
-    ui->leDecl->setText(*currentDeclString);
+    this->currentHAString->clear();
+    this->currentHAString->append(this->generateCoordinateString(hourAngleForDisplay, true)); // hour angle is converted like RA
+    ui->leHourAngle->setText(*currentHAString);
     // finally, the actual scope position is updated in the GUI
 }
+//------------------------------------------------------------------------
+// a routine that computes a string out of decimal coordinates for RA and decl
+
+QString* MainWindow::generateCoordinateString(float coord, bool isRA) {
+    int RAHrs, RAMin, RASec; // a few little helpers for displaying RA
+    int declDeg, declMin, declSec,sign = 1; // same for Declination
+    QString *helper;
+    double currRA, remainder,RAInHours, currDecl;
+
+    helper = new QString();
+    this->coordString->clear();
+    if (isRA == true) {
+        currRA = coord;
+        RAInHours = currRA/360.0*24.0;
+        if (RAInHours > 24) {
+            RAInHours -= 24;
+        }
+        RAHrs = floor(RAInHours);
+        RAMin = floor((RAInHours - RAHrs)*60.0);
+        remainder = ((RAInHours - RAHrs)*60.0) - RAMin;
+        RASec = round(remainder*60.0);
+        if (RAHrs < 10) {
+            this->coordString->append("0");
+        }
+        helper->setNum(RAHrs);
+        this->coordString->append(helper);
+        helper->clear();
+        this->coordString->append("h ");
+        if (RAMin < 10) {
+            this->coordString->append("0");
+        }
+        helper->setNum(RAMin);
+        this->coordString->append(helper);
+        helper->clear();
+        this->coordString->append("m ");
+        if (RASec < 10) {
+            this->coordString->append("0");
+        }
+        helper->setNum(RASec);
+        this->coordString->append(helper);
+        helper->clear();
+        this->coordString->append("s");
+    } else {
+        currDecl = coord;
+        if (currDecl < 0) {
+            sign = -1;
+        } else {
+            sign = 1;
+        }
+        declDeg=(int)(sign*floor(fabs(currDecl)));
+        remainder = fabs(currDecl-((double)declDeg));
+        declMin=(int)(floor(remainder*60.0));
+        remainder = remainder*60.0-declMin;
+        declSec=round(remainder*60.0);
+        if (sign == 1) {
+            this->coordString->insert(0,'+');
+        } else {
+            this->coordString->insert(0,'-');
+        }
+
+        if ((abs(declDeg)) < 10) {
+            this->coordString->insert(1,'0');
+        }
+        helper->setNum(abs(declDeg));
+        this->coordString->append(helper);
+        helper->clear();
+        this->coordString->append("° ");
+        if (declMin < 10) {
+            this->coordString->append("0");
+        }
+        helper->setNum(declMin);
+        this->coordString->append(helper);
+        helper->clear();
+        this->coordString->append("' ");
+        if (declSec < 10) {
+            this->coordString->append("0");
+        }
+        helper->setNum(declSec);
+        this->coordString->append(helper);
+        this->coordString->append("''");
+    }
+    delete helper;
+    return this->coordString;
+}
+
 
 //------------------------------------------------------------------------
 // routine for handling date and time; also computes julian day and local sidereal
@@ -1285,6 +1345,8 @@ void MainWindow::shutDownProgram() {
     }
     delete currentRAString;
     delete currentDeclString;
+    delete currentHAString;
+    delete coordString;
     delete spiDrOnChan0;
     delete spiDrOnChan1;
     delete st4State.RATimeEl;
@@ -1789,15 +1851,19 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
      QString *leEntry;
 
      leEntry = new QString(ui->lePixelSizeX->text());
+     leEntry->replace(",",".");
      psx=leEntry->toFloat();
      leEntry->clear();
      leEntry->append(ui->lePixelSizeY->text());
+     leEntry->replace(",",".");
      psy=leEntry->toFloat();
      leEntry->clear();
      leEntry->append(ui->leFrameSizeX->text());
+     leEntry->replace(",",".");
      ccdw=leEntry->toInt();
      leEntry->clear();
      leEntry->append(ui->leFrameSizeY->text());
+     leEntry->replace(",",".");
      ccdh=leEntry->toInt();
      delete leEntry;
      g_AllData->setCameraParameters(psx,psy,ccdw,ccdh);
@@ -2765,6 +2831,8 @@ void MainWindow::IPaddressForHandboxChosen(void) {
 
     ipaddress = new QString(ui->listWidgetIPAddresses_2->currentItem()->text());
     g_AllData->setHandboxIPAddress(*ipaddress);
+    g_AllData->storeGlobalData();
+    ui->leDefaultIPAddressHBox->setText(*ipaddress);
     delete ipaddress;
     ui->pbTCPHBEnable->setEnabled(true);
 }
@@ -2941,6 +3009,8 @@ void MainWindow::IPaddressChosen(void) {
 
     ipaddress = new QString(ui->listWidgetIPAddresses->currentItem()->text());
     g_AllData->setLX200IPAddress(*ipaddress);
+    g_AllData->storeGlobalData();
+    ui->leDefaultIPAddressLX200->setText(*ipaddress);
     delete ipaddress;
     ui->pbEnableTCP->setEnabled(true);
 }
@@ -3151,10 +3221,11 @@ void MainWindow::LXsyncMount(void) {
         // convey right ascension and declination to the global parameters;
         // a microtimer starts ...
         this->startRATracking();
-        lestr = QString::number(this->ra, 'g', 8);
+        lestr.append(this->generateCoordinateString(this->ra,true));
         ui->lineEditRA->setText(lestr);
         ui->leLX200RA->setText(lestr);
-        lestr = QString::number(this->decl, 'g', 8);
+        lestr.clear();
+        lestr.append(this->generateCoordinateString(this->decl,false));
         ui->lineEditDecl->setText(lestr);
         ui->leLX200Decl->setText(lestr);
         ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
@@ -3191,10 +3262,11 @@ void MainWindow::LXslewMount(void) {
                 QCoreApplication::processEvents(QEventLoop::AllEvents,100);
                 this->ra = (float)(this->lx200Comm->getReceivedCoordinates(0));
                 this->decl = (float)(this->lx200Comm->getReceivedCoordinates(1));
-                lestr = QString::number(this->ra, 'g', 8);
+                lestr.append(this->generateCoordinateString(this->ra,true));
                 ui->lineEditRA->setText(lestr);
                 ui->leLX200RA->setText(lestr);
-                lestr = QString::number(this->decl, 'g', 8);
+                lestr.clear();
+                lestr.append(this->generateCoordinateString(this->decl,false));
                 ui->lineEditDecl->setText(lestr);
                 ui->leLX200Decl->setText(lestr);
                 this->startGoToObject();
@@ -3393,6 +3465,7 @@ void MainWindow::switchToLX200(void) {
         ui->pbLX200Active->setText("Activate LX200");
         ui->cbRS232Open->setChecked(false);
         ui->tabLXTCP->setEnabled(true);
+        qDebug() << "Cannot open serial port ...";
     }
 }
 
@@ -4276,9 +4349,10 @@ void MainWindow::catalogObjectChosen(void) {
                 this->decl = -90;
             }
         }
-        lestr = QString::number(this->ra, 'g', 8);
+        lestr.append(this->generateCoordinateString(this->ra,true));
         ui->lineEditRA->setText(lestr);
-        lestr = QString::number(this->decl, 'g', 8);
+        lestr.clear();
+        lestr.append(this->generateCoordinateString(this->decl,false));
         ui->lineEditDecl->setText(lestr);
         ui->pbSync->setEnabled(true);
     }
@@ -4287,20 +4361,19 @@ void MainWindow::catalogObjectChosen(void) {
 //------------------------------------------------------------------
 // slot that conveys manual coordinates to the controller
 void MainWindow::transferCoordinates(void) {
-    short rah, ram, declDeg, declMin;
-    float ras, declSec;
+    double rah, ram, declDeg, declMin, ras, declSec;
     double lRA, lDecl, lSubVal;
     QString lestr;
 
     ui->pbGoTo->setEnabled(false);
-    rah = ui->sbRAhours->value();
-    ram = ui->sbRAmins->value();
-    ras = ui->sbRASecs->value();
-    declDeg = ui->sbDeclDegrees->value();
-    declMin = ui->sbDeclMin->value();
-    declSec = ui->sbDeclSec->value();
-    lRA = ras/3600.0+ram/60.0+rah*15.0;
-    lSubVal = declSec/3600.0+declMin/60.0;
+    rah = (double)(ui->sbRAhours->value());
+    ram = (double)(ui->sbRAmins->value());
+    ras = (double)(ui->sbRASecs->value());
+    declDeg = (double)(ui->sbDeclDegrees->value());
+    declMin = (double)(ui->sbDeclMin->value());
+    declSec = (double)(ui->sbDeclSec->value());
+    lRA = (rah + ram/60.0 + ras/3600.0)*15;
+    lSubVal = (declSec/60.0+declMin)/60.0;
     if (declDeg < 0) {
         lDecl = declDeg-lSubVal;
     } else {
@@ -4308,9 +4381,10 @@ void MainWindow::transferCoordinates(void) {
     }
     this->ra=lRA;
     this->decl=lDecl;
-    lestr = QString::number(this->ra, 'g', 8);
+    lestr.append(this->generateCoordinateString(this->ra,true));
     ui->lineEditRA->setText(lestr);
-    lestr = QString::number(this->decl, 'g', 8);
+    lestr.clear();
+    lestr.append(this->generateCoordinateString(this->decl,false));
     ui->lineEditDecl->setText(lestr);
     ui->pbSync->setEnabled(true);
     ui->pbGoTo->setEnabled(true);
@@ -4328,27 +4402,35 @@ void MainWindow::storeGearData(void) {
     QString *leEntry;
 
     leEntry = new QString(ui->leRAPlanetary->text());
+    leEntry->replace(",",".");
     pgra=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leRAGear->text());
+    leEntry->replace(",",".");
     ogra=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leRAWorm->text());
+    leEntry->replace(",",".");
     wormra=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leRAStepsize->text());
+    leEntry->replace(",",".");
     ssra=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leDeclPlanetary->text());
+    leEntry->replace(",",".");
     pgdec=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leDeclGear->text());
+    leEntry->replace(",",".");
     ogdec=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leDeclWorm->text());
+    leEntry->replace(",",".");
     wormdec=leEntry->toFloat();
     leEntry->clear();
     leEntry->append(ui->leDeclStepSize->text());
+    leEntry->replace(",",".");
     ssdec=leEntry->toFloat();
     microsteps=ui->lcdMicrosteps->value();
     g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,microsteps);
@@ -4420,9 +4502,11 @@ void MainWindow::storeSiteData(void)  {
     QString *leEntry;
 
     leEntry = new QString(ui->leLat->text());
+    leEntry->replace(",",".");
     guilat=leEntry->toDouble();
     leEntry->clear();
     leEntry->append(ui->leLong->text());
+    leEntry->replace(",",".");
     guilong=leEntry->toDouble();
     leEntry->clear();
     guiUTCOffs=ui->sbUTCOffs->value();
@@ -4472,9 +4556,11 @@ void MainWindow::doMeridianFlip(void) {
                 this->ra = targetRA;
                 targetDecl = g_AllData->getActualScopePosition(1)+180.0;
                 this->decl = targetDecl;
-                lestr = QString::number(this->ra, 'g', 8);
+                lestr.append(this->generateCoordinateString(this->ra,true));
                 ui->lineEditRA->setText(lestr);
                 ui->leLX200RA->setText(lestr);
+                lestr.clear();
+                lestr.append(this->generateCoordinateString(this->decl,false));
                 lestr = QString::number(this->decl, 'g', 8);
                 ui->lineEditDecl->setText(lestr);
                 ui->leLX200Decl->setText(lestr);
@@ -5472,3 +5558,20 @@ void MainWindow::updateAuxDriveStatus(void) {
         }
     }
 }
+
+//-------------------------------------------------------------------------
+// a slot that stores the stae of the checkbox on using LX200 by default upon startup
+
+void MainWindow::handleSerialLXCB(void) {
+    if (ui->cbSerialLX200Default->isChecked() == true) {
+        g_AllData->setLX200SerialFlag(true);
+    } else {
+        g_AllData->setLX200SerialFlag(false);
+    }
+    g_AllData->storeGlobalData();
+}
+
+//-------------------------------------------------------------------------
+
+
+

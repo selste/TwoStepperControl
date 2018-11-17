@@ -429,7 +429,7 @@ void lx200_communication::assembleDeclinationString(void) {
     remainder = fabs(currDecl-((double)declDeg));
     declMin=(int)(floor(remainder*60.0));
     remainder = remainder*60.0-declMin;
-    declSec=round(remainder);
+    declSec=round(remainder*60);
     helper = new QString();
     if (sign == 1) {
         replyStrLX->insert(0,'+');
