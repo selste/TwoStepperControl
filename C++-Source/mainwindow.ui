@@ -2294,7 +2294,7 @@
         <string/>
        </property>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>0</x>
@@ -2396,7 +2396,7 @@
        </rect>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabLXTCP">
        <attribute name="title">
@@ -5081,7 +5081,7 @@
         <x>390</x>
         <y>10</y>
         <width>381</width>
-        <height>411</height>
+        <height>361</height>
        </rect>
       </property>
       <property name="title">
@@ -5096,7 +5096,7 @@
          <x>10</x>
          <y>30</y>
          <width>351</width>
-         <height>341</height>
+         <height>321</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -5110,13 +5110,12 @@
          <rect>
           <x>10</x>
           <y>280</y>
-          <width>151</width>
-          <height>51</height>
+          <width>331</width>
+          <height>31</height>
          </rect>
         </property>
         <property name="text">
-         <string>Store Parameters
-to Drives</string>
+         <string>Store Parameters to Drives</string>
         </property>
        </widget>
        <widget class="QWidget" name="layoutWidget_22">
@@ -6004,20 +6003,6 @@ to Drives</string>
          </widget>
         </widget>
        </widget>
-       <widget class="QPushButton" name="pbStopAuxDrives">
-        <property name="geometry">
-         <rect>
-          <x>170</x>
-          <y>280</y>
-          <width>161</width>
-          <height>51</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Stop auxiliary
-drives</string>
-        </property>
-       </widget>
       </widget>
      </widget>
      <widget class="Line" name="line_8">
@@ -6742,6 +6727,19 @@ drives</string>
         </property>
        </widget>
       </widget>
+     </widget>
+     <widget class="QPushButton" name="pbStopAuxDrives">
+      <property name="geometry">
+       <rect>
+        <x>410</x>
+        <y>380</y>
+        <width>331</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Stop auxiliary drives</string>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="gearTab">

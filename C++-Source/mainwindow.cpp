@@ -4273,6 +4273,7 @@ void MainWindow::setAuxDriveControls(bool isEnabled) {
         ui->pbStoreAuxData->setEnabled(isEnabled);
         ui->sbAuxAcc->setEnabled(isEnabled);
         ui->sbAuxSpeed->setEnabled(isEnabled);
+        ui->pbStopAuxDrives->setEnabled(true);
     }
 }
 
