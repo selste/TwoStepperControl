@@ -1,5 +1,6 @@
 // sketch for controlling an Pololu AMIS 30543 stepper controller board with an Adafruit ItsyBitsyM4 ATMWEGA ATSAMD51 Cortex M4 microcontroller.
 // wolfgang birkfellner, 2018. wbirkfellner@gmail.com
+// this is the RIGHT ASCENSION drive
 
 #include <SPI.h>
 #include <AMIS30543.h>
@@ -10,11 +11,8 @@ const uint8_t amisDirPin = 7;
 const uint8_t amisStepPin = 12;
 const uint8_t amisSlaveSelect = 9;
 const uint8_t amisErrPin = 11;
-const uint8_t amisSLAPin = A2;
-const uint8_t inputVoltagePin = A3;
 const uint8_t resetPin = 10;
-const bool inputVoltageReadEnabled = false; // set to true if the bridge to A3 is closed
-const float inputVoltageCalibrationFactor = 10.889; // the PCB has a voltage divider; set the correct value for converting the read voltage (< 3.3 V) to the input voltage for the motor
+const uint8_t LED = 13;
 
 AMIS30543 stepper;
 AccelStepper accelStepper(AccelStepper::DRIVER, amisStepPin, amisDirPin);
@@ -40,7 +38,8 @@ void setup() {
   SPI.begin(); // start SPI for setting up the AMIS board
   Serial.begin(10000000); // communication is native USB - speed is set to maximum 10 Mbit/s should be ok
   stepper.init(amisSlaveSelect); // initialize the AMIS board while giving the SPI slave select line
-  delay(1);
+  while (!Serial);
+  pinMode(LED, OUTPUT); 
 
   driveParams.steps = 20000; // default parameters
   driveParams.stepsDone = 0;
@@ -91,7 +90,7 @@ void loop() {
       enableDrive(numVal); 
       break;
     case 'f':
-      reportAMISStates(numVal); // report conditions. 0 = is drive moving, 1 = error on AMIS board reproted, 2 = error on SPI settings, 3 = input voltage for motor, 4 = voltage on SLA pin of the AMIS, 5 = steps carried out at the given time,  
+      reportAMISStates(numVal); // report conditions. 0 = is drive moving, 1 = error on AMIS board reproted, 2 = error on SPI settings, 5 = steps carried out at the given time,  
       break;                    // 6 = microstepping ratio, 7 = maximum speed in msteps/s, 8 = acceleration in msteps/(s*s), 9 = maximum current per coil in milliAmpere, 10 = number of steps set
     case 'm': 
       setMicrosteps(numVal);    // set microstepping mode: 1, 2, 4, 8, 16, 32, 64 and 128 are permitted    
@@ -111,6 +110,9 @@ void loop() {
     case 'x': 
       stopDrive(); // stop drive
       break;
+    case 'z':
+      resetCounter(); // set position of stepper to zero
+      break;
     default:
       break;
     }
@@ -123,13 +125,19 @@ void loop() {
     driveParams.isActive = false;
     stepper.disableDriver();
   } 
+  if (digitalRead(amisErrPin) == LOW) {
+    digitalWrite(LED,HIGH);
+  }
 }
 
 //----------------------------------------------------------------------------------
 // respond with an identifier for the drive when receiving the <ACK> character
 
 inline void replyWithDriveID(void) {
+  digitalWrite(LED,HIGH);
   Serial.write("TSC_RADR");
+  delay(200);
+  digitalWrite(LED,LOW);
 }
 
 //----------------------------------------------------------------------------------
@@ -157,6 +165,16 @@ inline void setAcc(long acceleration) {
   } else {
     Serial.write("Acceleration value not permitted");
   } 
+}
+
+//------------------------------------------------------------------------------------
+// set stepper counter to home position; speed needs to be reset then
+
+inline void resetCounter(void) {
+
+  accelStepper.setCurrentPosition(0);
+  accelStepper.setMaxSpeed(driveParams.maxSpeedInMicrosteps);
+  Serial.write("Counter reset");
 }
 
 //------------------------------------------------------------------------------------
@@ -265,30 +283,13 @@ inline void reportAMISStates(long what) {
       Serial.write("0");
     }
     break;
-  case 2: // report whether the settings are correct as set on the AMIS via SPI
+    case 2: // report whether the settings are correct as set on the AMIS via SPI
     if (stepper.verifySettings() == true) {
       Serial.write("1");  
     } else {
       Serial.write("0");  
     }
     break;
-    case 3: // report the input voltage if enabled on the PCB
-      if (inputVoltageReadEnabled == true) {
-        analogReading = analogRead(inputVoltagePin)/1024.0*3.3;
-        iVoltage = analogReading*inputVoltageCalibrationFactor;
-        outputFloat=String(iVoltage,2);
-        accelStepper.run();
-        Serial.write(outputFloat.c_str());    
-      } else {
-        Serial.write("Voltage not available");
-      }
-      break;
-    case 4: // report the  voltage from the SLA pin
-        analogReading = analogRead(amisSLAPin)/1024.0*3.3;
-        outputFloat=String(analogReading,3);
-        accelStepper.run();
-        Serial.write(outputFloat.c_str());    
-      break;
     case 5: // report current number of microsteps carried out
         sprintf(outputString,"%d",driveParams.stepsDone);
         accelStepper.run();
@@ -340,6 +341,7 @@ inline void resetAMIS(void) {
   stepper.setCurrentMilliamps(driveParams.current);
   stepper.setStepMode(driveParams.stepMode);
   Serial.write("1");
+  digitalWrite(LED,LOW);
 }
 
 //---------------------------------------------------------------------------------------
