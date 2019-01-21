@@ -1,18 +1,17 @@
-// sketch for controlling an Pololu AMIS 30543 stepper controller board with an Adafruit ItsyBitsyM4 ATMWEGA ATSAMD51 Cortex M4 microcontroller.
+// sketch for controlling an Pololu AMIS 30543 stepper controller board with a Teensy 3.5 M4 microcontroller.
 // wolfgang birkfellner, 2018. wbirkfellner@gmail.com
-// this is the RIGHT ASCENSION drive
+// this is the Declination drive
 
 #include <SPI.h>
 #include <AMIS30543.h>
 #include <AccelStepper.h>
 #include <stdlib.h>
 
-const uint8_t amisDirPin = 7;
-const uint8_t amisStepPin = 12;
-const uint8_t amisSlaveSelect = 9;
-const uint8_t amisErrPin = 11;
-const uint8_t resetPin = 10;
-const uint8_t LED = 13;
+const uint8_t amisDirPin = 24;
+const uint8_t amisStepPin = 25;
+const uint8_t amisSlaveSelect = 10;
+const uint8_t amisErrPin = 28;
+const uint8_t resetPin = 17;
 
 AMIS30543 stepper;
 AccelStepper accelStepper(AccelStepper::DRIVER, amisStepPin, amisDirPin);
@@ -36,10 +35,10 @@ String outputFloat;
 //------------------------------------------------------------
 void setup() {
   SPI.begin(); // start SPI for setting up the AMIS board
-  Serial.begin(10000000); // communication is native USB - speed is set to maximum 10 Mbit/s should be ok
   stepper.init(amisSlaveSelect); // initialize the AMIS board while giving the SPI slave select line
+  delay(1);
+  Serial.begin(10000000); // communication is native USB - speed is set to maximum 10 Mbit/s should be ok
   while (!Serial);
-  pinMode(LED, OUTPUT); 
 
   driveParams.steps = 20000; // default parameters
   driveParams.stepsDone = 0;
@@ -52,7 +51,8 @@ void setup() {
   stepper.resetSettings();
   stepper.setCurrentMilliamps(driveParams.current);
   stepper.setStepMode(driveParams.stepMode); // setting the AMIS parameters via SPI
-
+  stepper.enableDriver();
+  
   accelStepper.setMaxSpeed(driveParams.maxSpeedInMicrosteps);
   accelStepper.setAcceleration(driveParams.acceleration);
   accelStepper.setCurrentPosition(0); // initialising the accelstepper library
@@ -125,19 +125,13 @@ void loop() {
     driveParams.isActive = false;
     stepper.disableDriver();
   } 
-  if (digitalRead(amisErrPin) == LOW) {
-    digitalWrite(LED,HIGH);
-  }
 }
 
 //----------------------------------------------------------------------------------
 // respond with an identifier for the drive when receiving the <ACK> character
 
 inline void replyWithDriveID(void) {
-  digitalWrite(LED,HIGH);
   Serial.write("TSC_DEDR");
-  delay(200);
-  digitalWrite(LED,LOW);
 }
 
 //----------------------------------------------------------------------------------
@@ -251,6 +245,7 @@ inline void setCurrent(long curr) {
   if ((curr > 10) && (curr < 3000)) {
     driveParams.current = curr;
     stepper.setCurrentMilliamps(driveParams.current);
+    delay(50);
     if (stepper.verifySettings() == true) {
       Serial.write("Current set. AMIS settings ok");  
     } else {
@@ -265,7 +260,6 @@ inline void setCurrent(long curr) {
 // report the condition of the driver
 
 inline void reportAMISStates(long what) {
-  float analogReading, iVoltage;
 
   accelStepper.run();
   switch(what) {
@@ -278,9 +272,9 @@ inline void reportAMISStates(long what) {
     break;
   case 1: // report the state of the internal ERR pin of the AMIS
     if (digitalRead(amisErrPin) == HIGH) {
-      Serial.write("1"); 
+      Serial.write("0"); 
     } else {
-      Serial.write("0");
+      Serial.write("1");
     }
     break;
     case 2: // report whether the settings are correct as set on the AMIS via SPI
@@ -291,7 +285,7 @@ inline void reportAMISStates(long what) {
     }
     break;
     case 5: // report current number of microsteps carried out
-        sprintf(outputString,"%d",driveParams.stepsDone);
+        sprintf(outputString,"%ld",driveParams.stepsDone);
         accelStepper.run();
         Serial.write(outputString);    
       break;
@@ -301,22 +295,22 @@ inline void reportAMISStates(long what) {
       Serial.write(outputString);    
       break;
     case 7: // report the maximum speed in microsteps/s
-      sprintf(outputString,"%d",driveParams.maxSpeedInMicrosteps);
+      sprintf(outputString,"%ld",driveParams.maxSpeedInMicrosteps);
       accelStepper.run();
       Serial.write(outputString);    
       break;  
     case 8: // report the acceleration in microsteps/(s*s)
-      sprintf(outputString,"%d",driveParams.acceleration);
+      sprintf(outputString,"%ld",driveParams.acceleration);
       accelStepper.run();
       Serial.write(outputString);    
       break;  
     case 9: // report the maximum coil current in millAmpere
-      sprintf(outputString,"%d",driveParams.current);
+      sprintf(outputString,"%ld",driveParams.current);
       accelStepper.run();
       Serial.write(outputString);    
       break;    
     case 10: // report steps set
-     sprintf(outputString,"%d",driveParams.steps);
+     sprintf(outputString,"%ld",driveParams.steps);
       accelStepper.run();
       Serial.write(outputString);    
       break;     
@@ -341,7 +335,6 @@ inline void resetAMIS(void) {
   stepper.setCurrentMilliamps(driveParams.current);
   stepper.setStepMode(driveParams.stepMode);
   Serial.write("1");
-  digitalWrite(LED,LOW);
 }
 
 //---------------------------------------------------------------------------------------
