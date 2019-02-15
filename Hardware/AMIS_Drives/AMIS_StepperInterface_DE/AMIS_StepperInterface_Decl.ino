@@ -1,6 +1,6 @@
 // sketch for controlling an Pololu AMIS 30543 stepper controller board with a Teensy 3.6 microcontroller.
 // wolfgang birkfellner, 2018. wbirkfellner@gmail.com
-// this is the RIGHT ASCENSION drive
+// this is the DECLINATION drive
 
 #include <SPI.h>
 #include <AMIS30543.h>
@@ -54,7 +54,7 @@ void setup() {
   stepper.resetSettings();
   stepper.setCurrentMilliamps(driveParams.current);
   stepper.setStepMode(driveParams.stepMode); // setting the AMIS parameters via SPI
-  stepper.enableDriver(); 
+  stepper.enableDriver();
 }
 
 //------------------------------------------------------------
@@ -129,7 +129,7 @@ void loop() {
 // respond with an identifier for the drive when receiving the <ACK> character
 
 inline void replyWithDriveID(void) {
-  Serial.write("TSC_RA");
+  Serial.write("TSC_DE");
 }
 
 //----------------------------------------------------------------------------------
