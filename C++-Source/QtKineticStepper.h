@@ -21,15 +21,18 @@
 #define QTKINETICSTEPPER_H
 
 #include <phidget21.h>
+#include <QString>
+//#include "usb_communications.h"
 
 class QtKineticStepper {
-protected:
+
+private:
     CPhidgetStepperHandle SH;
     int errorOpen; // error received when opening a communication channel
     int errorCreate; // error received when creating a contact to the controller of the drive
     int snumifk; // an identifier for the controller, can be a serial number or something similar
     int vifk; // version number of the interface
-    double speedMax; // maxiumum speed in microsteps/sec
+    double speedMax; // maximum speed in microsteps/sec
     double speedMin; // minimal speed in microsteps per second
     double acc; // acceleration value for the stepper in microsteps/s^2
     double currMax; // maximum current if it can be set via the software
@@ -38,13 +41,17 @@ protected:
     int stopped; // a flag that indicates whether the drive has stopped
     double stepsPerSecond; // the current rate of microsteps per second
     bool hBoxSlewEnded; // a boolean that is set to true when a long slew has timed out; needed for the handbox-slew from TSC
+    bool isHBoxSlew;
+    QString sendCommandToAMIS(QString, long);
+    QString sendCommandToAMIS(QString);
 
 public:
-    QtKineticStepper(); // contructor, gets maximum acceleration and maximum current
-    virtual ~QtKineticStepper(void); // destructor
+    QtKineticStepper(void); // contructor, gets maximum acceleration and maximum current
+    ~QtKineticStepper(void);
     void setGearRatioAndMicrosteps(double, double); // the product of the gears divided by the step size and the number of microsteps is stored here
+    void changeMicroSteps(double); // switches the microstepping ratio for variable drivers
     void setInitialParamsAndComputeBaseSpeed(double,double); // after opening
-    virtual bool travelForNSteps(long,short,int,bool); // tell the drive to travel for steps, direction (+/-1),
+    void travelForNSteps(long,short,int,bool); // tell the drive to travel for steps, direction (+/-1),
         // a multiple of sidereal speed and a flag that indicates whether the slew was triggered by the handbox.
         // handbox slews terminate either after 180 or 360 degrees ...
     int retrieveKineticStepperData (int); // retrieve basic controller data such as identifiers of the controller
@@ -53,7 +60,9 @@ public:
     void shutDownDrive(void); // set motor to "unengaged state" - no more current is applied
     bool getStopped(void); // check whether the motor is active or not ...
     void stopDrive(void); // halt the motor
-    void engageDrive(void); // set motor to "engaged" stae without driving it
+    void resetSteppersAfterStop(void);
+    //void setDriveToStopped(void); // necessary to convey the AMIS that they were stopped
+    //void engageDrive(void); // set motor to "engaged" stae without driving it
     void changeSpeedForGearChange(void); // a callback that changes speeds if the gear ratios change
     bool hasHBoxSlewEnded(void); // retrieve the state of the "hBoxSlewEnded" - flag ...
 };

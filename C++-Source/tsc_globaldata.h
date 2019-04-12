@@ -27,6 +27,7 @@
 
 class TSC_GlobalData {
 public:
+    enum speedTypes {guide,track,move,slew};
     TSC_GlobalData(void);
     ~TSC_GlobalData(void);
     void storeGlobalData(void);
@@ -48,14 +49,14 @@ public:
     float getSyncPositionCoords(short); // 0 for decimal RA, 1 for declination- the monotonic timer "monotonicGlobalTimer" starts
     bool wasMountSynced(void); // get the sync-state ...
     qint64 getTimeSinceLastSync(void); // get time in milliseconds since last sync
-    void setGearData(float,float,float,float,float,float,float,float,float); // store data on stepper gears and stepsize
+    void setGearData(float,float,float,float,float,float,float,float,float, float,float); // store data on stepper gears and stepsize
     float getGearData(short); //0 for planetary ratio for RA, 1 for other in RA, 2 for # of wormwheels, 3 for stepsize in RA, 4,5,6 and 7 for declination, 8 for microstep-resolution
     void setDriveData(short, int); // 0 for controller ID of RA, 1 for ID of Decl
     int getDriveID(short); // 0 for controller ID of RA, 1 for ID of Decl
     void setDriveParams(short, short, double); // 0 for  RA, 1 for decl, 0 for speed, 1 for Acc, 2 for Current, and the value
     double getDriveParams(short, short); // 0 for RA, 1 for decl and 0 for speed, 1, for Acc and 2 for current
     double getActualScopePosition(short); // 0 for hour angle, 1 for decl, 2 for RA
-    void incrementActualScopePosition(double, double); // add hour angle and decl increments
+    bool incrementActualScopePosition(double, double); // add hour angle and decl increments; returns true if a meridian flip took place
     void storeCameraImage(QImage);
     void setGuideScopeFocalLength(int); // FL of guidescope in mm
     int getGuideScopeFocalLength(void);
@@ -101,6 +102,10 @@ public:
     short getStepperDriverType(void); // retrieve this parameter
     void setLX200SerialFlag(bool);
     bool getLX200SerialFlag(void);
+    void setMFlipParams(short, bool); // set meridian flip parameters; 0 is "isGEM", 1 is "isEast"
+    bool getMFlipParams(short); // get meridian flip parameters; 0 is for "isGEM", 1 is for "isEast"
+    short getMFlipDecSign(void);
+    int getMicroSteppingRatio(short); // 0 for guiding/tracking, 1 for moving, 2 for slewing
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -156,7 +161,9 @@ private:
         float gearRatioDecl;
         float wormSizeDecl;
         float stepSizeDecl;
-        float microsteps;
+        float trackmicrosteps;
+        float movemicrosteps;
+        float slewmicrosteps;
     };
 
     struct driveDataStruct {
@@ -194,6 +201,12 @@ private:
         short guideScopeFocuserDrive; // 0 is no guider, 1 is auxDrive1, 2 is auxDrive2
     };
 
+    struct mflipParams {
+        bool mfIsActive = false;
+        bool scopeIsEast = true;
+        short declSign = 1;
+    };
+
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
     struct cameraParametersStruct cameraParameters;
@@ -203,6 +216,7 @@ private:
     struct actualScopePositionStruct actualScopePosition;
     struct siteParamsStruct siteParams;
     struct auxDriveStruct auxDriveParams;
+    struct mflipParams meridianFlipState;
 };
 
 #endif // TSC_GLOBALDATA_H

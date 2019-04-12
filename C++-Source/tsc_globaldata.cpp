@@ -13,6 +13,7 @@
 
 //---------------------------------------------------
 #include "tsc_globaldata.h"
+#include "mainwindow.h"
 #include <QDebug>
 #include <QFile>
 
@@ -56,7 +57,9 @@ TSC_GlobalData::TSC_GlobalData() {
         this->gearData.gearRatioDecl=1;
         this->gearData.wormSizeDecl=213;
         this->gearData.stepSizeDecl=1.8;
-        this->gearData.microsteps=16;
+        this->gearData.movemicrosteps=16;
+        this->gearData.trackmicrosteps=16;
+        this->gearData.slewmicrosteps = 16;
         this->driveData.RAControllerID=-1;
         this->driveData.DeclControllerID=-1;
         this->driveData.driveAccRA=10000;
@@ -92,6 +95,40 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete LX200IPAddress;
+}
+
+//----------------------------------------------
+// return the requested microsteprate...
+int TSC_GlobalData::getMicroSteppingRatio(short what) {
+    switch (what) {
+        case 0: return this->gearData.trackmicrosteps;
+        case 1: return this->gearData.movemicrosteps;
+        case 2: return this->gearData.slewmicrosteps;
+        default: return 1;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setMFlipParams(short what, bool bval) {
+    if (what == 0) {
+        this->meridianFlipState.mfIsActive = bval;
+    } else {
+        this->meridianFlipState.scopeIsEast = bval;
+        this->meridianFlipState.declSign *= -1;
+    }
+}
+
+//-----------------------------------------------
+bool TSC_GlobalData::getMFlipParams(short what) {
+    if (what == 0) {
+        return this->meridianFlipState.mfIsActive;
+    } else {
+        return this->meridianFlipState.scopeIsEast;
+    }
+}
+//------------------------------------------------
+short TSC_GlobalData::getMFlipDecSign(void) {
+    return this->meridianFlipState.declSign;
 }
 
 //-----------------------------------------------
@@ -555,7 +592,8 @@ qint64 TSC_GlobalData::getTimeSinceLastSync(void) {
 };
 //-----------------------------------------------
 
-void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float stepsizera,float pgdecl,float ogdecl, float wormdecl, float stepsizedecl, float msteps) {
+void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float stepsizera,float pgdecl,float ogdecl, float wormdecl,
+                                 float stepsizedecl, float tmsteps, float mmsteps, float smsteps) {
     this->gearData.planetaryRatioRA=pgra;
     this->gearData.gearRatioRA=ogra;
     this->gearData.wormSizeRA=wormra;
@@ -564,7 +602,9 @@ void TSC_GlobalData::setGearData(float pgra,float ogra, float wormra, float step
     this->gearData.gearRatioDecl=ogdecl;
     this->gearData.wormSizeDecl=wormdecl;
     this->gearData.stepSizeDecl=stepsizedecl;
-    this->gearData.microsteps=msteps;
+    this->gearData.trackmicrosteps = tmsteps;
+    this->gearData.movemicrosteps = mmsteps;
+    this->gearData.slewmicrosteps = smsteps;
 }
 
 //-----------------------------------------------
@@ -595,9 +635,6 @@ float TSC_GlobalData::getGearData(short what) {
         break;
     case 7:
         retval = this->gearData.stepSizeDecl;
-        break;
-    case 8:
-        retval = this->gearData.microsteps;
         break;
     default:
         retval=-1;
@@ -739,8 +776,16 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Size of the full step for Declination-Stepper in degrees.\n");
     outfile << ostr.data();
     ostr.clear();
-    ostr = std::to_string(this->gearData.microsteps);
-    ostr.append("// Number of microsteps your drive can do - 16 for the 1067-board.\n");
+    ostr = std::to_string(this->gearData.trackmicrosteps);
+    ostr.append("// Number of microsteps your drive does when tracking.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.movemicrosteps);
+    ostr.append("// Number of microsteps your drive does when moving.\n");
+    outfile << ostr.data();
+    ostr.clear();
+    ostr = std::to_string(this->gearData.slewmicrosteps);
+    ostr.append("// Number of microsteps your drive does when slewing.\n");
     outfile << ostr.data();
     ostr.clear();
     ostr = std::to_string(this->driveData.driveAccRA);
@@ -876,6 +921,17 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Flag whether serial LX200 is to be used on startup.\n");
     outfile << ostr.data();
     ostr.clear();
+    if (this->meridianFlipState.mfIsActive == true) {
+        boolFlag = 1;
+    } else {
+        boolFlag = 0;
+    }
+    ostr.append(std::to_string(boolFlag));
+    ostr.append("// Flag whether meridian flip is is to be carried out\n");
+    outfile << ostr.data();
+    ostr.clear();
+
+
     outfile.close();
 }
 
@@ -932,8 +988,16 @@ bool TSC_GlobalData::loadGlobalData(void) {
     isSSDecl >> this->gearData.stepSizeDecl;
     std::getline(infile, line, '\n');
     std::getline(infile, line, delimiter);
-    std::istringstream isms(line);
-    isms >> this->gearData.microsteps;
+    std::istringstream istms(line);
+    istms >> this->gearData.trackmicrosteps;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream ismms(line);
+    ismms >> this->gearData.movemicrosteps;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream issms(line);
+    issms >> this->gearData.slewmicrosteps;
     std::getline(infile, line, '\n');
     std::getline(infile, line, delimiter);
     std::istringstream isdara(line);
@@ -1066,6 +1130,15 @@ bool TSC_GlobalData::loadGlobalData(void) {
     } else {
         this->useLX200SerialOnStartup = true;
     }
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isGEM(line);
+    isGEM >> boolFlag;
+    if (boolFlag == 0) {
+        this->meridianFlipState.mfIsActive = false;
+    } else {
+        this->meridianFlipState.mfIsActive = true;
+    }
     infile.close(); // close the reading file for preferences
     return true;
 }
@@ -1091,8 +1164,10 @@ double TSC_GlobalData::getActualScopePosition(short what) {
 }
 
 //-----------------------------------------------------------------
-void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
-    double actRA;
+// updates the actual scope position. returns "true" if a meridian flip took place
+bool TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
+    double actRA, actDec;
+    bool flipped = false;
 
     this->actualScopePosition.actualHA -= deltaRA;
     if (this->actualScopePosition.actualHA < 0) {
@@ -1104,8 +1179,22 @@ void TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDe
     // compute the HA at sideral time 0, which is here the time of the last sync
     actRA=this->actualScopePosition.actualHA+this->celestialSpeed*(this->getTimeSinceLastSync()/1000.0);
     this->actualScopePosition.actualRA=actRA;
-    this->actualScopePosition.actualDecl += deltaDec;
- }
+
+    if (this->meridianFlipState.mfIsActive == true) {
+        actDec = this->actualScopePosition.actualDecl + ((this->meridianFlipState.declSign)*deltaDec);
+        if ((actDec > 90) || (actDec < -90)) {
+            this->meridianFlipState.declSign *= -1;
+            flipped = true;
+            if (this->meridianFlipState.scopeIsEast == true) {
+                this->meridianFlipState.scopeIsEast = false;
+            } else {
+                this->meridianFlipState.scopeIsEast = true;
+            }
+        }
+    }
+    this->actualScopePosition.actualDecl += (this->meridianFlipState.declSign)*deltaDec;
+    return flipped;
+}
 
 //-----------------------------------------------------------------
 

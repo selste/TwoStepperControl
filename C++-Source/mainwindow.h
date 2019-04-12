@@ -17,7 +17,6 @@
 #define MAINWINDOW_H
 
 #include <QtWidgets/QMainWindow>
-#include <QtConcurrent/qtconcurrentrun.h>
 #include <QListWidgetItem>
 #include <QElapsedTimer>
 #include <QFile>
@@ -34,8 +33,6 @@
 #include "ocv_guiding.h"
 #include "spi_drive.h"
 
-using namespace QtConcurrent;
-
 namespace Ui {
 class MainWindow;
 }
@@ -44,6 +41,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 
 public:
+    enum driveSpeed {guideTrack, move, slew};
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
@@ -181,9 +179,11 @@ private slots: // callbacks for (mainly) GUI widgets
     void syncParkPosition(void);
     void writeDriverSelectionFile(void);
     void handleSerialLXCB(void);
+    void mountIsGerman(void);
+    void mountIsEast(void);
 
 private:
-    enum stepperDriverTypes {phidget, amisM4, quadStepper};
+    enum stepperDriverTypes {phidget, amisM4};
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
         bool RATrackingIsOn;  // true when the telescope is in tracking mode
         bool RADriveIsMoving; // true when the RA drive moves but does not track
@@ -267,6 +267,8 @@ private:
     struct DSLRStateStruct dslrStates;
     struct currentCommunicationParameters commSPIParams;
     struct ST4StateStruct st4State;
+    driveSpeed raState = guideTrack;
+    driveSpeed deState = guideTrack;
     QtContinuousStepper *StepperDriveRA;
     QtKineticStepper *StepperDriveDecl;
     QTimer *timer;
@@ -285,13 +287,6 @@ private:
     QDisplay2D *camView;
     QElapsedTimer *elapsedGoToTime;
     ocv_guiding *guiding; // the class that does image processing for guiding
-    QFuture<void> futureStepperBehaviourRATracking;
-    QFuture<void> futureStepperBehaviourRA;
-    QFuture<void> futureStepperBehaviourDecl;
-    QFuture<void> futureStepperBehaviourRA_GOTO;
-    QFuture<void> futureStepperBehaviourDecl_GOTO;
-    QFuture<void> futureStepperBehaviourRA_Corr;
-    QFuture<void> futureStepperBehaviourDecl_Corr;
     ccd_client *camera_client;
     QTcpServer *LXServer;
     QTcpServer *HBServer;
@@ -307,6 +302,7 @@ private:
     SPI_Drive *spiDrOnChan0;
     stepperDriverTypes whatDriver;
     short initiateStepperDrivers(stepperDriverTypes);
+    void terminateGoTo(void);
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
@@ -318,6 +314,8 @@ private:
     float ra; // right ascension of a current object
     float decl;// declination of a current object
     double gotoETA; // estimated time of arrival for goto
+    float targetRA;
+    float targetDecl;  // coordinates for GoTo
     short RAdriveDirectionForNorthernHemisphere;
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
@@ -332,6 +330,7 @@ private:
     QString *currentHAString;
     QString *coordString;
     QFile *guidingLog;
+    bool isDriveActive(bool);
     void connectLX200Events(bool);
     void updateTimeAndDate(void);
     void declinationPulseGuide(long, short,bool);
@@ -378,6 +377,7 @@ private:
     void moveAuxPBSlot(short, bool, short);
     void moveGuiderAuxPBSlot(short, bool, short);
     void calibrationTerminationStuffToBeDone(void);
+    int getMStepRatios(short);
     void mvAux1FwdFullHB(void);
     void mvAux1BwdFullHB(void);
     void mvAux2FwdFullHB(void);

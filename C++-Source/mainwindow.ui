@@ -469,7 +469,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>6</y>
       <width>780</width>
       <height>470</height>
      </rect>
@@ -1033,9 +1033,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>340</y>
+        <y>370</y>
         <width>761</width>
-        <height>81</height>
+        <height>61</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -1044,13 +1044,13 @@
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QWidget" name="layoutWidget_3">
        <property name="geometry">
         <rect>
-         <x>21</x>
-         <y>10</y>
+         <x>20</x>
+         <y>6</y>
          <width>726</width>
-         <height>62</height>
+         <height>51</height>
         </rect>
        </property>
        <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -1059,13 +1059,13 @@
           <property name="minimumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="text">
@@ -1081,13 +1081,13 @@
           <property name="minimumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="text">
@@ -1106,13 +1106,13 @@
           <property name="minimumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="text">
@@ -1123,18 +1123,18 @@
         <item>
          <widget class="QPushButton" name="pbMeridianFlip">
           <property name="enabled">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="minimumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="text">
@@ -1153,13 +1153,13 @@
           <property name="minimumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>140</width>
-            <height>60</height>
+            <height>35</height>
            </size>
           </property>
           <property name="text">
@@ -1173,10 +1173,10 @@
      <widget class="QFrame" name="fHBSpeeds">
       <property name="geometry">
        <rect>
-        <x>550</x>
+        <x>540</x>
         <y>0</y>
         <width>221</width>
-        <height>331</height>
+        <height>361</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -1317,13 +1317,38 @@
         </item>
        </layout>
       </widget>
+      <widget class="QPushButton" name="pbStoreSpeeds">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>137</y>
+         <width>191</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Store Speeds</string>
+       </property>
+      </widget>
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
-         <x>11</x>
-         <y>260</y>
-         <width>204</width>
-         <height>68</height>
+         <x>9</x>
+         <y>257</y>
+         <width>212</width>
+         <height>101</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_9">
@@ -1334,7 +1359,7 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
+        <item row="0" column="1" colspan="2">
          <widget class="QLCDNumber" name="lcdGotoTime">
           <property name="minimumSize">
            <size>
@@ -1367,7 +1392,7 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+        <item row="1" column="1" colspan="2">
          <widget class="QLCDNumber" name="lcdTemp">
           <property name="minimumSize">
            <size>
@@ -1386,55 +1411,18 @@
           </property>
          </widget>
         </item>
-       </layout>
-      </widget>
-      <widget class="QPushButton" name="pbStoreSpeeds">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>137</y>
-         <width>191</width>
-         <height>25</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>25</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Store Speeds</string>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>12</y>
-         <width>189</width>
-         <height>123</height>
-        </rect>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_6">
-        <item row="0" column="0">
-         <widget class="QLabel" name="lGoTo">
-          <property name="text">
-           <string>V-GoTo</string>
+        <item row="2" column="0" colspan="2">
+         <widget class="QCheckBox" name="cbMountIsEast">
+          <property name="enabled">
+           <bool>false</bool>
           </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
+          <property name="text">
+           <string>GEM is East</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="1" colspan="2">
-         <spacer name="horizontalSpacer_8">
+        <item row="2" column="2">
+         <spacer name="horizontalSpacer_5">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -1446,7 +1434,46 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="3">
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>11</y>
+         <width>201</width>
+         <height>123</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_38">
+          <item>
+           <widget class="QLabel" name="lGoTo">
+            <property name="text">
+             <string>V-GoTo</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_8">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item row="0" column="1">
          <widget class="QSpinBox" name="sbGoToSpeed">
           <property name="maximumSize">
            <size>
@@ -1465,7 +1492,7 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0" colspan="3">
+        <item row="1" column="0">
          <widget class="QRadioButton" name="rbMoveSpeed">
           <property name="minimumSize">
            <size>
@@ -1487,7 +1514,7 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="3">
+        <item row="1" column="1">
          <widget class="QSpinBox" name="sbMoveSpeed">
           <property name="maximumSize">
            <size>
@@ -1506,7 +1533,7 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0" colspan="3">
+        <item row="2" column="0">
          <widget class="QRadioButton" name="rbCorrSpeed">
           <property name="minimumSize">
            <size>
@@ -1528,7 +1555,7 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="3">
+        <item row="2" column="1">
          <spacer name="horizontalSpacer_9">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -1541,23 +1568,34 @@
           </property>
          </spacer>
         </item>
-        <item row="3" column="2">
-         <spacer name="horizontalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
+        <item row="3" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_37">
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>V-Guide</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
-        <item row="3" column="3">
+        <item row="3" column="1">
          <widget class="QDoubleSpinBox" name="doubleSpinBox">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="minimumSize">
            <size>
@@ -1582,31 +1620,6 @@
           </property>
           <property name="singleStep">
            <double>0.100000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QRadioButton" name="rbGuideSpeed">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>80</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>80</width>
-            <height>25</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>V-Guide</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -1660,9 +1673,9 @@
       <property name="geometry">
        <rect>
         <x>520</x>
-        <y>10</y>
+        <y>6</y>
         <width>241</width>
-        <height>81</height>
+        <height>80</height>
        </rect>
       </property>
       <layout class="QFormLayout" name="formLayout_4">
@@ -1710,7 +1723,7 @@
       <property name="geometry">
        <rect>
         <x>521</x>
-        <y>100</y>
+        <y>91</y>
         <width>241</width>
         <height>74</height>
        </rect>
@@ -1768,7 +1781,7 @@
       <property name="geometry">
        <rect>
         <x>520</x>
-        <y>370</y>
+        <y>390</y>
         <width>241</width>
         <height>31</height>
        </rect>
@@ -1781,49 +1794,7 @@
       <property name="geometry">
        <rect>
         <x>520</x>
-        <y>180</y>
-        <width>241</width>
-        <height>107</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_16">
-       <item>
-        <widget class="QPushButton" name="pbSync">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>Sync mount</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pbGoTo">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>GoTo</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pbStop2">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>Emergency Stop</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>518</x>
-        <y>290</y>
+        <y>316</y>
         <width>241</width>
         <height>70</height>
        </rect>
@@ -1939,6 +1910,48 @@
          </property>
          <property name="singleStep">
           <double>0.100000000000000</double>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>521</x>
+        <y>170</y>
+        <width>241</width>
+        <height>101</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_16">
+       <item>
+        <widget class="QPushButton" name="pbSync">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Sync mount</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pbGoTo">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>GoTo</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pbStop2">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Emergency Stop</string>
          </property>
         </widget>
        </item>
@@ -2396,7 +2409,7 @@
        </rect>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabLXTCP">
        <attribute name="title">
@@ -6750,9 +6763,9 @@
       <property name="geometry">
        <rect>
         <x>4</x>
-        <y>260</y>
+        <y>170</y>
         <width>571</width>
-        <height>171</height>
+        <height>261</height>
        </rect>
       </property>
       <property name="frameShape">
@@ -7220,14 +7233,16 @@
       <widget class="QPushButton" name="pbStoreGears">
        <property name="geometry">
         <rect>
-         <x>400</x>
+         <x>470</x>
          <y>130</y>
-         <width>161</width>
-         <height>31</height>
+         <width>91</width>
+         <height>121</height>
         </rect>
        </property>
        <property name="text">
-        <string>Store gear data</string>
+        <string>Store
+gear
+data</string>
        </property>
       </widget>
       <widget class="QGroupBox" name="groupBox_3">
@@ -7307,6 +7322,241 @@
         </layout>
        </widget>
       </widget>
+      <widget class="QTabWidget" name="tmstepsAMIS">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>3</x>
+         <y>170</y>
+         <width>461</width>
+         <height>80</height>
+        </rect>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <widget class="QWidget" name="tab_5">
+        <attribute name="title">
+         <string>Track and Guide</string>
+        </attribute>
+        <widget class="QWidget" name="layoutWidget_5">
+         <property name="geometry">
+          <rect>
+           <x>11</x>
+           <y>10</y>
+           <width>444</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_35">
+          <item>
+           <widget class="QRadioButton" name="rbNormal_4_AMIS">
+            <property name="text">
+             <string>1/4</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbNormal_8_AMIS">
+            <property name="text">
+             <string>1/8</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbNormal_16_AMIS">
+            <property name="text">
+             <string>1/16</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbNormal_32_AMIS">
+            <property name="text">
+             <string>1/32</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbNormal_64_AMIS">
+            <property name="text">
+             <string>1/64</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbNormal_128_AMIS">
+            <property name="text">
+             <string>1/128</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbNormal_256_AMIS">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>1/256</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="tab_4">
+        <attribute name="title">
+         <string>Move</string>
+        </attribute>
+        <widget class="QWidget" name="layoutWidget_6">
+         <property name="geometry">
+          <rect>
+           <x>11</x>
+           <y>10</y>
+           <width>444</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_28">
+          <item>
+           <widget class="QRadioButton" name="rbMove_4_AMIS">
+            <property name="text">
+             <string>1/4</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbMove_8_AMIS">
+            <property name="text">
+             <string>1/8</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbMove_16_AMIS">
+            <property name="text">
+             <string>1/16</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbMove_32_AMIS">
+            <property name="text">
+             <string>1/32</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbMove_64_AMIS">
+            <property name="text">
+             <string>1/64</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbMove_128_AMIS">
+            <property name="text">
+             <string>1/128</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbMove_256_AMIS">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>1/256</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="tab_2">
+        <attribute name="title">
+         <string>GoTo</string>
+        </attribute>
+        <widget class="QWidget" name="layoutWidget_10">
+         <property name="geometry">
+          <rect>
+           <x>11</x>
+           <y>10</y>
+           <width>444</width>
+           <height>29</height>
+          </rect>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_30">
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_4_AMIS">
+            <property name="text">
+             <string>1/4</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_8_AMIS">
+            <property name="text">
+             <string>1/8</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_16_AMIS">
+            <property name="text">
+             <string>1/16</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_32_AMIS">
+            <property name="text">
+             <string>1/32</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_64_AMIS">
+            <property name="text">
+             <string>1/64</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_128_AMIS">
+            <property name="text">
+             <string>1/128</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="rbGoTo_256_AMIS">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>1/256</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </widget>
      </widget>
      <widget class="QTabWidget" name="driverSelectWidget">
       <property name="enabled">
@@ -7316,13 +7566,301 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>621</width>
-        <height>241</height>
+        <width>541</width>
+        <height>151</height>
        </rect>
       </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
+      <widget class="QWidget" name="tabAMIS">
+       <attribute name="title">
+        <string>AMIS M4</string>
+       </attribute>
+       <widget class="QGroupBox" name="gbAMISRA">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>5</x>
+          <y>6</y>
+          <width>190</width>
+          <height>111</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>190</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>190</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>RA Drive</string>
+        </property>
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>9</x>
+           <y>33</y>
+           <width>173</width>
+           <height>68</height>
+          </rect>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_19">
+          <item row="0" column="0">
+           <widget class="QLabel" name="lAccRAAMIS">
+            <property name="minimumSize">
+             <size>
+              <width>85</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>85</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>A [mstp/s²]:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="sbAMaxRA_AMIS">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="minimum">
+             <number>100</number>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+            <property name="singleStep">
+             <number>50</number>
+            </property>
+            <property name="value">
+             <number>5000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lCurrRAAMIS">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Current [A]:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="sbCurrMaxRA_AMIS">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>4.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.500000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+       <widget class="QGroupBox" name="gbAMISDecl">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>200</x>
+          <y>6</y>
+          <width>190</width>
+          <height>111</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>190</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>190</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="title">
+         <string>Declination Drive</string>
+        </property>
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>9</x>
+           <y>34</y>
+           <width>173</width>
+           <height>68</height>
+          </rect>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_26">
+          <item row="0" column="0">
+           <widget class="QLabel" name="lAccDeclAMIS">
+            <property name="minimumSize">
+             <size>
+              <width>85</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>85</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>A [mstp/s²]:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="sbAMaxDecl_AMIS">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="minimum">
+             <number>100</number>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+            <property name="singleStep">
+             <number>50</number>
+            </property>
+            <property name="value">
+             <number>5000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lCurrDeclAMIS">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Current [A]:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDoubleSpinBox" name="sbCurrMaxDecl_AMIS">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>25</height>
+             </size>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>4.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.500000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+       <widget class="QPushButton" name="pbStoreDrive">
+        <property name="geometry">
+         <rect>
+          <x>399</x>
+          <y>10</y>
+          <width>121</width>
+          <height>91</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>5000</width>
+          <height>4000</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Store
+drive
+data</string>
+        </property>
+       </widget>
+      </widget>
       <widget class="QWidget" name="tabPhidgets">
        <attribute name="title">
         <string>Phidget 1067</string>
@@ -7562,31 +8100,6 @@
           </layout>
          </widget>
         </widget>
-        <widget class="QPushButton" name="pbStoreDrive">
-         <property name="geometry">
-          <rect>
-           <x>400</x>
-           <y>10</y>
-           <width>201</width>
-           <height>181</height>
-          </rect>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>50</width>
-           <height>30</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>5000</width>
-           <height>4000</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Store drive data</string>
-         </property>
-        </widget>
         <widget class="QFrame" name="frame_2">
          <property name="geometry">
           <rect>
@@ -7637,772 +8150,26 @@
         </widget>
        </widget>
       </widget>
-      <widget class="QWidget" name="tabAMIS">
-       <attribute name="title">
-        <string>AMIS M4</string>
-       </attribute>
-       <widget class="QGroupBox" name="gbAMISRA">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>5</x>
-          <y>6</y>
-          <width>190</width>
-          <height>111</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>190</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>190</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="title">
-         <string>RA Drive</string>
-        </property>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>9</x>
-           <y>33</y>
-           <width>173</width>
-           <height>68</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_19">
-          <item row="0" column="0">
-           <widget class="QLabel" name="lAccRAAMIS">
-            <property name="minimumSize">
-             <size>
-              <width>85</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>85</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>A [mstp/s²]:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="sbAMaxRA_AMIS">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="minimum">
-             <number>100</number>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-            <property name="singleStep">
-             <number>50</number>
-            </property>
-            <property name="value">
-             <number>5000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="lCurrRAAMIS">
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>80</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Current [A]:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="sbCurrMaxRA_AMIS">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="decimals">
-             <number>1</number>
-            </property>
-            <property name="minimum">
-             <double>0.100000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>4.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.100000000000000</double>
-            </property>
-            <property name="value">
-             <double>1.500000000000000</double>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-       <widget class="QGroupBox" name="gbAMISDecl">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>200</x>
-          <y>6</y>
-          <width>190</width>
-          <height>111</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>190</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>190</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="title">
-         <string>Declination Drive</string>
-        </property>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>9</x>
-           <y>34</y>
-           <width>173</width>
-           <height>68</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_26">
-          <item row="0" column="0">
-           <widget class="QLabel" name="lAccDeclAMIS">
-            <property name="minimumSize">
-             <size>
-              <width>85</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>85</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>A [mstp/s²]:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="sbAMaxDecl_2">
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="minimum">
-             <number>100</number>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-            <property name="singleStep">
-             <number>50</number>
-            </property>
-            <property name="value">
-             <number>5000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="lCurrDeclAMIS">
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>80</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Current [A]:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="sbCurrMaxDecl_2">
-            <property name="minimumSize">
-             <size>
-              <width>80</width>
-              <height>25</height>
-             </size>
-            </property>
-            <property name="decimals">
-             <number>1</number>
-            </property>
-            <property name="minimum">
-             <double>0.100000000000000</double>
-            </property>
-            <property name="maximum">
-             <double>4.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.100000000000000</double>
-            </property>
-            <property name="value">
-             <double>1.500000000000000</double>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-       <widget class="QTabWidget" name="tmstepsAMIS">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>120</y>
-          <width>441</width>
-          <height>80</height>
-         </rect>
-        </property>
-        <property name="layoutDirection">
-         <enum>Qt::LeftToRight</enum>
-        </property>
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <widget class="QWidget" name="tab_2">
-         <attribute name="title">
-          <string>GoTo</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>426</width>
-            <height>29</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_35">
-           <item>
-            <widget class="QRadioButton" name="rbGoTO_2_AMIS">
-             <property name="text">
-              <string>1/2</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGoTo_4_AMIS">
-             <property name="text">
-              <string>1/4</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGoTo_8_AMIS">
-             <property name="text">
-              <string>1/8</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGoTo_16_AMIS">
-             <property name="text">
-              <string>1/16</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGoTo_32_AMIS">
-             <property name="text">
-              <string>1/32</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGoTo_64_AMIS">
-             <property name="text">
-              <string>1/64</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGoTo_128_AMIS">
-             <property name="text">
-              <string>1/128</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="tab_4">
-         <attribute name="title">
-          <string>Move</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>11</x>
-            <y>10</y>
-            <width>426</width>
-            <height>29</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_37">
-           <item>
-            <widget class="QRadioButton" name="rbMove_2_AMIS">
-             <property name="text">
-              <string>1/2</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbMove_4_AMIS">
-             <property name="text">
-              <string>1/4</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbMove_8_AMIS">
-             <property name="text">
-              <string>1/8</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbMove_16_AMIS">
-             <property name="text">
-              <string>1/16</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbMove_32_AMIS">
-             <property name="text">
-              <string>1/32</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbMove_64_AMIS">
-             <property name="text">
-              <string>1/64</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbMove_128_AMIS">
-             <property name="text">
-              <string>1/128</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="tab_5">
-         <attribute name="title">
-          <string>Normal</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>11</x>
-            <y>10</y>
-            <width>426</width>
-            <height>29</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_38">
-           <item>
-            <widget class="QRadioButton" name="rbNormal_2_AMIS">
-             <property name="text">
-              <string>1/2</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbNormal_4_AMIS">
-             <property name="text">
-              <string>1/4</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbNormal_8_AMIS">
-             <property name="text">
-              <string>1/8</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbNormal_16_AMIS">
-             <property name="text">
-              <string>1/16</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbNormal_32_AMIS">
-             <property name="text">
-              <string>1/32</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbNormal_64_AMIS">
-             <property name="text">
-              <string>1/64</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbNormal_128_AMIS">
-             <property name="text">
-              <string>1/128</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QWidget" name="tab_6">
-         <attribute name="title">
-          <string>Guide</string>
-         </attribute>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>426</width>
-            <height>29</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_40">
-           <item>
-            <widget class="QRadioButton" name="rbGuide_2_AMIS">
-             <property name="text">
-              <string>1/2</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGuide_4_AMIS">
-             <property name="text">
-              <string>1/4</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGuide_8_AMIS">
-             <property name="text">
-              <string>1/8</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGuide_16_AMIS">
-             <property name="text">
-              <string>1/16</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGuide_32_AMIS">
-             <property name="text">
-              <string>1/32</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGuide_64_AMIS">
-             <property name="text">
-              <string>1/64</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="rbGuide_128_AMIS">
-             <property name="text">
-              <string>1/128</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-       </widget>
-       <widget class="QGroupBox" name="gbTestAMISSettings">
-        <property name="geometry">
-         <rect>
-          <x>460</x>
-          <y>6</y>
-          <width>151</width>
-          <height>191</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>Test all settings:</string>
-        </property>
-        <widget class="QPushButton" name="pbTestAllSettingsAMIS">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="geometry">
-          <rect>
-           <x>8</x>
-           <y>30</y>
-           <width>141</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Test all settings</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pbResetAMIS">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="geometry">
-          <rect>
-           <x>8</x>
-           <y>115</y>
-           <width>141</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Reset drives</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="pbStoreSettingsAMIS">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="geometry">
-          <rect>
-           <x>8</x>
-           <y>147</y>
-           <width>141</width>
-           <height>25</height>
-          </rect>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>25</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Store drive data</string>
-         </property>
-        </widget>
-        <widget class="QWidget" name="layoutWidget">
-         <property name="geometry">
-          <rect>
-           <x>8</x>
-           <y>59</y>
-           <width>141</width>
-           <height>50</height>
-          </rect>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_27">
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="cbAMISCheckGoTo">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="lChkGoTo">
-            <property name="text">
-             <string>GoTo</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QCheckBox" name="cbAMISCheckMove">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QLabel" name="lChkMove">
-            <property name="text">
-             <string>Move</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="cbAMISCheckNormal">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="lChkNormal">
-            <property name="text">
-             <string>Normal</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QCheckBox" name="cbAMISCheckGuide">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QLabel" name="lChkGuide">
-            <property name="text">
-             <string>Guide</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </widget>
-       <widget class="Line" name="line_9">
-        <property name="geometry">
-         <rect>
-          <x>449</x>
-          <y>10</y>
-          <width>16</width>
-          <height>191</height>
-         </rect>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </widget>
      </widget>
      <widget class="QGroupBox" name="gbGeneralSettings">
       <property name="geometry">
        <rect>
         <x>581</x>
-        <y>266</y>
+        <y>230</y>
         <width>191</width>
-        <height>171</height>
+        <height>281</height>
        </rect>
       </property>
       <property name="title">
        <string>General Settings</string>
       </property>
-      <widget class="QFrame" name="frame_4">
+      <widget class="QFrame" name="fGenSettings">
        <property name="geometry">
         <rect>
          <x>8</x>
          <y>30</y>
          <width>181</width>
-         <height>131</height>
+         <height>171</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -8414,10 +8181,10 @@
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>5</x>
-          <y>10</y>
+          <x>6</x>
+          <y>11</y>
           <width>176</width>
-          <height>120</height>
+          <height>153</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -8503,6 +8270,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QCheckBox" name="cbIsGEM">
+           <property name="text">
+            <string>German Equatorial</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </widget>
@@ -8510,54 +8284,22 @@
      <widget class="QGroupBox" name="gbSelectDriver">
       <property name="geometry">
        <rect>
-        <x>640</x>
+        <x>560</x>
         <y>10</y>
-        <width>121</width>
-        <height>241</height>
+        <width>201</width>
+        <height>131</height>
        </rect>
       </property>
       <property name="title">
        <string>Active Driver:</string>
       </property>
-      <widget class="QPushButton" name="pbStoreDriver">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>150</y>
-         <width>111</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Store</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="lWarningDriveChange">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>190</y>
-         <width>101</width>
-         <height>51</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>9</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Changes effective
-after reset</string>
-       </property>
-      </widget>
       <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>40</y>
+         <y>34</y>
          <width>81</width>
-         <height>95</height>
+         <height>71</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -8574,7 +8316,7 @@ after reset</string>
         <item>
          <widget class="QRadioButton" name="rbAMIS">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>AMIS</string>
@@ -8582,6 +8324,42 @@ after reset</string>
          </widget>
         </item>
        </layout>
+      </widget>
+      <widget class="QLabel" name="lWarningDriveChange">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>70</y>
+         <width>71</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>9</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Changes
+effective
+after reset</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pbStoreDriver">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>30</y>
+         <width>81</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Store</string>
+       </property>
       </widget>
      </widget>
     </widget>
