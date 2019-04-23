@@ -61,11 +61,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
     this->timer = new QTimer(); // start the event timer ... this is NOT the microtimer for the mount
-    this->timer->start(100); // check all 150 ms for events
+    this->timer->start(100); // check all 100 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
     this->st4Timer = new QTimer();
     this->LX200Timer = new QTimer();
-    this->LX200Timer->start(300);
+    this->LX200Timer->start(150);
     this->auxDriveUpdateTimer = new QTimer();
     this->auxDriveUpdateTimer->start(500);
     this->tempUpdateTimer = new QTimer();
@@ -415,11 +415,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4State.eActive = false; // same as above for east
     this->st4State.sActive = false; // same as above for south
     this->st4State.wActive = false; // same as above for west
-    this->st4State.correctionDone = true; // a flag that is set to true when a correction was carried out
-    this->st4State.RATimeEl = new QElapsedTimer();
-    this->st4State.DeclTimeEl = new QElapsedTimer();
-    this->st4State.RACorrTime = 0;
-    this->st4State.DeclCorrTime = 0; // correction times for ST4
         // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
     ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
@@ -878,6 +873,10 @@ void MainWindow::updateReadings() {
     } // checks whether GoTo is active
 
     if ((this->mountMotion.GoToIsActiveInRA==true) || (this->mountMotion.GoToIsActiveInDecl==true)) { // the mount is slewing. slew is not complete as either RA or decl are in slew mode - or both
+
+        if ((this->mountMotion.RATrackingIsOn == false) && (this->mountMotion.GoToIsActiveInRA == false) && (this->isInParking == false)) {
+            this->startRATracking(); // start tracking if RA slew ended
+        }
         if (this->isDriveActive(true) == false) {
             this->mountMotion.GoToIsActiveInRA = false;
         }
@@ -897,9 +896,9 @@ void MainWindow::updateReadings() {
         if (this->mountMotion.GoToIsActiveInDecl==true) {
             topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.DeclGoToElapsedTimeInMS;
             this->mountMotion.DeclGoToElapsedTimeInMS+=topicalTime;
-            totalGearRatio = g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*g_AllData->getGearData(6 );
+            totalGearRatio = g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6);
             relativeTravelDecl= this->mountMotion.DeclDriveDirection*
-                    this->approximateGOTOSpeedDecl*topicalTime*g_AllData->getGearData(7 )/
+                    this->approximateGOTOSpeedDecl*topicalTime*g_AllData->getGearData(7)/
                     (1000.0*g_AllData->getMicroSteppingRatio((short)this->deState)*totalGearRatio);
             if (g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl) == true) { // update the declination position and check whether a meridian flip took place
                 if (g_AllData->getMFlipParams(0) == true) { // ... if the mount is GEM and the MF is on
@@ -936,7 +935,7 @@ void MainWindow::updateReadings() {
         isInGoTo = true;
     } // checks whether GoTo was deactivated
     if ((wasInGoTo == true) && (isInGoTo == false)) { // slew has stopped
-        this->terminateGoTo();
+        this->terminateGoTo(false);
     }
 }
 //------------------------------------------------------------------------
@@ -1062,12 +1061,12 @@ void MainWindow::waitForNMSecs(int msecs) {
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-// the most important routine - is compensates for earth motion, sets all flags and disables all GUI elements that can interefere
+// the most important routine - is compensates for earth motion, sets all flags and disables all GUI elements that can interfere
 void MainWindow::startRATracking(void) {
-    qDebug() << "Start tracking called...";
+    this->isInParking = false; // true if a parking motion was carried out before ...
     ui->rbCorrSpeed->setEnabled(true);
     ui->rbMoveSpeed->setEnabled(true);
-    if (ui->rbMoveSpeed->isChecked()==false) {
+    if (ui->rbMoveSpeed->isChecked() == false) {
         ui->sbMoveSpeed->setEnabled(true);
     }
     this->StepperDriveRA->stopDrive();
@@ -1080,6 +1079,7 @@ void MainWindow::startRATracking(void) {
     this->StepperDriveRA->startTracking();
     this->setControlsForRATracking(false);
     g_AllData->setTrackingMode(true);
+    qDebug() << "RA is tracking...";
 }
 
 //------------------------------------------------------------------
@@ -1112,6 +1112,26 @@ void MainWindow::syncMount(void) {
     ui->pbGoToPark->setEnabled(true);
     ui->pbStorePark->setEnabled(true);
 }
+
+//------------------------------------------------------------------
+// synchronizes the mount to coordinates provided and sets the monotonic timer to zero
+void MainWindow::syncMount(float lra, float lde) {
+    if (this->StepperDriveRA->getStopped() == false) { // stop tracking
+        this->stopRATracking();
+    }
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        this->mountMotion.DeclDriveIsMoving=false;
+        this->StepperDriveDecl->stopDrive();
+    } // stop the declination drive as well ...
+    g_AllData->setSyncPosition(lra, lde);
+    // convey right ascension and declination to the global parameters;
+    // a microtimer starts ...
+    this->startRATracking(); // start tracking again
+    ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
+    ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
+    ui->pbGoToPark->setEnabled(true);
+    ui->pbStorePark->setEnabled(true);
+}
 //---------------------------------------------------------------------
 // that one handles GOTO-commands. it leaves when the destination is reached ...
 void MainWindow::startGoToObject(void) {
@@ -1124,13 +1144,6 @@ void MainWindow::startGoToObject(void) {
     long int RASteps, DeclSteps; // microsteps for travel plus a correction measure
     int timeForProcessingEventQueue = 100; // should be the same as the time for the event queue given in this->timer
 
-    qDebug() << "-------------------------------";
-    qDebug() << "!!! GoTo started ..............";
-    qDebug() << "-------------------------------";
-    this->raState = slew;
-    this->deState = slew;
-    this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(2));
-    this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(2));
     g_AllData->setCelestialSpeed(0); // make sure that the drive speed is sidereal
     ui->rbSiderealSpeed->setChecked(true);
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
@@ -1139,6 +1152,8 @@ void MainWindow::startGoToObject(void) {
     if (this->ccdCameraIsAcquiring == true) { // slewing and transfer of FITS images at the same time cause erratic behaviour,
         this->stopCCDAcquisition();           // the guiding camera acquisition is terminated if active
     }
+    this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1));
+    // make a sync to the topicalposition
     travelRA=((g_AllData->getActualScopePosition(0))+g_AllData->getCelestialSpeed()*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
     if (fabs(travelRA) > 180) {
         absShortRATravel = 360.0 - fabs(travelRA);
@@ -1161,6 +1176,11 @@ void MainWindow::startGoToObject(void) {
     } else {
         this->mountMotion.DeclDriveDirection = 1;
     } // determine direction in declination
+
+    this->raState = slew;
+    this->deState = slew;
+    this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(2));
+    this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(2));
     mstepRatio = g_AllData->getMicroSteppingRatio(2)/((double)(g_AllData->getMicroSteppingRatio(0)));
     speedFactorDecl=ui->sbGoToSpeed->value()*mstepRatio;
     speedFactorRA=ui->sbGoToSpeed->value()*mstepRatio;    // set the drive speed to GOTO speed according to spinbox in GUI
@@ -1170,10 +1190,6 @@ void MainWindow::startGoToObject(void) {
     convertDegreesToMicrostepsRA=1.0/g_AllData->getGearData(3)*g_AllData->getMicroSteppingRatio(2)*
             g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2);
     RASteps=round(fabs(travelRA)*convertDegreesToMicrostepsRA); // determine the number of microsteps necessary to reach target. direction is already given and unimportant here ...
-    qDebug() << "------------------------------------------------------";
-    qDebug() << "RASteps/degrees: " << RASteps << "/" << travelRA;
-    qDebug() << "DeSteps/degrees: " << DeclSteps << "/" << travelDecl;
-    qDebug() << "------------------------------------------------------";
     // ------------------------------- computed gross distance for ra and decl
     TRamp = (this->StepperDriveDecl->getKineticsFromController(3)*(speedFactorDecl))/this->StepperDriveDecl->getKineticsFromController(2);// time needed until drive reaches full speed - vel/acc ...
     SRamp = 0.5*this->StepperDriveDecl->getKineticsFromController(2)*TRamp*TRamp; // travel in microsteps until full speed is reached
@@ -1185,15 +1201,6 @@ void MainWindow::startGoToObject(void) {
         TAtFullSpeed = SAtFullSpeed/(this->StepperDriveDecl->getKineticsFromController(3)*speedFactorDecl);
         timeEstimatedInDeclInMS = (TAtFullSpeed+2.0*TRamp)*1000+timeForProcessingEventQueue; // time in microseconds estimated for Declination-Travel
     }
-    qDebug() << "------------------------------------------------------";
-    qDebug() << "De Speed: " << this->StepperDriveDecl->getKineticsFromController(3);
-    qDebug() << "De Acc: " << this->StepperDriveDecl->getKineticsFromController(2);
-    qDebug() << "Speedfactor: " << speedFactorDecl;
-    qDebug() << "StepsAtFullSpeed: " << SAtFullSpeed;
-    qDebug() << "TimeAtFullSpeed: " << TAtFullSpeed;
-    qDebug() << "------------------------------------------------------";
-
-
     // Now repeat that computation for the RA drive
     TRamp = (this->StepperDriveRA->getKineticsFromController(3)*(speedFactorRA))/this->StepperDriveRA->getKineticsFromController(2);
     SRamp = 0.5*this->StepperDriveRA->getKineticsFromController(2)*TRamp*TRamp;
@@ -1216,28 +1223,15 @@ void MainWindow::startGoToObject(void) {
         RASteps=RASteps-earthTravelDuringGOTOinMSteps;
     }
     timeEstimatedInRAInMS = RASteps/((double)this->StepperDriveRA->getKineticsFromController(3)*(speedFactorRA))*1000; // correct RA travel time for this additional motion
-    qDebug() << "------------------------------------------";
-    qDebug() << "Time in RA: " << timeEstimatedInRAInMS/1000.0;
-    qDebug() << "Time in Decl: " << timeEstimatedInDeclInMS/1000.0;
-    qDebug() << "------------------------------------------";
-
     // finished travel time considerations ...
-    this->approximateGOTOSpeedRA=RASteps/(timeEstimatedInRAInMS/1000.0)*0.95; // for LX 200 display, a mean speed during GOTO not taking ramps into account is computed; it is shortened to avoid overshooting (in graphical display)
-    this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0)*0.95; // same as above
+    this->approximateGOTOSpeedRA=RASteps/(timeEstimatedInRAInMS/1000.0); // for LX 200 display, a mean speed during GOTO not taking ramps into account is computed; it is shortened to avoid overshooting (in graphical display)
+    this->approximateGOTOSpeedDecl=DeclSteps/(timeEstimatedInDeclInMS/1000.0); // same as above
     if (timeEstimatedInRAInMS > timeEstimatedInDeclInMS) {
         gotoETA = timeEstimatedInRAInMS;
     } else {
         gotoETA = timeEstimatedInDeclInMS;
     }
-    gotoETA *= 1.05; // just overerestimate the time in order to avoid negative times ...
-    qDebug() << "------------------------------------------";
-    qDebug() << "Estimated GoTo: " << gotoETA;
-    qDebug() << "------------------------------------------";
-
-
-
     ui->lcdGotoTime->display(round(gotoETA/1000.0)); // determined the estimated duration of the GoTo - Process and display it in the GUI. it is reduced in the event queue
-
     // let the games begin ... GOTO is ready to start ...
     this->terminateAllMotion(); // stop the drives
     this->elapsedGoToTime->start(); // a second timer in the class to measure the time elapsed during goto - needed for updates in the event queue
@@ -1249,31 +1243,44 @@ void MainWindow::startGoToObject(void) {
     this->StepperDriveDecl->travelForNSteps(DeclSteps,this->mountMotion.DeclDriveDirection,round(speedFactorDecl/mstepRatio),0);
     this->mountMotion.GoToIsActiveInDecl=true;
     this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync(); // now, all drives are started and timestamps were taken
-    qDebug() << "First timestamp: " << this->elapsedGoToTime->elapsed();
-    qDebug() << "------------------------------";
-    qDebug() << "GoTo routine completed....";
-    qDebug() << "------------------------------";
 }
 
 //------------------------------------------------------------------
 // this routine handles finishing a GoTo
-void MainWindow::terminateGoTo(void) {
+void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
+    qDebug() << "Parking state: " << this->isInParking;
     this->ra=this->targetRA;
     this->decl=this->targetDecl;
-    this->syncMount(); // sync the mount
+
     ui->lcdGotoTime->display(0); // set the LCD counter to zero again
-    ui->pbStopTracking->setDisabled(false);
     this->setControlsForGoto(true);
+    ui->pbStopTracking->setDisabled(false);
     this->setControlsForRATravel(true); // set GUI back in base state
-    this->setControlsForRATracking(false);
     this->mountMotion.GoToIsActiveInRA=false;
     this->mountMotion.GoToIsActiveInDecl=false; // just to make sure - slew has ENDED here ...
     this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    if (this->isInParking == false) {
+        if (calledAsEmergencyStop == false) {
+            this->syncMount(); // sync the mount to desired position
+        } else {
+            this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1));
+            // in an emergency stop, sync the mount top actual position
+        }
+        this->setControlsForRATracking(false);
+
+    } else {
+        this->setControlsForRATracking(true);
+        ui->pbStartTracking->setDisabled(false);
+        this->stopRATracking();
+        this->isInParking = false;
+    }
+
     this->deState = guideTrack;
     if (this->whatDriver == 1) {
-        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value() ,((double)ui->sbCurrMaxDecl_AMIS->value()*1000));
+        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value()
+                                                                    ,((double)(round(ui->sbCurrMaxDecl_AMIS->value()))));
     }
-    qDebug() << "GoTo terminated...";
+
 }
 
 //------------------------------------------------------------------
@@ -1302,10 +1309,7 @@ void MainWindow::gotoParkPosition(void) {
     this->ra   = g_AllData->getLocalSTime()*15 - g_AllData->getParkingPosition(0);
     this->decl = g_AllData->getParkingPosition(1);
     this->startGoToObject();
-    this->ra   = g_AllData->getLocalSTime()*15 - g_AllData->getParkingPosition(0);
-    this->decl = g_AllData->getParkingPosition(1);
-    this->startGoToObject();
-    this->stopRATracking();
+    this->isInParking = true;
 }
 
 //------------------------------------------------------------------
@@ -1334,8 +1338,6 @@ void MainWindow::shutDownProgram() {
     delete coordString;
     delete spiDrOnChan0;
     delete spiDrOnChan1;
-    delete st4State.RATimeEl;
-    delete st4State.DeclTimeEl;
     delete textEntry;
     delete lx200Comm;
     delete camImg;
@@ -1362,7 +1364,7 @@ void MainWindow::shutDownProgram() {
 }
 
 //---------------------------------------------------------------------
-// soft stop for drives used in GOTO
+// soft stop for drives
 void MainWindow::terminateAllMotion(void) {
     if (this->mountMotion.RADriveIsMoving == true) {
         this->mountMotion.RADriveIsMoving=false;
@@ -1383,6 +1385,9 @@ void MainWindow::emergencyStop(void) {
     this->mountMotion.emergencyStopTriggered=true;
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive();
+    if ((this->mountMotion.GoToIsActiveInRA == true) || (this->mountMotion.GoToIsActiveInDecl == true)) {
+        this->terminateGoTo(true);
+    }
     this->mountMotion.RATrackingIsOn = false;
     this->mountMotion.RADriveIsMoving = false;
     this->mountMotion.DeclDriveIsMoving = false;
@@ -2148,6 +2153,10 @@ void MainWindow::calibrateAutoGuider(void) {
     bool medianOn, lpOn;
     short slewCounter;
 
+    this->raState = guideTrack;
+    this->deState = guideTrack;
+    this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.systemIsCalibrated=false;
     ui->teCalibrationStatus->clear();
@@ -2611,6 +2620,10 @@ void MainWindow::resetGuidingCalibration(void) {
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingState.guidingIsOn == false) {
+        this->raState = guideTrack;
+        this->deState = guideTrack;
+        this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+        this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
         this->guidingState.raErrs[0] = this->guidingState.raErrs[1] =
         this->guidingState.raErrs[2] = 0;
         this->guidingState.declErrs[0] = this->guidingState.declErrs[1] =
@@ -3195,8 +3208,8 @@ void MainWindow::LXsyncMount(void) {
         }
         this->ra = (float)(this->lx200Comm->getReceivedCoordinates(0));
         this->decl = (float)(this->lx200Comm->getReceivedCoordinates(1));
-        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
         g_AllData->setSyncPosition(this->ra, this->decl);
+        this->syncMount();
         // convey right ascension and declination to the global parameters;
         // a microtimer starts ...
         this->startRATracking();
@@ -3458,12 +3471,12 @@ void MainWindow::switchToLX200(void) {
 void MainWindow::declinationMoveHandboxUp(void) {
     long maxDeclSteps;
 
-    if (ui->rbMoveSpeed->isChecked() == true) {
-        this->deState = move;
-    } else {
-        this->deState = guideTrack;
-    }
     if (this->mountMotion.DeclDriveIsMoving==false){
+        if (ui->rbMoveSpeed->isChecked() == true) {
+            this->deState = move;
+        } else {
+            this->deState = guideTrack;
+        }
         this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbDeclDown->setEnabled(0);
@@ -3476,7 +3489,13 @@ void MainWindow::declinationMoveHandboxUp(void) {
         this->StepperDriveDecl->travelForNSteps(maxDeclSteps,this->mountMotion.DeclDriveDirection, this->mountMotion.DeclSpeedFactor,1);
     } else {
         this->mountMotion.DeclDriveIsMoving=false;
+        this->deState=guideTrack;
+        this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
         this->StepperDriveDecl->stopDrive();
+        if (this->whatDriver == 1) {
+            this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value()
+                                                                        ,((double)(ui->sbCurrMaxDecl_AMIS->value())));
+        }
         ui->pbDeclDown->setEnabled(1);
         this->setControlsForDeclTravel(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -3484,6 +3503,7 @@ void MainWindow::declinationMoveHandboxUp(void) {
         } else {
             ui->sbMoveSpeed->setEnabled(false);
         }
+        this->mountMotion.DeclDriveIsMoving=false;
     }
 }
 
@@ -3491,12 +3511,12 @@ void MainWindow::declinationMoveHandboxUp(void) {
 void MainWindow::declinationMoveHandboxDown(void) {
     long maxDeclSteps;
 
-    if (ui->rbMoveSpeed->isChecked() == true) {
-        this->deState = move;
-    } else {
-        this->deState = guideTrack;
-    }
     if (this->mountMotion.DeclDriveIsMoving==false){
+        if (ui->rbMoveSpeed->isChecked() == true) {
+            this->deState = move;
+        } else {
+            this->deState = guideTrack;
+        }
         this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
         this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbDeclUp->setEnabled(0);
@@ -3508,8 +3528,13 @@ void MainWindow::declinationMoveHandboxDown(void) {
                 g_AllData->getGearData(6 ); // travel 180° at most
         this->StepperDriveDecl->travelForNSteps(maxDeclSteps,this->mountMotion.DeclDriveDirection,this->mountMotion.DeclSpeedFactor,1);
     } else {
-        this->mountMotion.DeclDriveIsMoving=false;
+        this->deState=guideTrack;
+        this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
         this->StepperDriveDecl->stopDrive();
+        if (this->whatDriver == 1) {
+            this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value()
+                                                                        ,((double)(ui->sbCurrMaxDecl_AMIS->value())));
+        }
         ui->pbDeclUp->setEnabled(1);
         this->setControlsForDeclTravel(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -3517,6 +3542,7 @@ void MainWindow::declinationMoveHandboxDown(void) {
         } else {
             ui->sbMoveSpeed->setEnabled(false);
         }
+        this->mountMotion.DeclDriveIsMoving=false;
     }
 }
 //--------------------------------------------------------------
@@ -3527,15 +3553,16 @@ void MainWindow::RAMoveHandboxFwd(void) {
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }
-    if (ui->rbMoveSpeed->isChecked() == true) {
-        this->raState = move;
-    } else {
-        this->raState = guideTrack;
-    }
+
     ui->rbCorrSpeed->setEnabled(false);
     ui->rbMoveSpeed->setEnabled(false);
     ui->sbMoveSpeed->setEnabled(false);
     if (this->mountMotion.RADriveIsMoving == false){
+        if (ui->rbMoveSpeed->isChecked() == true) {
+            this->raState = move;
+        } else {
+            this->raState = guideTrack;
+        }
         this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->raState));
         this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
         ui->pbRAMinus->setEnabled(0);
@@ -3553,6 +3580,12 @@ void MainWindow::RAMoveHandboxFwd(void) {
     } else {
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
+        this->raState=guideTrack;
+        this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->raState));
+        if (this->whatDriver == 1) {
+            this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxRA_AMIS->value()
+                                                                        ,((double)(ui->sbCurrMaxRA_AMIS->value())));
+        }
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
         }
@@ -3564,7 +3597,6 @@ void MainWindow::RAMoveHandboxFwd(void) {
             ui->sbMoveSpeed->setEnabled(true);
         }
     }
-    qDebug() << "HandboxMotion done____________________________________";
 
 }
 
@@ -3574,20 +3606,19 @@ void MainWindow::RAMoveHandboxBwd(void) {
     double bwdFactor;
 
 
-    qDebug() << "HandboxMotion ________________________________________";
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
-    }
-    if (ui->rbMoveSpeed->isChecked() == true) {
-        this->raState = move;
-    } else {
-        this->raState = guideTrack;
     }
 
     ui->rbCorrSpeed->setEnabled(false);
     ui->rbMoveSpeed->setEnabled(false);
     ui->sbMoveSpeed->setEnabled(false);
     if (this->mountMotion.RADriveIsMoving ==false){
+        if (ui->rbMoveSpeed->isChecked() == true) {
+            this->raState = move;
+        } else {
+            this->raState = guideTrack;
+        }
 
         this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->raState));
         this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
@@ -3596,9 +3627,9 @@ void MainWindow::RAMoveHandboxBwd(void) {
         ui->pbStartTracking->setEnabled(0);
         ui->pbStopTracking->setEnabled(0);
         this->mountMotion.RADriveIsMoving=true;
-        maxRASteps=180/g_AllData->getGearData(3 )*g_AllData->getMicroSteppingRatio((short)this->raState)*
-                g_AllData->getGearData(0 )*g_AllData->getGearData(1 )*
-                g_AllData->getGearData(2 ); // travel 180° at most
+        maxRASteps=180/g_AllData->getGearData(3)*g_AllData->getMicroSteppingRatio((short)this->raState)*
+                g_AllData->getGearData(0)*g_AllData->getGearData(1 )*
+                g_AllData->getGearData(2); // travel 180° at most
 
         this->mountMotion.RADriveDirection=-1;
         bwdFactor=this->mountMotion.RASpeedFactor-1; // backward motion means stop at tracking speeds
@@ -3606,6 +3637,12 @@ void MainWindow::RAMoveHandboxBwd(void) {
     } else {
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
+        this->raState=guideTrack;
+        this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->raState));
+        if (this->whatDriver == 1) {
+            this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxRA_AMIS->value()
+                                                                        ,((double)(ui->sbCurrMaxRA_AMIS->value())));
+        }
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
         }
@@ -3658,6 +3695,12 @@ void MainWindow::startST4Guiding(void) {
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();
     } // if tracking is not active - start it ...
+
+    if (whatDriver == amisM4) {
+        this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+        this->deState = guideTrack; // set the declination drive to guiding speed
+    }
+
     this->tempUpdateTimer->stop(); // no temperature updates during ST4 guiding - SPI channel 0 is only available for ST4
     ui->lcdTemp->display("-");
     this->guidingState.st4IsActive = true;
@@ -3667,7 +3710,6 @@ void MainWindow::startST4Guiding(void) {
     this->st4State.eActive = false;
     this->st4State.sActive = false;
     this->st4State.wActive = false;
-    this->st4State.correctionDone = false;
     ui->ctrlTab->setEnabled(false);
     ui->catTab->setEnabled(false);
     ui->camTab->setEnabled(false);
@@ -3704,7 +3746,6 @@ void MainWindow::stopST4Guiding(void) {
     this->st4State.eActive = false;
     this->st4State.sActive = false;
     this->st4State.wActive = false;
-    this->st4State.correctionDone = false;
     ui->ctrlTab->setEnabled(true);
     ui->catTab->setEnabled(true);
     ui->camTab->setEnabled(true);
@@ -3720,8 +3761,6 @@ void MainWindow::stopST4Guiding(void) {
     ui->pbClearLXLog->setEnabled(true);
     ui->pbStartST4->setEnabled(true);
     ui->pbStopST4->setEnabled(false);
-    ui->lcdST4DurationDecl->display(0);
-    ui->lcdST4DurationRA->display(0);
     this->getTemperature(); // read the temperature sensor - it is only updated every 30 sec
     this->getTemperature(); // call it a second time to avoid trash in the SPI register
     this->waitForNMSecs(250);
@@ -3729,7 +3768,6 @@ void MainWindow::stopST4Guiding(void) {
     ui->cbST4East->setChecked(false);
     ui->cbST4South->setChecked(false);
     ui->cbST4West->setChecked(false);
-
     this->tempUpdateTimer->start(30000); // start the timer for requesting temperature again
 }
 
@@ -3739,10 +3777,6 @@ void MainWindow::stopST4Guiding(void) {
 void MainWindow::handleST4State(void) {
     char stateCharFromSPI;
     bool nUp, eUp, sUp, wUp;
-    bool doSCorr = false;
-    bool doNCorr = false;
-    bool doECorr = false;
-    bool doWCorr = false;
 
     if ((this->guidingState.st4IsActive == true)) { // poll data if ST4 is active and not correcting
         this->commSPIParams.guiData->clear();
@@ -3778,81 +3812,12 @@ void MainWindow::handleST4State(void) {
         ui->cbST4South->setChecked(sUp);
         ui->cbST4West->setChecked(wUp);
 
-
-        if (nUp != this->st4State.nActive) { // now compare the actual state of ST4 to the earlier states. start or stop a
-                                             // timer if necessary
-            if (nUp == true) { // north has become active
-                this->st4State.DeclTimeEl->start();
-            } else {
-                if (this->st4State.DeclTimeEl->isValid()) {
-                    this->st4State.DeclCorrTime = this->st4State.DeclTimeEl->elapsed();
-                    this->st4State.DeclTimeEl->invalidate();
-                    ui->lcdST4DurationDecl->display((int)(this->st4State.DeclCorrTime));
-                    doNCorr = true;
-                }
-            }
-        }
-        if (sUp != this->st4State.sActive) {
-            if (sUp == true) { // south has become active
-                this->st4State.DeclTimeEl->start();
-            } else {
-                if (this->st4State.DeclTimeEl->isValid()) {
-                    this->st4State.DeclCorrTime = this->st4State.DeclTimeEl->elapsed();
-                    this->st4State.DeclTimeEl->invalidate();
-                    ui->lcdST4DurationDecl->display((int)(this->st4State.DeclCorrTime));
-                    doSCorr = true;
-                }
-            }
-        }
-        if (eUp != this->st4State.eActive) {
-            if (eUp == true) { // east has become active
-                this->st4State.RATimeEl->start();
-            } else {
-                if (this->st4State.RATimeEl->isValid()) {
-                    this->st4State.RACorrTime = this->st4State.RATimeEl->elapsed();
-                    this->st4State.RATimeEl->invalidate();
-                    ui->lcdST4DurationRA->display((int)(this->st4State.RACorrTime));
-                    doECorr = true;
-                }
-            }
-        }
-        if (wUp != this->st4State.wActive) {
-            if (wUp == true) { // east has become active
-                this->st4State.RATimeEl->start();
-            } else {
-                if (this->st4State.RATimeEl->isValid()) {
-                    this->st4State.RACorrTime = this->st4State.RATimeEl->elapsed();
-                    this->st4State.RATimeEl->invalidate();
-                    ui->lcdST4DurationRA->display((int)(this->st4State.RACorrTime));
-                    doWCorr = true;
-                }
-            }
-        }
+        qDebug() << "ST4 - states: " << nUp << "/" << eUp << "/" << sUp << "/" << wUp;
 
         this->st4State.nActive = nUp;  // now update the ST4 states
         this->st4State.eActive = eUp;
         this->st4State.sActive = sUp;
         this->st4State.wActive = wUp;
-
-        if ((doWCorr == true) || (doECorr == true)) { // carry out correction in RA
-            this->st4State.correctionDone = false;
-            if (doWCorr == true) {
-                raPGFwdGd((long)this->st4State.RACorrTime);
-            } else {
-                raPGBwdGd((long)this->st4State.RACorrTime);
-            }
-            this->st4State.RACorrTime = 0;
-        }
-        if ((doNCorr == true) || (doSCorr == true)) {
-            this->st4State.correctionDone = false;
-            if (doNCorr == true) {
-                declPGPlusGd((long)this->st4State.DeclCorrTime);
-            } else {
-                declPGMinusGd((long)this->st4State.DeclCorrTime);
-            }
-            this->st4State.DeclCorrTime = 0;
-        }
-        this->st4State.correctionDone = true; // corrections were carried out
     }
 }
 
@@ -4141,7 +4106,6 @@ void MainWindow::setControlsForRATracking(bool isEnabled) {
         ui->sbAMaxRA_AMIS->setEnabled(isEnabled);
         ui->sbCurrMaxRA_AMIS->setEnabled(isEnabled);
     }
-
     ui->leRAPlanetary->setEnabled(isEnabled);
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);

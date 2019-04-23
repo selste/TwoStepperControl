@@ -98,7 +98,6 @@ void QtKineticStepper::changeMicroSteps(double ms) {
         this->sendCommandToAMIS("x"); // stop steppers
         this->sendCommandToAMIS("m",lms);
         usleep(50);
-        this->sendCommandToAMIS("o");
         this->microsteps=lms;
     }
 }
@@ -342,6 +341,7 @@ void QtKineticStepper::stopDrive(void) {
         usleep(100);
     }
     if (g_AllData->getStepperDriverType() == 1) {
+        this->sendCommandToAMIS("s",0);
         this->sendCommandToAMIS("x");
         this->sendCommandToAMIS("z");
     }
@@ -388,11 +388,11 @@ QString QtKineticStepper::sendCommandToAMIS(QString cmd, long val) {
     theCommand.append(QString::number(val, 10));
     amisInterface->sendCommand(theCommand,false);
     theReply.append(amisInterface->getReply(false));
- //   if (cmd != "f7") {
- //       qDebug() << "--- Command to Decl ---";
- //       qDebug() << "Sent: " << theCommand.toLatin1();
- //       qDebug() << "Received: " << theReply.toLatin1();
- //   }
+   /* if (cmd != "f7") {
+        qDebug() << "--- Command to Decl ---";
+        qDebug() << "Sent: " << theCommand.toLatin1();
+        qDebug() << "Received: " << theReply.toLatin1();
+    }*/
     return theReply;
 }
 
@@ -404,10 +404,10 @@ QString QtKineticStepper::sendCommandToAMIS(QString cmd) {
     theCommand.append(cmd);
     amisInterface->sendCommand(theCommand,false);
     theReply.append(amisInterface->getReply(false));
- //   if (cmd != "f7") {
- //       qDebug() << "--- Command to Decl ---";
- //       qDebug() << "Sent: " << theCommand.toLatin1();
- //       qDebug() << "Received: " << theReply.toLatin1();
- //   }
+ /*   if (cmd != "f7") {
+        qDebug() << "--- Command to Decl ---";
+        qDebug() << "Sent: " << theCommand.toLatin1();
+        qDebug() << "Received: " << theReply.toLatin1();
+    }*/
     return theReply;
 }

@@ -97,7 +97,6 @@ void QtContinuousStepper::changeMicroSteps(double ms) {
         this->sendCommandToAMIS("x"); // stop steppers
         this->sendCommandToAMIS("m",lms);
         usleep(50);
-        this->sendCommandToAMIS("o");
         this->microsteps=lms;
     }
 }
@@ -417,12 +416,12 @@ QString QtContinuousStepper::sendCommandToAMIS(QString cmd, long val) {
     theCommand.append(QString::number(val, 10));
     amisInterface->sendCommand(theCommand,true);
     theReply.append(amisInterface->getReply(true));
-  //  if (cmd != "f7") {
-  //      qDebug() << "--- Command to RA ---";
-  //      qDebug() << "Sent: " << theCommand.toLatin1();
-  //      qDebug() << "Received: " << theReply.toLatin1();
-  //  }
-    return theReply;
+  /*  if (cmd != "f7") {
+        qDebug() << "--- Command to RA ---";
+        qDebug() << "Sent: " << theCommand.toLatin1();
+        qDebug() << "Received: " << theReply.toLatin1();
+    }
+*/    return theReply;
 }
 
 //--------------------------------------------------------------------------------
@@ -433,11 +432,11 @@ QString QtContinuousStepper::sendCommandToAMIS(QString cmd) {
     theCommand.append(cmd);
     amisInterface->sendCommand(theCommand,true);
     theReply.append(amisInterface->getReply(true));
-  //  if (cmd != "f7") {
-  //      qDebug() << "--- Command to RA ---";
-  //      qDebug() << "Sent: " << theCommand.toLatin1();
-  //      qDebug() << "Received: " << theReply.toLatin1();
-  //  }
+  /*  if (cmd != "f7") {
+        qDebug() << "--- Command to RA ---";
+        qDebug() << "Sent: " << theCommand.toLatin1();
+        qDebug() << "Received: " << theReply.toLatin1();
+    } */
     return theReply;
 }
 

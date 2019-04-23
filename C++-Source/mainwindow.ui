@@ -1966,21 +1966,50 @@
       <property name="geometry">
        <rect>
         <x>410</x>
-        <y>250</y>
+        <y>290</y>
         <width>361</width>
-        <height>171</height>
+        <height>131</height>
        </rect>
       </property>
       <property name="title">
        <string>ST 4</string>
       </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>190</x>
+         <y>0</y>
+         <width>150</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_41">
+        <item>
+         <widget class="QCheckBox" name="cbSTFourIsWorking">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lSTFourIsWorking">
+          <property name="text">
+           <string>ST4 is operational</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
       <widget class="QFrame" name="frame_3">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>27</y>
          <width>361</width>
-         <height>141</height>
+         <height>101</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -1992,8 +2021,8 @@
        <widget class="QWidget" name="layoutWidget_4">
         <property name="geometry">
          <rect>
-          <x>6</x>
-          <y>5</y>
+          <x>10</x>
+          <y>10</y>
           <width>151</width>
           <height>77</height>
          </rect>
@@ -2069,76 +2098,12 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="layoutWidget_11">
         <property name="geometry">
          <rect>
-          <x>6</x>
-          <y>89</y>
-          <width>342</width>
-          <height>41</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_29">
-         <item>
-          <widget class="QLabel" name="lRAST4Corr">
-           <property name="text">
-            <string>RA Corr. [ms]:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLCDNumber" name="lcdST4DurationRA">
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>60</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="digitCount">
-            <number>4</number>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lDeclST4Corr">
-           <property name="text">
-            <string>Decl. Corr. [ms]:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLCDNumber" name="lcdST4DurationDecl">
-           <property name="minimumSize">
-            <size>
-             <width>60</width>
-             <height>30</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>60</width>
-             <height>20</height>
-            </size>
-           </property>
-           <property name="digitCount">
-            <number>4</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>169</x>
-          <y>23</y>
-          <width>181</width>
+          <x>180</x>
+          <y>10</y>
+          <width>152</width>
           <height>58</height>
          </rect>
         </property>
@@ -2189,35 +2154,6 @@
          </item>
         </layout>
        </widget>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>190</x>
-         <y>0</y>
-         <width>150</width>
-         <height>23</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_41">
-        <item>
-         <widget class="QCheckBox" name="cbSTFourIsWorking">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lSTFourIsWorking">
-          <property name="text">
-           <string>ST4 is operational</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </widget>
      </widget>
      <widget class="QGroupBox" name="gbLogLX">

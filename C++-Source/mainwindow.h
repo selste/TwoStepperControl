@@ -64,6 +64,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void changeCCDGain(void);
     void storeCCDData(void);
     void syncMount(void);
+    void syncMount(float, float);
     void storeGearData(void);
     void storeDriveData(void);
     void catalogChosen(QListWidgetItem*);
@@ -253,11 +254,6 @@ private:
         bool eActive;
         bool sActive;
         bool wActive;
-        bool correctionDone;
-        QElapsedTimer *RATimeEl;
-        QElapsedTimer *DeclTimeEl;
-        unsigned long RACorrTime;
-        unsigned long DeclCorrTime;
     };
 
     Ui::MainWindow *ui;
@@ -302,7 +298,7 @@ private:
     SPI_Drive *spiDrOnChan0;
     stepperDriverTypes whatDriver;
     short initiateStepperDrivers(stepperDriverTypes);
-    void terminateGoTo(void);
+    void terminateGoTo(bool);
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
@@ -311,6 +307,7 @@ private:
     bool tcpHandboxIsConnected = 0;
     bool auxDriveIsStartingUp = false; // a flag that suppresses GUI updates when one of the focus motors comes up
     bool calibrationToBeTerminated = 0; // a flag that is set when the calibration process is stopped prematurely
+    bool isInParking = false; // set to true if parking was initiated
     float ra; // right ascension of a current object
     float decl;// declination of a current object
     double gotoETA; // estimated time of arrival for goto

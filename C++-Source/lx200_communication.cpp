@@ -103,6 +103,7 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
     }
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
+
     subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
     if (subCmdList->isEmpty()==false) {
         for (cmdCounter = 0; cmdCounter < (subCmdList->length()-1); cmdCounter++) {
@@ -114,8 +115,8 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
                 this->subCmd->clear();
                 this->subCmd->append(chopSCMD);
             } // some people send commands starting with two ":" - don't ask me why ...
-                this->handleBasicLX200Protocol(*subCmd);
                 emit this->RS232CommandReceived();
+                this->handleBasicLX200Protocol(*subCmd);
                 this->subCmd->clear();
         }
         this->subCmd->append(subCmdList->at(subCmdList->length()-1));
@@ -133,8 +134,8 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
                 this->subCmd->clear();
                 this->subCmd->append(chopSCMD);
             }
-            this->handleBasicLX200Protocol(*subCmd);
             emit this->RS232CommandReceived();
+            this->handleBasicLX200Protocol(*subCmd);
             this->subCmd->clear();
         }
     }
