@@ -26,23 +26,8 @@ extern usbCommunications *amisInterface;
 //-----------------------------------------------------------------------------
 
 QtKineticStepper::QtKineticStepper(void){
-    int sernum, version;
 
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        this->SH = NULL;
-        this->errorCreate = CPhidgetStepper_create(&SH);
-        this->errorOpen = CPhidget_open((CPhidgetHandle)SH, -1);
-        sleep(1);
-        CPhidget_getSerialNumber((CPhidgetHandle)SH, &sernum);
-        CPhidget_getDeviceVersion((CPhidgetHandle)SH, &version);
-        sleep(1);
-        CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1); // enable steppers
-        this->snumifk=sernum;
-        this->vifk=version;
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("e",1); // enable steppers
-    }
+    this->sendCommandToAMIS("e",1); // enable stepper
     this->hBoxSlewEnded=false;
     this->stopped=true;
     this->gearRatio = 1;
@@ -54,16 +39,8 @@ QtKineticStepper::QtKineticStepper(void){
 
 QtKineticStepper::~QtKineticStepper(void){
     this->stopped=true;
-    if (g_AllData->getStepperDriverType() == 0) {
-        CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
-        sleep(1);
-        CPhidget_close((CPhidgetHandle)SH);
-        CPhidget_delete((CPhidgetHandle)SH);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("x"); // stop steppers
-        this->sendCommandToAMIS("e",0); // disable steppers
-    }
+    this->sendCommandToAMIS("x"); // stop steppers
+    this->sendCommandToAMIS("e",0); // disable steppers
 }
 
 //-----------------------------------------------------------------------------
@@ -75,13 +52,9 @@ void QtKineticStepper::setGearRatioAndMicrosteps(double gr, double ms) {
     if ((lms != 4) && (lms != 8) && (lms != 16) && (lms != 32) && (lms != 64) && (lms != 128) && (lms != 256)) {
         lms = 16;
     }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("x"); // stop steppers
-        this->sendCommandToAMIS("m",lms);
-        usleep(50);
-    } else {
-        lms = 16;
-    }
+    this->sendCommandToAMIS("x"); // stop steppers
+    this->sendCommandToAMIS("m",lms);
+    usleep(50);
     this->microsteps=lms;
 }
 
@@ -90,16 +63,14 @@ void QtKineticStepper::setGearRatioAndMicrosteps(double gr, double ms) {
 void QtKineticStepper::changeMicroSteps(double ms) {
     long lms;
 
-    if (g_AllData->getStepperDriverType() == 1) {
-        lms = (long)ms;
-        if ((lms != 4) && (lms != 8) && (lms != 16) && (lms != 32) && (lms != 64) && (lms != 128) && (lms != 256)) {
-            lms = 16;
-        }
-        this->sendCommandToAMIS("x"); // stop steppers
-        this->sendCommandToAMIS("m",lms);
-        usleep(50);
-        this->microsteps=lms;
+    lms = (long)ms;
+    if ((lms != 4) && (lms != 8) && (lms != 16) && (lms != 32) && (lms != 64) && (lms != 128) && (lms != 256)) {
+        lms = 16;
     }
+    this->sendCommandToAMIS("x"); // stop steppers
+    this->sendCommandToAMIS("m",lms);
+    usleep(50);
+    this->microsteps=lms;
 }
 
 //-----------------------------------------------------------------------------
@@ -107,58 +78,29 @@ void QtKineticStepper::changeMicroSteps(double ms) {
 void QtKineticStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double lcurr) {
     double smax, amax, smin;
 
-    if (g_AllData->getStepperDriverType() == 0) {
-        if ((this->errorCreate == 0) && (this->errorOpen == 0)) {
-            CPhidgetStepper_getVelocityMax((CPhidgetStepperHandle)SH,0,&smax);
-            CPhidgetStepper_getVelocityMin((CPhidgetStepperHandle)SH,0,&smin);
-            CPhidgetStepper_getAccelerationMax((CPhidgetStepperHandle)SH,0,&amax);
-            this->speedMin=smin;
-            if (lacc > amax) {
-                this->acc = amax;
-            } else {
-                this->acc = lacc;
-            }
-            if (lcurr <= 4) {
-                this->currMax=lcurr;
-            } else {
-                this->currMax = 4;
-            }
-            CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
-            CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,currMax);
-            this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
-            if (this->stepsPerSecond < 1) {
-                this->speedMax = 1; // a speed of less than 1 microsteps is not achievable - it is physics, baby ...
-                this->stepsPerSecond = this->speedMax;
-            }
-            this->speedMax=this->stepsPerSecond;
-            CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-        }
+    smax = 25000;
+    amax = 20000;
+    smin = 0;
+    if (lacc > amax) {
+        this->acc = amax;
+    } else {
+        this->acc = lacc;
     }
-    if (g_AllData->getStepperDriverType() == 1) {
-        smax = 25000;
-        amax = 20000;
-        smin = 0;
-        if (lacc > amax) {
-            this->acc = amax;
-        } else {
-            this->acc = lacc;
-        }
-        if (lcurr <= 3) {
-            this->currMax=lcurr;
-        } else {
-            this->currMax = 3;
-        }
-        this->sendCommandToAMIS("a", this->acc);
-        this->sendCommandToAMIS("c",(long)(this->currMax*1000));
-        usleep(100);
-        this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
-        if (this->stepsPerSecond < 1) {
-            this->speedMax = 1; // a speed of less than 1 microsteps is not achievable - it is physics, baby ...
-            this->stepsPerSecond = this->speedMax;
-        }
-        this->speedMax=this->stepsPerSecond;
-        this->sendCommandToAMIS("v",(long)(this->speedMax));
+    if (lcurr <= 3) {
+        this->currMax=lcurr;
+    } else {
+        this->currMax = 3;
     }
+    this->sendCommandToAMIS("a", this->acc);
+    this->sendCommandToAMIS("c",(long)(this->currMax*1000));
+    usleep(100);
+    this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
+    if (this->stepsPerSecond < 1) {
+        this->speedMax = 1; // a speed of less than 1 microsteps is not achievable - it is physics, baby ...
+        this->stepsPerSecond = this->speedMax;
+    }
+    this->speedMax=this->stepsPerSecond;
+    this->sendCommandToAMIS("v",(long)(this->speedMax));
 }
 
 //-----------------------------------------------------------------------------
@@ -168,64 +110,45 @@ void QtKineticStepper::travelForNSteps(long steps,short direction, int factor,bo
     this->hBoxSlewEnded = false;
     this->isHBoxSlew=isHBSlew;
     this->speedMax=round(factor*g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
-    qDebug() << this->speedMax;
-    qDebug() << this->microsteps;
-
     if (direction < 0) {
         direction = -1;
     } else {
         direction = 1;
     }
-    if (g_AllData->getStepperDriverType() == 0) {
-        CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-        CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 1);
-        CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
-        CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, g_AllData->getMFlipDecSign()*directionfactor*direction*steps);
-        this->stopped = false;
+    this->sendCommandToAMIS("v",(long)(this->speedMax));
+    this->sendCommandToAMIS("z");
+    this->sendCommandToAMIS("s", (long)g_AllData->getMFlipDecSign()*directionfactor*direction*steps);
+    this->sendCommandToAMIS("o");
+    this->stopped = false;
+}
+
+//-----------------------------------------------------------------------------
+// same as above for guiding with ST4 and so on
+void QtKineticStepper::travelForNSteps(short direction, float factor) {
+    const short directionfactor = -1; // change to switch directions of the drive
+
+    this->speedMax=round(factor*g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
+    if (direction < 0) {
+        direction = -1;
+    } else {
+        direction = 1;
     }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("v",(long)(this->speedMax));
-        this->sendCommandToAMIS("z");
-        this->sendCommandToAMIS("s", (long)g_AllData->getMFlipDecSign()*directionfactor*direction*steps);
-        this->sendCommandToAMIS("o");
-        this->stopped = false;
-    }
+    this->sendCommandToAMIS("v",(long)(this->speedMax));
+    this->sendCommandToAMIS("z");
+    this->sendCommandToAMIS("s", (long)g_AllData->getMFlipDecSign()*directionfactor*direction*1000000);
+    this->sendCommandToAMIS("o");
+    this->stopped = false;
 }
 
 //----------------------------------------------------------------------------------
 void QtKineticStepper::resetSteppersAfterStop(void) { // this function is called once it was detected that the steppers stopped moving
     this->stopped = true;
     this->speedMax=g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps);
-    if (g_AllData->getStepperDriverType() == 0) {
-        CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("v",(long)(this->speedMax));
-    }
+    this->sendCommandToAMIS("v",(long)(this->speedMax));
     if (this->isHBoxSlew == true) {
         this->hBoxSlewEnded=true;
         this->isHBoxSlew = false;
     }
-}
-
-//-----------------------------------------------------------------------------
-
-int QtKineticStepper::retrieveKineticStepperData(int what) {
-    int retval = 0;
-
-    if (g_AllData->getStepperDriverType() == 0) {
-        switch (what) {
-        case 1:
-            retval=this->snumifk;
-            break;
-        case 2:
-            retval=this->vifk;
-            break;
-        default:
-            retval=-1;
-        }
-    }
-    return retval;
 }
 
 //-----------------------------------------------------------------------------
@@ -234,28 +157,13 @@ double QtKineticStepper::getKineticsFromController(short whichOne) {
 
     switch (whichOne) {
     case 1:
-        if (g_AllData->getStepperDriverType() == 0) {
-            CPhidgetStepper_getCurrentLimit((CPhidgetStepperHandle)SH,0,&retval);
-        }
-        if (g_AllData->getStepperDriverType() == 1) {
-            retval = (double)(this->sendCommandToAMIS("f9").toLong()/1000.0);
-        }
+        retval = (double)(this->sendCommandToAMIS("f9").toLong()/1000.0);
         break;
     case 2:
-        if (g_AllData->getStepperDriverType() == 0) {
-            CPhidgetStepper_getAcceleration((CPhidgetStepperHandle)SH,0,&retval);
-        }
-        if (g_AllData->getStepperDriverType() == 1) {
-            retval = (double)(this->sendCommandToAMIS("f8").toLong());
-        }
+        retval = (double)(this->sendCommandToAMIS("f8").toLong());
         break;
     case 3:
-        if (g_AllData->getStepperDriverType() == 0) {
-            CPhidgetStepper_getVelocityLimit((CPhidgetStepperHandle)SH,0,&retval);
-        }
-        if (g_AllData->getStepperDriverType() == 1) {
-            retval = (double)(this->sendCommandToAMIS("f7").toLong());
-        }
+        retval = (double)(this->sendCommandToAMIS("f7").toLong());
         break;
     case 4:
         retval = (this->speedMin);
@@ -273,38 +181,19 @@ void QtKineticStepper::setStepperParams(double val, short whichOne) {
     switch (whichOne) {
     case 1:
         this->acc=val;
-        if (g_AllData->getStepperDriverType() == 0) {
-            CPhidgetStepper_setAcceleration((CPhidgetStepperHandle)SH,0,this->acc);
-        }
-        if (g_AllData->getStepperDriverType() == 1) {
-            this->sendCommandToAMIS("a", this->acc);
-        }
+        this->sendCommandToAMIS("a", this->acc);
         break;
     case 2:
         this->speedMax=val;
-        if (g_AllData->getStepperDriverType() == 0) {
-            CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-        }
-        if (g_AllData->getStepperDriverType() == 1) {
-            this->sendCommandToAMIS("v", this->speedMax);
-        }
+        this->sendCommandToAMIS("v", this->speedMax);
         break;
     case 3:
-        if (g_AllData->getStepperDriverType() == 0) {
-            if (val > 4) {
-                val = 4;
-            }
-            this->currMax=val;
-            CPhidgetStepper_setCurrentLimit((CPhidgetStepperHandle)SH,0,this->currMax);
+        if (val > 3) {
+            val = 3;
         }
-        if (g_AllData->getStepperDriverType() == 1) {
-            if (val > 3) {
-                val = 3;
-            }
-            this->currMax=val;
-            this->sendCommandToAMIS("c", this->currMax*1000);
-            usleep(100);
-        }
+        this->currMax=val;
+        this->sendCommandToAMIS("c", this->currMax*1000);
+        usleep(100);
     }
     return;
 }
@@ -314,14 +203,8 @@ void QtKineticStepper::setStepperParams(double val, short whichOne) {
 
 void QtKineticStepper::shutDownDrive(void) {
     this->stopped=true;
-    if (g_AllData->getStepperDriverType() == 0) {
-        CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
-        sleep(1);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("x");
-        this->sendCommandToAMIS("e",0);
-    }
+    this->sendCommandToAMIS("x");
+    this->sendCommandToAMIS("e",0);
 }
 
 //-----------------------------------------------------------------------------
@@ -331,26 +214,14 @@ bool QtKineticStepper::getStopped(void) {
 }
 
 //------------------------------------------------------------------------------
-
 void QtKineticStepper::stopDrive(void) {
-    if (g_AllData->getStepperDriverType() == 0) {
-        CPhidgetStepper_setEngaged((CPhidgetStepperHandle)SH, 0, 0);
-        CPhidgetStepper_setCurrentPosition((CPhidgetStepperHandle)SH, 0, 0);
-        CPhidgetStepper_setTargetPosition((CPhidgetStepperHandle)SH, 0, 0);
-        this->stopped = true;
-        usleep(100);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("s",0);
-        this->sendCommandToAMIS("x");
-        this->sendCommandToAMIS("z");
-    }
+    this->sendCommandToAMIS("s",0);
+    this->sendCommandToAMIS("x");
+    this->sendCommandToAMIS("z");
     this->stopped=true;
-
 }
 
 //-------------------------------------------------------------------------------
-
 void QtKineticStepper::changeSpeedForGearChange(void) {
 
     this->stepsPerSecond=round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
@@ -363,12 +234,7 @@ void QtKineticStepper::changeSpeedForGearChange(void) {
         this->stepsPerSecond = this->speedMax;
     }
     this->speedMax=stepsPerSecond;
-    if (g_AllData->getStepperDriverType() == 0) {
-        CPhidgetStepper_setVelocityLimit((CPhidgetStepperHandle)SH,0,this->speedMax);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        this->sendCommandToAMIS("v", this->speedMax);
-    }
+    this->sendCommandToAMIS("v", this->speedMax);
     // 360°/sidereal day in seconds*gear ratios*microsteps/steps
 }
 

@@ -1593,7 +1593,7 @@
          </layout>
         </item>
         <item row="3" column="1">
-         <widget class="QDoubleSpinBox" name="doubleSpinBox">
+         <widget class="QDoubleSpinBox" name="sbGuidingRate">
           <property name="enabled">
            <bool>true</bool>
           </property>
@@ -1966,9 +1966,9 @@
       <property name="geometry">
        <rect>
         <x>410</x>
-        <y>290</y>
+        <y>230</y>
         <width>361</width>
-        <height>131</height>
+        <height>191</height>
        </rect>
       </property>
       <property name="title">
@@ -2009,7 +2009,7 @@
          <x>0</x>
          <y>27</y>
          <width>361</width>
-         <height>101</height>
+         <height>151</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -2151,6 +2151,38 @@
             <string>Stop ST 4</string>
            </property>
           </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>110</y>
+          <width>274</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_29">
+         <item>
+          <widget class="QLabel" name="lRAST4">
+           <property name="text">
+            <string>RA [ms]:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdRAST4Lms"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="lDEST4">
+           <property name="text">
+            <string>Decl [ms]:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLCDNumber" name="lcdDEST4Lms"/>
          </item>
         </layout>
        </widget>
@@ -7797,303 +7829,14 @@ data</string>
         </property>
        </widget>
       </widget>
-      <widget class="QWidget" name="tabPhidgets">
-       <attribute name="title">
-        <string>Phidget 1067</string>
-       </attribute>
-       <widget class="QFrame" name="frameKinetics">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>0</y>
-          <width>611</width>
-          <height>201</height>
-         </rect>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <widget class="QGroupBox" name="gbRAKin">
-         <property name="geometry">
-          <rect>
-           <x>5</x>
-           <y>6</y>
-           <width>191</width>
-           <height>111</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>RA Drive</string>
-         </property>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>9</x>
-            <y>33</y>
-            <width>173</width>
-            <height>68</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_17">
-           <item row="0" column="0">
-            <widget class="QLabel" name="labelContr3">
-             <property name="minimumSize">
-              <size>
-               <width>85</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>85</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>A [mstp/s²]:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="sbAMaxRA">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="minimum">
-              <number>100</number>
-             </property>
-             <property name="maximum">
-              <number>10000</number>
-             </property>
-             <property name="singleStep">
-              <number>50</number>
-             </property>
-             <property name="value">
-              <number>5000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="labelContr4">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Current [A]:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="sbCurrMaxRA">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="minimum">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>4.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.500000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QGroupBox" name="gbDeclKin">
-         <property name="geometry">
-          <rect>
-           <x>200</x>
-           <y>6</y>
-           <width>191</width>
-           <height>110</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>Declination Drive</string>
-         </property>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>9</x>
-            <y>34</y>
-            <width>173</width>
-            <height>68</height>
-           </rect>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_18">
-           <item row="0" column="0">
-            <widget class="QLabel" name="labelContr3_2">
-             <property name="minimumSize">
-              <size>
-               <width>85</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>85</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>A [mstp/s²]:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="sbAMaxDecl">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="minimum">
-              <number>100</number>
-             </property>
-             <property name="maximum">
-              <number>10000</number>
-             </property>
-             <property name="singleStep">
-              <number>50</number>
-             </property>
-             <property name="value">
-              <number>5000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="labelContr4_2">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>80</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Current [A]:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="sbCurrMaxDecl">
-             <property name="minimumSize">
-              <size>
-               <width>80</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="decimals">
-              <number>1</number>
-             </property>
-             <property name="minimum">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>4.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.500000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-        <widget class="QFrame" name="frame_2">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>120</y>
-           <width>381</width>
-           <height>71</height>
-          </rect>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <widget class="QWidget" name="layoutWidget">
-          <property name="geometry">
-           <rect>
-            <x>6</x>
-            <y>7</y>
-            <width>135</width>
-            <height>25</height>
-           </rect>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_34">
-           <item>
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Microsteps:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLCDNumber" name="lcdMicrosteps">
-             <property name="digitCount">
-              <number>3</number>
-             </property>
-             <property name="segmentStyle">
-              <enum>QLCDNumber::Filled</enum>
-             </property>
-             <property name="value" stdset="0">
-              <double>16.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </widget>
-       </widget>
-      </widget>
      </widget>
      <widget class="QGroupBox" name="gbGeneralSettings">
       <property name="geometry">
        <rect>
         <x>581</x>
-        <y>230</y>
+        <y>20</y>
         <width>191</width>
-        <height>281</height>
+        <height>221</height>
        </rect>
       </property>
       <property name="title">
@@ -8215,87 +7958,6 @@ data</string>
          </item>
         </layout>
        </widget>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="gbSelectDriver">
-      <property name="geometry">
-       <rect>
-        <x>560</x>
-        <y>10</y>
-        <width>201</width>
-        <height>131</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Active Driver:</string>
-      </property>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>34</y>
-         <width>81</width>
-         <height>71</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_13">
-        <item>
-         <widget class="QRadioButton" name="rbPhidget">
-          <property name="text">
-           <string>Phidget</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="rbAMIS">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>AMIS</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QLabel" name="lWarningDriveChange">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>70</y>
-         <width>71</width>
-         <height>51</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>9</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Changes
-effective
-after reset</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pbStoreDriver">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>30</y>
-         <width>81</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Store</string>
-       </property>
       </widget>
      </widget>
     </widget>

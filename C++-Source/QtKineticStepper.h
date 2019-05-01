@@ -54,7 +54,7 @@ public:
     void travelForNSteps(long,short,int,bool); // tell the drive to travel for steps, direction (+/-1),
         // a multiple of sidereal speed and a flag that indicates whether the slew was triggered by the handbox.
         // handbox slews terminate either after 180 or 360 degrees ...
-    int retrieveKineticStepperData (int); // retrieve basic controller data such as identifiers of the controller
+    void travelForNSteps(short,float); // tell the drive to travel a constant number of steps in direction (+/-1) and a fraction of sidereal speed - used in ST4 guiding
     double getKineticsFromController(short); //get parameters from controller such as maximum current, currently set acceleration, currently set velocity and so on ...
     void setStepperParams(double, short); // set acceleration, speed and current and convey it to the controller
     void shutDownDrive(void); // set motor to "unengaged state" - no more current is applied

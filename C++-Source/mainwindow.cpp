@@ -81,25 +81,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbEpoch->setValue(currentYear->toInt());
     delete currentYear;
 
-    if (this->determineDriverType() == true) {
-        qDebug() << "Found a driver";
-    } else {
-        qDebug() << "Found no driver";
-    }
-    qDebug() << "DriverType is" << this->whatDriver;
-    g_AllData->setStepperDriverType(this->whatDriver); // important - this stores the driver board type globally
-    switch (this->whatDriver) {
-        case phidget: ui->rbPhidget->setChecked(true);
-            ui->gbAMISRA->setEnabled(false);
-            ui->gbAMISDecl->setEnabled(false);
-            ui->tmstepsAMIS->setEnabled(false);
-            break;
-        case amisM4: ui->rbAMIS->setChecked(true);
-            ui->gbRAKin->setEnabled(false);
-            ui->gbDeclKin->setEnabled(false);
-            break;
-    }
-    this->initiateStepperDrivers(this->whatDriver); // initialise the driver boards
+    this->initiateStepperDrivers(); // initialise the driver boards
     qDebug() << "Steppers initialized";
 
         // set a bunch of flags and factors
@@ -118,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->rbCorrSpeed->setChecked(true); // activate radiobutton for correction speed ... this is sidereal speed
     this->guidingState.guideStarSelected=false;
     this->guidingState.guidingIsOn=false;
-    qDebug() << "1";
+
     g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
     this->guidingState.calibrationIsRunning=false;
     this->guidingState.systemIsCalibrated=false;
@@ -141,7 +123,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->dslrStates.ditherTravelInMSRA = 0;
     this->dslrStates.ditherTravelInMSDecl = 0;
     ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
-    qDebug() << "2";
 //    this->setTrackingRate();
     ui->sbGoToSpeed->setValue(g_AllData->getHandBoxSpeeds(0));
     ui->sbMoveSpeed->setValue(g_AllData->getHandBoxSpeeds(1));
@@ -164,20 +145,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->lcdVMaxRA->display(round(val));
     val=(this->StepperDriveDecl->getKineticsFromController(3));
     ui->lcdVMaxDecl->display(round(val));
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        ui->sbAMaxRA->setValue((this->StepperDriveRA->getKineticsFromController(2)));
-        ui->sbCurrMaxRA->setValue((this->StepperDriveRA->getKineticsFromController(1)));
-        ui->sbAMaxDecl->setValue((this->StepperDriveDecl->getKineticsFromController(2)));
-        ui->sbCurrMaxDecl->setValue((this->StepperDriveDecl->getKineticsFromController(1)));
-        ui->driverSelectWidget->setCurrentWidget(ui->tabPhidgets);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        ui->sbAMaxRA_AMIS->setValue((this->StepperDriveRA->getKineticsFromController(2)));
-        ui->sbCurrMaxRA_AMIS->setValue((this->StepperDriveRA->getKineticsFromController(1)));
-        ui->sbAMaxDecl_AMIS->setValue((this->StepperDriveDecl->getKineticsFromController(2)));
-        ui->sbCurrMaxDecl_AMIS->setValue((this->StepperDriveDecl->getKineticsFromController(1)));
-        ui->driverSelectWidget->setCurrentWidget(ui->tabAMIS);
-    }
+    ui->sbAMaxRA_AMIS->setValue((this->StepperDriveRA->getKineticsFromController(2)));
+    ui->sbCurrMaxRA_AMIS->setValue((this->StepperDriveRA->getKineticsFromController(1)));
+    ui->sbAMaxDecl_AMIS->setValue((this->StepperDriveDecl->getKineticsFromController(2)));
+    ui->sbCurrMaxDecl_AMIS->setValue((this->StepperDriveDecl->getKineticsFromController(1)));
+    ui->driverSelectWidget->setCurrentWidget(ui->tabAMIS);
     textEntry = new QString();
     ui->leRAPlanetary->setText(textEntry->number(g_AllData->getGearData(0)));
     textEntry->clear();
@@ -194,8 +166,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leDeclWorm->setText(textEntry->number(g_AllData->getGearData(6 )));
     textEntry->clear();
     ui->leDeclStepSize->setText(textEntry->number(g_AllData->getGearData(7 )));
-    textEntry->clear();
-    ui->lcdMicrosteps->display(round(g_AllData->getMicroSteppingRatio((short)this->raState)));
     textEntry->clear();
         // now setting all the parameters in the "Cam"-tab
     ui->lePixelSizeX->setText(textEntry->number(g_AllData->getCameraPixelSize(0)));
@@ -415,6 +385,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4State.eActive = false; // same as above for east
     this->st4State.sActive = false; // same as above for south
     this->st4State.wActive = false; // same as above for west
+    this->st4State.raCorrTime = new QElapsedTimer();
+    this->st4State.deCorrTime = new QElapsedTimer();
         // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
     ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
@@ -458,10 +430,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
-    connect(ui->sbAMaxRA, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
-    connect(ui->sbCurrMaxRA, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
-    connect(ui->sbAMaxDecl, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
-    connect(ui->sbCurrMaxDecl, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
     connect(ui->sbAMaxRA_AMIS, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
     connect(ui->sbCurrMaxRA_AMIS, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
     connect(ui->sbAMaxDecl_AMIS, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
@@ -551,7 +519,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbStorePark, SIGNAL(clicked()), this, SLOT(determineParkingPosition())); // store the actual position as parking position
     connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
     connect(ui->pbSyncToPark, SIGNAL(clicked()), this, SLOT(syncParkPosition())); // if the scope is parked, sync it to the known parking position
-    connect(ui->pbStoreDriver, SIGNAL(clicked()), this, SLOT(writeDriverSelectionFile())); // write the file that determines which driver is loaded
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries()),Qt::QueuedConnection); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
@@ -576,137 +543,29 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
 }
 
 //------------------------------------------------------------------
-// find out about the drivers used; this is stored in a file ".TSC_DriverType.tsl".
-// if the file does not exist, phidget 1067 drivers are assumed and the file is
-// generated. setting the driver type takes place in the "Settings" tab ...
-bool MainWindow::determineDriverType(void) {
-    bool driverTypeFound = false;
-
-    std::ifstream infile(".TSC_DriverType.tsl");
-    std::string line;   // define a line that is read
-    std::getline(infile, line);     // read that line
-    if (line.length() > 0) {
-        if (line.compare("phidget") == 0) {
-            this->whatDriver=phidget;
-            driverTypeFound = true;
-        }
-        if (line.compare("amisM4") == 0) {
-            this->whatDriver=amisM4;
-            driverTypeFound = true;
-        }
-    } else {
-       this->whatDriver=phidget;
-        QFile *defaultDriverFile = new QFile(".TSC_DriverType.tsl");
-        defaultDriverFile->open((QIODevice::ReadWrite | QIODevice::Text));
-        defaultDriverFile->write("phidget\n",8);
-        defaultDriverFile->close();
-    }
-    infile.close();
-    return driverTypeFound;
-}
-
-
-//------------------------------------------------------------------
-// callback for setting up the driver selection file; it just writes
-// a file ".TSC_DriverType.tsl" with the strings "phidget" or "amisM4".
-void MainWindow::writeDriverSelectionFile(void) {
-    if (ui->rbAMIS->isChecked() == true) {
-        QFile *defaultDriverFile = new QFile(".TSC_DriverType.tsl");
-        defaultDriverFile->open((QIODevice::ReadWrite | QIODevice::Text));
-        defaultDriverFile->write("amisM4\n",7);
-        defaultDriverFile->close();
-    }
-    if (ui->rbPhidget->isChecked() == true) {
-        QFile *defaultDriverFile = new QFile(".TSC_DriverType.tsl");
-        defaultDriverFile->open((QIODevice::ReadWrite | QIODevice::Text));
-        defaultDriverFile->write("phidget\n",8);
-        defaultDriverFile->close();
-    }
-}
-
-//------------------------------------------------------------------
 // initialisation of the stepper driver hardware
-short MainWindow::initiateStepperDrivers(stepperDriverTypes whatDrvr) {
+short MainWindow::initiateStepperDrivers(void) {
     double draccRA, draccDecl, drcurrRA, drcurrDecl; // local values on drive acceleration and so on...
-    int serNo; // serial number of the phidgets boards
 
     draccRA = g_AllData->getDriveParams(0,1);
     draccDecl = g_AllData->getDriveParams(1,1);
     drcurrRA = g_AllData->getDriveParams(0,2);
     drcurrDecl = g_AllData->getDriveParams(1,2); // retrieving acceleration and maximum current for the phidget boards
-
-    switch (whatDrvr) {
-    case phidget:
-        // start searching for the right boards for the drives ...
-        QtContinuousStepper *dummyDrive; // a helper to determine the right order of phidget drives
-        dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
-        serNo = dummyDrive->retrieveKineticStepperData(1);
-        delete dummyDrive;
-        if ((g_AllData->getDriveID(0) != serNo) && (g_AllData->getDriveID(1) != serNo)) { //no driver boards are assigned to drives
-            qDebug() << "New phidgets were installed";
-            StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
-            serNo = StepperDriveRA->retrieveKineticStepperData(1);     // get the serial number of the phidget board
-            g_AllData->setDriveData(0,serNo); // remember the ID of the RA-drive in the global class
-            StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
-            serNo = StepperDriveDecl->retrieveKineticStepperData(1); // get the serial number of the phidget board
-            g_AllData->setDriveData(1,serNo); // remember the ID of the Decl-drive in the global class
-        } else { // IDs are written in the "TSC_Preferences.tsc" file
-            dummyDrive = new QtContinuousStepper(); // call the first phidget interface to the board of the stepper
-            serNo = dummyDrive->retrieveKineticStepperData(1);
-            if (serNo != g_AllData->getDriveID(0)) { // dummy drive is NOT the designatedRA Drive
-                qDebug() << "Drive ID 0 is not the RA drive";
-                StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
-                serNo =StepperDriveRA->retrieveKineticStepperData(1);
-                g_AllData->setDriveData(0,serNo);
-                delete dummyDrive; // set the other board to RA
-                StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
-                serNo = StepperDriveDecl->retrieveKineticStepperData(1);
-                g_AllData->setDriveData(1,serNo);
-            } else {
-                qDebug () << "Drive ID 0 is RA";
-                StepperDriveDecl = new QtKineticStepper(); // call the phidget interface to the board of the stepper
-                serNo = StepperDriveDecl->retrieveKineticStepperData(1);
-                g_AllData->setDriveData(1,serNo);
-                delete dummyDrive; // set the other board to Decl
-                StepperDriveRA = new QtContinuousStepper(); // call the phidget interface to the board of the stepper
-                serNo =StepperDriveRA->retrieveKineticStepperData(1);
-                g_AllData->setDriveData(0,serNo);
-            }
-            g_AllData->storeGlobalData();
-        }
-        this->StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0 )*g_AllData->getGearData(1 )*
-                                                        g_AllData->getGearData(2 )/g_AllData->getGearData(3 ),
-                                                        g_AllData->getMicroSteppingRatio(this->raState));
-        this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed(draccRA,drcurrRA); // setting initial parameters for the ra drive
-        this->StepperDriveDecl->setGearRatioAndMicrosteps(g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*
-                                                          g_AllData->getGearData(6 )/g_AllData->getGearData(7 ),
-                                                          g_AllData->getMicroSteppingRatio(this->deState));
-        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(draccDecl,drcurrDecl); // setting initial parameters for the declination drive
-        break; // initialisation routine for the phidget 1067 boards
-    case amisM4:
-        qDebug() << "--- Setting up the AMIS-Drivers ---------------------------";
-        g_AllData->setDriveData(0,0);
-        g_AllData->setDriveData(1,0);
-        amisInterface = new usbCommunications(0x16c0);
-        StepperDriveRA = new QtContinuousStepper();
-        StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
-        this->StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0 )*g_AllData->getGearData(1 )*
-                                                        g_AllData->getGearData(2 )/g_AllData->getGearData(3 ),
-                                                        g_AllData->getMicroSteppingRatio(0));
-        qDebug() << "Microstep ratio in startup RA: " << g_AllData->getMicroSteppingRatio(0);
-
-
-        this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed(draccRA,drcurrRA); // setting initial parameters for the ra drive
-        StepperDriveDecl = new QtKineticStepper();
-        StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
-        this->StepperDriveDecl->setGearRatioAndMicrosteps(g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*
-                                                          g_AllData->getGearData(6 )/g_AllData->getGearData(7 ),
-                                                          g_AllData->getMicroSteppingRatio(0));
-        qDebug() << "Microstep ratio in startup De: " << g_AllData->getMicroSteppingRatio(0);
-
-        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(draccDecl,drcurrDecl); // setting initial parameters for the declination drive
-        break;
-    }
+    g_AllData->setDriveData(0,0);
+    g_AllData->setDriveData(1,0);
+    amisInterface = new usbCommunications(0x16c0);
+    StepperDriveRA = new QtContinuousStepper();
+    StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->StepperDriveRA->setGearRatioAndMicrosteps(g_AllData->getGearData(0 )*g_AllData->getGearData(1 )*
+                                                    g_AllData->getGearData(2 )/g_AllData->getGearData(3 ),
+                                                    g_AllData->getMicroSteppingRatio(0));
+    this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed(draccRA,drcurrRA); // setting initial parameters for the ra drive
+    StepperDriveDecl = new QtKineticStepper();
+    StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->StepperDriveDecl->setGearRatioAndMicrosteps(g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*
+                                                      g_AllData->getGearData(6 )/g_AllData->getGearData(7 ),
+                                                      g_AllData->getMicroSteppingRatio(0));
+    this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed(draccDecl,drcurrDecl); // setting initial parameters for the declination drive
     return 0;
 }
 //------------------------------------------------------------------
@@ -754,21 +613,13 @@ MainWindow::~MainWindow() {
 bool MainWindow::isDriveActive(bool isRA) {
     bool state=false;
 
-    if (this->whatDriver == amisM4) {
-        amisInterface->sendCommand("f0", isRA);
-        if (amisInterface->getReply(isRA).toLong() == 0) { // checking whether the drives are in motion
-            state = false;
-        } else {
-            state = true;
-        }
-        return state;
+    amisInterface->sendCommand("f0", isRA);
+    if (amisInterface->getReply(isRA).toLong() == 0) { // checking whether the drives are in motion
+        state = false;
     } else {
-        if (isRA == true) {
-            return (this->StepperDriveRA->getStopped());
-        } else {
-            return (this->StepperDriveDecl->getStopped());
-        }
+        state = true;
     }
+    return state;
 }
 
 //------------------------------------------------------------------
@@ -1274,13 +1125,9 @@ void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
         this->stopRATracking();
         this->isInParking = false;
     }
-
     this->deState = guideTrack;
-    if (this->whatDriver == 1) {
-        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value()
-                                                                    ,((double)(round(ui->sbCurrMaxDecl_AMIS->value()))));
-    }
-
+    this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value(),
+                                                                ((double)(round(ui->sbCurrMaxDecl_AMIS->value()))));
 }
 
 //------------------------------------------------------------------
@@ -1356,10 +1203,10 @@ void MainWindow::shutDownProgram() {
     delete lx200SerialData;
     delete g_AllData;
     delete timer;
-    if (this->whatDriver == amisM4) {
-        amisInterface->closeUSBConnection();
-        delete amisInterface;
-    }
+    delete st4State.raCorrTime;
+    delete st4State.deCorrTime;
+    amisInterface->closeUSBConnection();
+    delete amisInterface;
     exit(0);
 }
 
@@ -1444,12 +1291,7 @@ void MainWindow::setMaxStepperAccRA(void) {
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        val = (double)(ui->sbAMaxRA->value());
-    }
-    if (g_AllData->getStepperDriverType() == 1 ) {
-        val = (double)(ui->sbAMaxRA_AMIS->value());
-    }
+    val = (double)(ui->sbAMaxRA_AMIS->value());
     this->StepperDriveRA->setStepperParams(val, 1);
     if (trackingWasOn == true) {
         this->startRATracking();
@@ -1462,12 +1304,7 @@ void MainWindow::setMaxStepperAccRA(void) {
 void MainWindow::setMaxStepperAccDecl(void) {
     double val = 2500;
 
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        val = (double)(ui->sbAMaxDecl->value());
-    }
-    if (g_AllData->getStepperDriverType() == 1 ) {
-        val = (double)(ui->sbAMaxDecl_AMIS->value());
-    }
+    val = (double)(ui->sbAMaxDecl_AMIS->value());
     this->StepperDriveDecl->setStepperParams(val, 1);
     g_AllData->setDriveParams(1,1,val);
 }
@@ -1482,12 +1319,7 @@ void MainWindow::setMaxStepperCurrentRA(void) {
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
     }
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        val = ui->sbCurrMaxRA->value();
-    }
-    if (g_AllData->getStepperDriverType() == 1 ) {
-        val = ui->sbCurrMaxRA_AMIS->value();
-    }
+    val = ui->sbCurrMaxRA_AMIS->value();
     this->StepperDriveRA->setStepperParams(val, 3);
     if (trackingWasOn == true) {
         this->startRATracking();
@@ -1499,12 +1331,7 @@ void MainWindow::setMaxStepperCurrentRA(void) {
 void MainWindow::setMaxStepperCurrentDecl(void) {
     double val=0.1;
 
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        val = ui->sbCurrMaxDecl->value();
-    }
-    if (g_AllData->getStepperDriverType() == 1 ) {
-        val = ui->sbCurrMaxDecl_AMIS->value();
-    }
+    val = ui->sbCurrMaxDecl_AMIS->value();
     this->StepperDriveDecl->setStepperParams(val, 3);
     g_AllData->setDriveParams(1,2,val);
 }
@@ -3492,10 +3319,8 @@ void MainWindow::declinationMoveHandboxUp(void) {
         this->deState=guideTrack;
         this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
         this->StepperDriveDecl->stopDrive();
-        if (this->whatDriver == 1) {
-            this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value()
-                                                                        ,((double)(ui->sbCurrMaxDecl_AMIS->value())));
-        }
+        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value(),
+                                                                    ((double)(ui->sbCurrMaxDecl_AMIS->value())));
         ui->pbDeclDown->setEnabled(1);
         this->setControlsForDeclTravel(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -3531,10 +3356,8 @@ void MainWindow::declinationMoveHandboxDown(void) {
         this->deState=guideTrack;
         this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
         this->StepperDriveDecl->stopDrive();
-        if (this->whatDriver == 1) {
-            this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value()
-                                                                        ,((double)(ui->sbCurrMaxDecl_AMIS->value())));
-        }
+        this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value(),
+                                                                   ((double)(ui->sbCurrMaxDecl_AMIS->value())));
         ui->pbDeclUp->setEnabled(1);
         this->setControlsForDeclTravel(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
@@ -3582,10 +3405,8 @@ void MainWindow::RAMoveHandboxFwd(void) {
         this->StepperDriveRA->stopDrive();
         this->raState=guideTrack;
         this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->raState));
-        if (this->whatDriver == 1) {
-            this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxRA_AMIS->value()
-                                                                        ,((double)(ui->sbCurrMaxRA_AMIS->value())));
-        }
+        this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxRA_AMIS->value(),
+                                                                     ((double)(ui->sbCurrMaxRA_AMIS->value())));
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
         }
@@ -3639,10 +3460,8 @@ void MainWindow::RAMoveHandboxBwd(void) {
         this->StepperDriveRA->stopDrive();
         this->raState=guideTrack;
         this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->raState));
-        if (this->whatDriver == 1) {
-            this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxRA_AMIS->value()
-                                                                        ,((double)(ui->sbCurrMaxRA_AMIS->value())));
-        }
+        this->StepperDriveRA->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxRA_AMIS->value(),
+                                                                     ((double)(ui->sbCurrMaxRA_AMIS->value())));
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
         }
@@ -3695,12 +3514,8 @@ void MainWindow::startST4Guiding(void) {
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();
     } // if tracking is not active - start it ...
-
-    if (whatDriver == amisM4) {
-        this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
-        this->deState = guideTrack; // set the declination drive to guiding speed
-    }
-
+    this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->deState = guideTrack; // set the declination drive to guiding speed
     this->tempUpdateTimer->stop(); // no temperature updates during ST4 guiding - SPI channel 0 is only available for ST4
     ui->lcdTemp->display("-");
     this->guidingState.st4IsActive = true;
@@ -3733,7 +3548,9 @@ void MainWindow::startST4Guiding(void) {
     this->commSPIParams.guiData->append("g");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
     this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
-    this->st4Timer->start(20); // if ST4 is active, the interface is read every 50 ms
+    this->st4Timer->start(20); // if ST4 is active, the interface is read every 20 ms
+    ui->lcdDEST4Lms->display(0);
+    ui->lcdRAST4Lms->display(0);
 }
 
 //--------------------------------------------------------------
@@ -3769,6 +3586,8 @@ void MainWindow::stopST4Guiding(void) {
     ui->cbST4South->setChecked(false);
     ui->cbST4West->setChecked(false);
     this->tempUpdateTimer->start(30000); // start the timer for requesting temperature again
+    ui->lcdDEST4Lms->display(0);
+    ui->lcdRAST4Lms->display(0);
 }
 
 //--------------------------------------------------------------
@@ -3777,6 +3596,7 @@ void MainWindow::stopST4Guiding(void) {
 void MainWindow::handleST4State(void) {
     char stateCharFromSPI;
     bool nUp, eUp, sUp, wUp;
+    int raTime, deTime;
 
     if ((this->guidingState.st4IsActive == true)) { // poll data if ST4 is active and not correcting
         this->commSPIParams.guiData->clear();
@@ -3812,7 +3632,55 @@ void MainWindow::handleST4State(void) {
         ui->cbST4South->setChecked(sUp);
         ui->cbST4West->setChecked(wUp);
 
-        qDebug() << "ST4 - states: " << nUp << "/" << eUp << "/" << sUp << "/" << wUp;
+        if (this->st4State.nActive != nUp) {
+            if (nUp == true) {
+                this->StepperDriveDecl->travelForNSteps(+1,(float)ui->sbGuidingRate->value());
+                this->st4State.deCorrTime->start();
+            } else {
+                this->StepperDriveDecl->stopDrive();
+                this->StepperDriveDecl->resetSteppersAfterStop();
+                deTime = this->st4State.deCorrTime->elapsed();
+                ui->lcdDEST4Lms->display(deTime);
+            }
+        }
+
+        if (this->st4State.sActive != sUp) {
+            if (sUp == true) {
+                this->StepperDriveDecl->travelForNSteps(-1,(float)ui->sbGuidingRate->value());
+                this->st4State.deCorrTime->start();
+            } else {
+                this->StepperDriveDecl->stopDrive();
+                this->StepperDriveDecl->resetSteppersAfterStop();
+                deTime = this->st4State.deCorrTime->elapsed();
+                ui->lcdDEST4Lms->display(deTime);
+            }
+        }
+
+        if (this->st4State.wActive != wUp) {
+            if (wUp == true) {
+                this->StepperDriveRA->travelForNSteps(+1,(float)(1+ui->sbGuidingRate->value()));
+                this->st4State.raCorrTime->start();
+            } else {
+                this->StepperDriveRA->stopDrive();
+                this->StepperDriveRA->resetSteppersAfterStop();
+                this->startRATracking();
+                raTime = this->st4State.raCorrTime->elapsed();
+                ui->lcdRAST4Lms->display(raTime);
+            }
+        }
+
+        if (this->st4State.eActive != eUp) {
+            if (eUp == true) {
+                this->StepperDriveRA->travelForNSteps(+1,(float)(1-ui->sbGuidingRate->value()));
+                this->st4State.raCorrTime->start();
+            } else {
+                this->StepperDriveRA->stopDrive();
+                this->StepperDriveRA->resetSteppersAfterStop();
+                this->startRATracking();
+                raTime = this->st4State.raCorrTime->elapsed();
+                ui->lcdRAST4Lms->display(raTime);
+            }
+        }
 
         this->st4State.nActive = nUp;  // now update the ST4 states
         this->st4State.eActive = eUp;
@@ -4098,38 +3966,23 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
 }
 //---------------------------------------------------------------------
 void MainWindow::setControlsForRATracking(bool isEnabled) {
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        ui->sbAMaxRA->setEnabled(isEnabled);
-        ui->sbCurrMaxRA->setEnabled(isEnabled);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        ui->sbAMaxRA_AMIS->setEnabled(isEnabled);
-        ui->sbCurrMaxRA_AMIS->setEnabled(isEnabled);
-    }
+    ui->sbAMaxRA_AMIS->setEnabled(isEnabled);
+    ui->sbCurrMaxRA_AMIS->setEnabled(isEnabled);
     ui->leRAPlanetary->setEnabled(isEnabled);
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);
     ui->leRAStepsize->setEnabled(isEnabled);
-    ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
 }
 
 //---------------------------------------------------------------------
 void MainWindow::setControlsForRATravel(bool isEnabled) {
-
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        ui->sbAMaxRA->setEnabled(isEnabled);
-        ui->sbCurrMaxRA->setEnabled(isEnabled);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        ui->sbAMaxRA_AMIS->setEnabled(isEnabled);
-        ui->sbCurrMaxRA_AMIS->setEnabled(isEnabled);
-    }
+    ui->sbAMaxRA_AMIS->setEnabled(isEnabled);
+    ui->sbCurrMaxRA_AMIS->setEnabled(isEnabled);
     ui->leRAPlanetary->setEnabled(isEnabled);
     ui->leRAGear->setEnabled(isEnabled);
     ui->leRAWorm->setEnabled(isEnabled);
     ui->leRAStepsize->setEnabled(isEnabled);
-    ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
     ui->listWidgetCatalog->setEnabled(isEnabled);
     ui->listWidgetObject->setEnabled(isEnabled);
@@ -4140,14 +3993,8 @@ void MainWindow::setControlsForRATravel(bool isEnabled) {
 
 //---------------------------------------------------------------------
 void MainWindow::setControlsForDeclTravel(bool isEnabled) {
-    if (g_AllData->getStepperDriverType() == 0 ) {
-        ui->sbAMaxDecl->setEnabled(isEnabled);
-        ui->sbCurrMaxDecl->setEnabled(isEnabled);
-    }
-    if (g_AllData->getStepperDriverType() == 1) {
-        ui->sbAMaxDecl_AMIS->setEnabled(isEnabled);
-        ui->sbCurrMaxDecl_AMIS->setEnabled(isEnabled);
-    }
+    ui->sbAMaxDecl_AMIS->setEnabled(isEnabled);
+    ui->sbCurrMaxDecl_AMIS->setEnabled(isEnabled);
     ui->rbCorrSpeed->setEnabled(isEnabled);
     ui->rbMoveSpeed->setEnabled(isEnabled);
     ui->sbMoveSpeed->setEnabled(isEnabled);
@@ -4155,7 +4002,6 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
     ui->leDeclGear->setEnabled(isEnabled);
     ui->leDeclWorm->setEnabled(isEnabled);
     ui->leDeclStepSize->setEnabled(isEnabled);
-    ui->lcdMicrosteps->setEnabled(isEnabled);
     ui->listWidgetCatalog->setEnabled(isEnabled);
     ui->listWidgetObject->setEnabled(isEnabled);
     ui->pbSync->setEnabled(isEnabled);
@@ -4376,13 +4222,9 @@ void MainWindow::storeGearData(void) {
     leEntry->append(ui->leDeclStepSize->text());
     leEntry->replace(",",".");
     ssdec=leEntry->toFloat();
-    if (this->whatDriver == phidget) {
-        tmstps = mmstps = smstps =ui->lcdMicrosteps->value();
-    } else {
-        tmstps = getMStepRatios(0);
-        mmstps = getMStepRatios(1);
-        smstps = getMStepRatios(2);
-    }
+    tmstps = getMStepRatios(0);
+    mmstps = getMStepRatios(1);
+    smstps = getMStepRatios(2);
     g_AllData->setGearData(pgra,ogra,wormra,ssra,pgdec,ogdec,wormdec,ssdec,tmstps,mmstps,smstps);
     // store all gear data in global struct
     g_AllData->storeGlobalData();

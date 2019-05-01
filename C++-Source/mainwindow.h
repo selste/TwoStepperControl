@@ -178,13 +178,11 @@ private slots: // callbacks for (mainly) GUI widgets
     void determineParkingPosition(void);
     void gotoParkPosition(void);
     void syncParkPosition(void);
-    void writeDriverSelectionFile(void);
     void handleSerialLXCB(void);
     void mountIsGerman(void);
     void mountIsEast(void);
 
 private:
-    enum stepperDriverTypes {phidget, amisM4};
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
         bool RATrackingIsOn;  // true when the telescope is in tracking mode
         bool RADriveIsMoving; // true when the RA drive moves but does not track
@@ -250,6 +248,8 @@ private:
     };
 
     struct ST4StateStruct {
+        QElapsedTimer *raCorrTime;
+        QElapsedTimer *deCorrTime;
         bool nActive;
         bool eActive;
         bool sActive;
@@ -296,8 +296,7 @@ private:
     QByteArray *lx200SerialData;
     SPI_Drive *spiDrOnChan1;
     SPI_Drive *spiDrOnChan0;
-    stepperDriverTypes whatDriver;
-    short initiateStepperDrivers(stepperDriverTypes);
+    short initiateStepperDrivers(void);
     void terminateGoTo(bool);
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
@@ -389,7 +388,6 @@ private:
     void mvAux2BwdTinyHB(void);
     void readTCPHandboxData(void);
     void sendDataToTCPHandbox(QString);
-    bool determineDriverType(void);
     QString* generateCoordinateString(float, bool);
 
 signals:

@@ -46,13 +46,13 @@ public:
     ~QtContinuousStepper(void);
     void startTracking(void); // start continuous motion to compensate for earth's rotation
     void travelForNSteps(long,short,int,bool);
+    void travelForNSteps(short,float);
     void setRADirection(short); // switch "RADirection"
     void setGearRatioAndMicrosteps(double, double); // the product of the gears divided by the step size and the number of microsteps is stored here
     void changeMicroSteps(double); // switches the microstepping ratio for variable drivers
     void setInitialParamsAndComputeBaseSpeed(double,double); // after opening
         // a multiple of sidereal speed and a flag that indicates whether the slew was triggered by the handbox.
         // handbox slews terminate either after 180 or 360 degrees ...
-    int retrieveKineticStepperData (int); // retrieve basic controller data such as identifiers of the controller
     double getKineticsFromController(short); //get parameters from controller such as maximum current, currently set acceleration, currently set velocity and so on ...
     void setStepperParams(double, short); // set acceleration, speed and current and convey it to the controller
     void shutDownDrive(void); // set motor to "unengaged state" - no more current is applied
