@@ -103,6 +103,10 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
     }
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
+    if (this->incomingCommand->length() > 0) {
+        qDebug() << "Received: " << this->incomingCommand->toLatin1();
+    }
+
 
     subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
     if (subCmdList->isEmpty()==false) {
@@ -221,10 +225,10 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
-                assembledString->append(QString::number(0));
-                assembledString->append("#");
+             //   assembledString->append(QString::number(0));
+             //   assembledString->append("#");
                 emit RS232slew();
-                this->sendCommand(2);
+             //   this->sendCommand(2);
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.syncCommand, Qt::CaseSensitive)==0) {
@@ -408,6 +412,7 @@ void lx200_communication::sendCommand(short what) {
         emit this->logDeclSent();
         emit this->clientDeclSent(msgDeclString);
     } else {
+        qDebug() << "Response: " << assembledString->toLatin1();
         emit this->logCommandSent();
         emit this->clientCommandSent(assembledString);
     }
