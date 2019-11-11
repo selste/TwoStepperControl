@@ -2918,10 +2918,10 @@ void MainWindow::readLX200Port(void) {
 
 void MainWindow::sendPolarAlignmentCommand(void) {
     if (this->LX200SerialPortIsUp == true) {
-        this->lx200SerialPort->write("P#");
+        this->lx200SerialPort->write("P");
         this->lx200SerialPort->flush();
     } else {
-        this->LXSocket->write("P#");
+        this->LXSocket->write("P");
     }
 }
 
@@ -3548,7 +3548,7 @@ void MainWindow::startST4Guiding(void) {
     this->commSPIParams.guiData->append("g");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
     this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
-    this->st4Timer->start(20); // if ST4 is active, the interface is read every 20 ms
+    this->st4Timer->start(10); // if ST4 is active, the interface is read every 20 ms
     ui->lcdDEST4Lms->display(0);
     ui->lcdRAST4Lms->display(0);
 }
@@ -3694,19 +3694,19 @@ void MainWindow::declPGPlus(void) {
     long duration;
 
     duration = this->pulseGuideDuration;
-    declinationPulseGuide(duration, 1,true);
+    declinationPulseGuide(duration, 1);
 }
 
 //--------------------------------------------------------------
 void MainWindow::declPGMinusGd(long duration) {
 
-    declinationPulseGuide(duration, -1,false);
+    declinationPulseGuide(duration, -1);
 }
 
 //--------------------------------------------------------------
 void MainWindow::declPGPlusGd(long duration) {
 
-    declinationPulseGuide(duration, 1,false);
+    declinationPulseGuide(duration, 1);
 }
 
 //--------------------------------------------------------------
@@ -3714,13 +3714,11 @@ void MainWindow::declPGMinus(void) {
     long duration;
 
     duration = this->pulseGuideDuration;
-    declinationPulseGuide(duration, -1,true);
+    declinationPulseGuide(duration, -1);
 }
 //--------------------------------------------------------------
-void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, bool isThreaded) { // to be revised
-    long steps;
-    double declSpeed;
-    short ldir;
+void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) { // to be revised
+    QElapsedTimer *deTimer;
 
     this->setControlsForDeclTravel(false);
     ui->pbDeclDown->setEnabled(false);
@@ -3733,32 +3731,18 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction, 
     } // if the decl drive was moving, it is now set to stop
     this->setCorrectionSpeed();
     ui->rbCorrSpeed->setChecked(true); // switch to correction speed
-    declSpeed = g_AllData->getCelestialSpeed()*
-            (g_AllData->getGearData(4 ))*
-            (g_AllData->getGearData(5 ))*
-            (g_AllData->getGearData(6 ))*
-            (g_AllData->getMicroSteppingRatio(0)/(g_AllData->getGearData(7)));
-    if (direction < 0) {
-        ldir = -1;
-    } else {
-        ldir = 1;
-    }
-    steps = declSpeed*(pulseDurationInMS/1000.0);
-    if (steps > 1) { // controller cannot do only one microstep
-        this->mountMotion.DeclDriveDirection=ldir;
-        this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
-        this->mountMotion.DeclDriveIsMoving=true;
-        if (isThreaded == true) {
-            this->StepperDriveDecl->travelForNSteps(steps,this->mountMotion.DeclDriveDirection,this->mountMotion.DeclSpeedFactor,0);
-        } else {
-            if (pulseDurationInMS < 2000) { // don't do corrections > 2 s in guiding
-                QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-                this->StepperDriveDecl->travelForNSteps(steps,this->mountMotion.DeclDriveDirection,
-                    this->mountMotion.DeclSpeedFactor,0);
-                QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-            }
-        }
-    }
+    this->mountMotion.DeclDriveDirection=direction;
+    this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
+    this->mountMotion.DeclDriveIsMoving=true;
+
+    deTimer = new QElapsedTimer();
+    this->StepperDriveDecl->travelForNSteps(direction,(float)ui->sbGuidingRate->value());
+    deTimer->start();
+    while (deTimer->elapsed() < pulseDurationInMS);
+    this->StepperDriveDecl->stopDrive();
+    this->StepperDriveDecl->resetSteppersAfterStop();
+    delete deTimer;
+
     this->mountMotion.DeclDriveIsMoving=false;
     this->setControlsForDeclTravel(true);
     ui->pbDeclDown->setEnabled(true);
@@ -3772,7 +3756,7 @@ void MainWindow::raPGFwd(void) {
     long duration;
 
     duration = this->pulseGuideDuration;
-    raPulseGuide(duration,1,true);
+    raPulseGuide(duration,1);
 }
 
 //---------------------------------------------------------------------
@@ -3780,32 +3764,24 @@ void MainWindow::raPGBwd(void) {
     long duration;
 
     duration = this->pulseGuideDuration;
-    raPulseGuide(duration,-1,true);
+    raPulseGuide(duration,-1);
 }
 
 //---------------------------------------------------------------------
 void MainWindow::raPGFwdGd(long duration) {
 
-    raPulseGuide(duration,1,false);
+    raPulseGuide(duration,1);
 }
 
 //---------------------------------------------------------------------
 void MainWindow::raPGBwdGd(long duration) {
 
-    raPulseGuide(duration,-1,false);
+    raPulseGuide(duration,-1);
 }
 //---------------------------------------------------------------------
-void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isThreaded) { // to be revised
-    long steps;
-    double raSpeed,pgFactor;
+void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) { // to be revised
+    QElapsedTimer *raTimer;
 
-    if (this->mountMotion.RATrackingIsOn) {
-        this->stopRATracking();
-    }
-    if (this->mountMotion.RADriveIsMoving==true){
-        this->mountMotion.RADriveIsMoving=false;
-        this->StepperDriveRA->stopDrive();
-    }
     this->setControlsForRATravel(false);
     ui->pbStartTracking->setEnabled(0);
     ui->pbStopTracking->setEnabled(0);
@@ -3815,45 +3791,38 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction, bool isTh
     ui->pbDeclUp->setEnabled(0);
     this->setCorrectionSpeed();
     ui->rbCorrSpeed->setChecked(true); // switch to correction speed
-    if (direction < 0) {
-        direction = -1;
-         pgFactor=this->mountMotion.RASpeedFactor-1;
-    } else {
-        direction = 1;
-        pgFactor=this->mountMotion.RASpeedFactor+1;
+
+    if (this->mountMotion.RATrackingIsOn) {
+        this->stopRATracking();
     }
-    if (direction == 1) {
-        this->mountMotion.RADriveDirection=direction;
-        raSpeed=g_AllData->getCelestialSpeed()*
-                (g_AllData->getGearData(0 ))*
-                (g_AllData->getGearData(1 ))*
-                (g_AllData->getGearData(2 ))*
-                (g_AllData->getMicroSteppingRatio(0)/(g_AllData->getGearData(3)));
-        steps = direction*pgFactor*raSpeed*(pulseDurationInMS/1000.0);
-        if (steps>1) { // controller cannot do only one microstep
-            this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
-            this->mountMotion.RADriveIsMoving=true;
-            if (isThreaded == true) {
-                this->StepperDriveRA->travelForNSteps(steps,this->mountMotion.RADriveDirection,pgFactor,false);
-            } else {
-                if (pulseDurationInMS < 2000) { // in guiding, do less that 2 s corrections
-                    QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-                    this->StepperDriveRA->travelForNSteps(steps,this->mountMotion.RADriveDirection,
-                        pgFactor,false);
-                    QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-                }
-            }
-        }
-    } else {
-        this->waitForNMSecs(pulseDurationInMS);
+    if (this->mountMotion.RADriveIsMoving==true){
+        this->mountMotion.RADriveIsMoving=false;
+        this->StepperDriveRA->stopDrive();
     }
+    this->mountMotion.RADriveDirection=direction;
+    this->mountMotion.RAMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
+    this->mountMotion.RADriveIsMoving=true;
+
+    raTimer = new QElapsedTimer();
+
+    if (direction > 0) {
+        this->StepperDriveDecl->travelForNSteps(1,(float)(1+ui->sbGuidingRate->value()));
+    } else {
+        this->StepperDriveDecl->travelForNSteps(1,(float)(1-ui->sbGuidingRate->value()));
+    }
+    raTimer->start();
+    while (raTimer->elapsed() < pulseDurationInMS);
+    this->StepperDriveDecl->stopDrive();
+    this->StepperDriveDecl->resetSteppersAfterStop();
+    delete raTimer;
+
     this->mountMotion.RADriveIsMoving=false;
+    this->startRATracking();
     ui->pbRAMinus->setEnabled(1);
     ui->pbRAPlus->setEnabled(1);
     ui->pbDeclDown->setEnabled(1);
     ui->pbDeclUp->setEnabled(1);
     this->setControlsForRATravel(true);
-    this->startRATracking();
 }
 
 //-----------------------------------------------------------------------

@@ -329,8 +329,8 @@ private:
     bool isDriveActive(bool);
     void connectLX200Events(bool);
     void updateTimeAndDate(void);
-    void declinationPulseGuide(long, short,bool);
-    void raPulseGuide(long, short,bool);
+    void declinationPulseGuide(long, short);
+    void raPulseGuide(long, short);
     void emergencyShutdown(short);
     void setControlsForRATravel(bool);
     void setControlsForRATracking(bool);
