@@ -148,7 +148,7 @@ void QtContinuousStepper::travelForNSteps(short direction, float factor) {
     }
     this->sendCommandToAMIS("v",this->speedMax);
     this->sendCommandToAMIS("z");
-    this->sendCommandToAMIS("s",this->RADirection*direction*1000000);
+    this->sendCommandToAMIS("s",this->RADirection*direction*1000000000);
     this->sendCommandToAMIS("o");
     this->stopped = false;
 }

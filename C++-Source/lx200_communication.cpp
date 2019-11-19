@@ -104,7 +104,7 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
     if (this->incomingCommand->length() > 0) {
-        qDebug() << "Received: " << this->incomingCommand->toLatin1();
+//        qDebug() << "Received: " << this->incomingCommand->toLatin1();
     }
 
 

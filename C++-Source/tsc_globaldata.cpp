@@ -110,21 +110,31 @@ int TSC_GlobalData::getMicroSteppingRatio(short what) {
 
 //-----------------------------------------------
 void TSC_GlobalData::setMFlipParams(short what, bool bval) {
-    if (what == 0) {
-        this->meridianFlipState.mfIsActive = bval;
-    } else {
-        this->meridianFlipState.scopeIsEast = bval;
-        this->meridianFlipState.declSign *= -1;
+    switch (what) {
+        case 0: this->meridianFlipState.mfIsActive = bval; break;
+        case 1: this->meridianFlipState.scopeIsEast = bval; break;
+        case 2: this->meridianFlipState.declSwitchChangePending = bval; break;
     }
 }
 
 //-----------------------------------------------
+void TSC_GlobalData::setDeclinationSign(short sign) {
+    this->meridianFlipState.declSign = sign;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::switchDeclinationSign(void) {
+    this->meridianFlipState.declSign *= -1;
+}
+
+//-----------------------------------------------
 bool TSC_GlobalData::getMFlipParams(short what) {
-    if (what == 0) {
-        return this->meridianFlipState.mfIsActive;
-    } else {
-        return this->meridianFlipState.scopeIsEast;
+    switch (what) {
+        case 0: return this->meridianFlipState.mfIsActive; break;
+        case 1: return this->meridianFlipState.scopeIsEast; break;
+        case 2: return this->meridianFlipState.declSwitchChangePending; break;
     }
+    return false;
 }
 //------------------------------------------------
 short TSC_GlobalData::getMFlipDecSign(void) {
@@ -914,8 +924,6 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Flag whether meridian flip is is to be carried out\n");
     outfile << ostr.data();
     ostr.clear();
-
-
     outfile.close();
 }
 
@@ -930,7 +938,6 @@ bool TSC_GlobalData::loadGlobalData(void) {
     if (!infile.is_open()) {
         return false;
     }
-
     std::getline(infile, line, delimiter);
     std::istringstream isRAID(line);   // convert 'line' to a stream so that the first line
     isRAID >> this->driveData.RAControllerID;
@@ -1150,7 +1157,7 @@ double TSC_GlobalData::getActualScopePosition(short what) {
 //-----------------------------------------------------------------
 // updates the actual scope position. returns "true" if a meridian flip took place
 bool TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDec) {
-    double actRA, actDec;
+    double actRA, actDec, decRes;
     bool flipped = false;
 
     this->actualScopePosition.actualHA -= deltaRA;
@@ -1162,13 +1169,24 @@ bool TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDe
     }
     // compute the HA at sideral time 0, which is here the time of the last sync
     actRA=this->actualScopePosition.actualHA+this->celestialSpeed*(this->getTimeSinceLastSync()/1000.0);
-    this->actualScopePosition.actualRA=actRA;
+    actDec = this->actualScopePosition.actualDecl + (deltaDec);
 
-    if (this->meridianFlipState.mfIsActive == true) {
-        actDec = this->actualScopePosition.actualDecl + ((this->meridianFlipState.declSign)*deltaDec);
-        if ((actDec > 90) || (actDec < -90)) {
-            this->meridianFlipState.declSign *= -1;
-            flipped = true;
+
+    if (actDec > 90) { // handle a pole cross
+        flipped = true;
+        decRes=actDec-90;
+        actDec = 90;
+        this->meridianFlipState.declSign *= -1;
+        actDec -= decRes;
+        actRA += 180.0;
+        if (actRA > 360) {
+            actRA -= 360.0;
+        }
+        this->actualScopePosition.actualHA -= 180;
+        if (this->actualScopePosition.actualHA < 0) {
+            this->actualScopePosition.actualHA += 360;
+        }
+        if (this->meridianFlipState.mfIsActive == true) {
             if (this->meridianFlipState.scopeIsEast == true) {
                 this->meridianFlipState.scopeIsEast = false;
             } else {
@@ -1176,7 +1194,26 @@ bool TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDe
             }
         }
     }
-    this->actualScopePosition.actualDecl += (this->meridianFlipState.declSign)*deltaDec;
+    if (actDec < -90) {
+        flipped = true;
+        decRes=actDec+90;
+        actDec = -90;
+        this->meridianFlipState.declSign *= -1;
+        actDec += decRes;
+        actRA += 180;
+        if (actRA > 360) {
+            actRA -=360.0;
+        }
+        if (this->meridianFlipState.mfIsActive == true) {
+            if (this->meridianFlipState.scopeIsEast == true) {
+                this->meridianFlipState.scopeIsEast = false;
+            } else {
+                this->meridianFlipState.scopeIsEast = true;
+            }
+        }
+    }
+    this->actualScopePosition.actualRA=actRA;
+    this->actualScopePosition.actualDecl = actDec;
     return flipped;
 }
 

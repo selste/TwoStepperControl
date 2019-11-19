@@ -1,5 +1,5 @@
 // this code is part of "TSC", a free control software for astronomical telescopes
-// Copyright (C)  2016-18, wolfgang birkfellner
+// Copyright (C)  2016-19, wolfgang birkfellner
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -135,7 +135,6 @@ private slots: // callbacks for (mainly) GUI widgets
     void stopST4Guiding(void);
     void storeSiteData(void);
     void setTrackingRate(void);
-    void doMeridianFlip(void);
     void handleDSLRSingleExposure(void);
     void startDSLRSeries(void);
     void takeNextExposureInSeries(void);
@@ -389,6 +388,7 @@ private:
     void readTCPHandboxData(void);
     void sendDataToTCPHandbox(QString);
     QString* generateCoordinateString(float, bool);
+    bool checkForFlip(bool, bool, float, float, int);
 
 signals:
     void dslrExposureDone(void);

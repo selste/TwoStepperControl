@@ -959,7 +959,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Dec -</string>
+           <string>South</string>
           </property>
          </widget>
         </item>
@@ -978,7 +978,7 @@
            </size>
           </property>
           <property name="text">
-           <string>RA -</string>
+           <string>East</string>
           </property>
          </widget>
         </item>
@@ -1003,7 +1003,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Dec +</string>
+           <string>North</string>
           </property>
          </widget>
         </item>
@@ -1022,7 +1022,7 @@
            </size>
           </property>
           <property name="text">
-           <string>RA +</string>
+           <string>West</string>
           </property>
          </widget>
         </item>
@@ -1117,28 +1117,6 @@
           </property>
           <property name="text">
            <string>Emergency Stop</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pbMeridianFlip">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>140</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>140</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Meridian Flip</string>
           </property>
          </widget>
         </item>
@@ -1485,7 +1463,7 @@
            <number>1</number>
           </property>
           <property name="maximum">
-           <number>500</number>
+           <number>1000</number>
           </property>
           <property name="value">
            <number>100</number>
@@ -1526,7 +1504,7 @@
            <number>1</number>
           </property>
           <property name="maximum">
-           <number>500</number>
+           <number>1000</number>
           </property>
           <property name="value">
            <number>70</number>
@@ -2154,7 +2132,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>10</x>
@@ -7836,7 +7814,7 @@ data</string>
         <x>581</x>
         <y>20</y>
         <width>191</width>
-        <height>221</height>
+        <height>411</height>
        </rect>
       </property>
       <property name="title">
@@ -7848,7 +7826,7 @@ data</string>
          <x>8</x>
          <y>30</y>
          <width>181</width>
-         <height>171</height>
+         <height>381</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -7860,10 +7838,10 @@ data</string>
        <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>6</x>
-          <y>11</y>
+          <x>7</x>
+          <y>12</y>
           <width>176</width>
-          <height>153</height>
+          <height>191</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -7952,9 +7930,30 @@ data</string>
          <item>
           <widget class="QCheckBox" name="cbIsGEM">
            <property name="text">
-            <string>German Equatorial</string>
+            <string>Enable Meridianflip</string>
            </property>
           </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_34">
+           <item>
+            <widget class="QSpinBox" name="sbDegToMFlip">
+             <property name="maximum">
+              <number>180</number>
+             </property>
+             <property name="value">
+              <number>15</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="lMaHAForFLip">
+             <property name="text">
+              <string>[°] to MFlip</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </widget>

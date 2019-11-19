@@ -100,9 +100,11 @@ public:
     float getParkingPosition(short); // get the stored parking position. 0 is for the hour angle, 1 is for declination.
     void setLX200SerialFlag(bool);
     bool getLX200SerialFlag(void);
-    void setMFlipParams(short, bool); // set meridian flip parameters; 0 is "isGEM", 1 is "isEast"
-    bool getMFlipParams(short); // get meridian flip parameters; 0 is for "isGEM", 1 is for "isEast"
+    void setMFlipParams(short, bool); // set meridian flip parameters; 0 is "isGEM", 1 is "isEast", 2 2 is for "declSwitchChangePending"
+    bool getMFlipParams(short); // get meridian flip parameters; 0 is for "isGEM", 1 is for "isEast", 2 is for "declSwitchChangePending"
     short getMFlipDecSign(void);
+    void setDeclinationSign(short);
+    void switchDeclinationSign(void);
     int getMicroSteppingRatio(short); // 0 for guiding/tracking, 1 for moving, 2 for slewing
 
 private:
@@ -203,6 +205,7 @@ private:
         bool mfIsActive = false;
         bool scopeIsEast = true;
         short declSign = 1;
+        bool declSwitchChangePending = false;
     };
 
     struct initialStarPosStruct initialStarPos;

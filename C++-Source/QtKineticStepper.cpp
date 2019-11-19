@@ -135,7 +135,7 @@ void QtKineticStepper::travelForNSteps(short direction, float factor) {
     }
     this->sendCommandToAMIS("v",(long)(this->speedMax));
     this->sendCommandToAMIS("z");
-    this->sendCommandToAMIS("s", (long)g_AllData->getMFlipDecSign()*directionfactor*direction*1000000);
+    this->sendCommandToAMIS("s", (long)g_AllData->getMFlipDecSign()*directionfactor*direction*1000000000);
     this->sendCommandToAMIS("o");
     this->stopped = false;
 }

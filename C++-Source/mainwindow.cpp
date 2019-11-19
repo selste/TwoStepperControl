@@ -1,5 +1,5 @@
 ﻿// this code is part of "TSC", a free control software for astronomical telescopes
-// Copyright (C)  2016-18, wolfgang birkfellner
+// Copyright (C)  2016-19, wolfgang birkfellner
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -93,7 +93,11 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.emergencyStopTriggered = false; // system can be halted by brute force. true if this was triggered
     this->lx200IsOn = false; // true if a serial connection was opened vai RS232
     this->ccdCameraIsAcquiring=false; // true if images are coming in from INDI-server
-    this->mountMotion.DeclDriveDirection = 1; // 1 for forward, -1 for backward
+    if (ui->cbIsGEM->isChecked() == true) {
+        ui->cbMountIsEast->setEnabled(true);
+        g_AllData->switchDeclinationSign();
+    }
+    this->mountMotion.DeclDriveDirection = g_AllData->getMFlipDecSign(); // 1 for forward, -1 for backward
     this->mountMotion.RADriveDirection = 1; // 1 for forward, -1 for backward
     this->mountMotion.RASpeedFactor=1;
     this->mountMotion.DeclSpeedFactor=1; // speeds are multiples of sidereal compensation
@@ -188,8 +192,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->cbIsGEM->setChecked(g_AllData->getMFlipParams(0));
     ui->cbMountIsEast->setChecked(g_AllData->getMFlipParams(1));
     if (ui->cbIsGEM->isChecked() == true) {
-        ui->pbMeridianFlip->setEnabled(true);
         ui->cbMountIsEast->setEnabled(true);
+    } else {
+        //g_AllData->switchDeclinationSign();
     }
     msRat = g_AllData->getMicroSteppingRatio(0);
     switch (msRat) {
@@ -488,7 +493,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbResetGdErr, SIGNAL(clicked()), this, SLOT(resetGuidingError())); // reset autoguider guiding error
     connect(ui->pbStartST4, SIGNAL(clicked()),this, SLOT(startST4Guiding())); // start ST4 pulse guiding
     connect(ui->pbStopST4, SIGNAL(clicked()),this, SLOT(stopST4Guiding())); // stop ST4 pulse guiding
-    connect(ui->pbMeridianFlip, SIGNAL(clicked()), this, SLOT(doMeridianFlip())); // carry out meridian flip
     connect(ui->pbDSLRSingleShot, SIGNAL(clicked()), this, SLOT(handleDSLRSingleExposure())); // start a dslr exposure
     connect(ui->pbDSLRStartSeries, SIGNAL(clicked()), this, SLOT(startDSLRSeries())); // start a series of DSLR exposures
     connect(ui->pbDSLRStopSeries, SIGNAL(clicked()), this, SLOT(terminateDSLRSeries())); // terminate a dslr series exposure early
@@ -627,7 +631,10 @@ bool MainWindow::isDriveActive(bool isRA) {
 void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
-    bool wasInGoTo = false, isInGoTo = false;
+    bool wasInGoTo = false, isInGoTo = false, isEast;
+
+    isEast = g_AllData->getMFlipParams(1); // store east/west flag for GEMs in case a meridian flip occurs. after a flip,
+    // the "isEast" checkbox is deactivated.
 
     if (this->guidingState.systemIsCalibrated == true) {
         ui->cbAutoguiderIsCalibrated->setChecked(true);
@@ -693,7 +700,7 @@ void MainWindow::updateReadings() {
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.DeclMoveElapsedTimeInMS;
         this->mountMotion.DeclMoveElapsedTimeInMS+=topicalTime;
         totalGearRatio = g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*g_AllData->getGearData(6 );
-        relativeTravelDecl= this->mountMotion.DeclDriveDirection*
+        relativeTravelDecl= this->mountMotion.DeclDriveDirection*g_AllData->getMFlipDecSign()*
                 this->StepperDriveDecl->getKineticsFromController(3)*topicalTime*g_AllData->getGearData(7 )/
                 (1000.0*g_AllData->getMicroSteppingRatio((short)this->deState)*totalGearRatio);
         if (g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl) == true) { // update the declination position and check whether a meridian flip took place
@@ -748,7 +755,7 @@ void MainWindow::updateReadings() {
             topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.DeclGoToElapsedTimeInMS;
             this->mountMotion.DeclGoToElapsedTimeInMS+=topicalTime;
             totalGearRatio = g_AllData->getGearData(4)*g_AllData->getGearData(5)*g_AllData->getGearData(6);
-            relativeTravelDecl= this->mountMotion.DeclDriveDirection*
+            relativeTravelDecl= this->mountMotion.DeclDriveDirection*g_AllData->getMFlipDecSign()*
                     this->approximateGOTOSpeedDecl*topicalTime*g_AllData->getGearData(7)/
                     (1000.0*g_AllData->getMicroSteppingRatio((short)this->deState)*totalGearRatio);
             if (g_AllData->incrementActualScopePosition(0.0, relativeTravelDecl) == true) { // update the declination position and check whether a meridian flip took place
@@ -785,6 +792,18 @@ void MainWindow::updateReadings() {
     } else {
         isInGoTo = true;
     } // checks whether GoTo was deactivated
+
+    if (isEast != g_AllData->getMFlipParams(1)) {
+        // deactivate the "isEast" checkbox so that user input is no longer feasible
+        ui->cbMountIsEast->setDisabled(true);
+        disconnect(ui->cbMountIsEast, SIGNAL(stateChanged(int)), 0, 0);
+    }
+    if (g_AllData->getMFlipParams(1) == true) {
+        ui->cbMountIsEast->setChecked(true);
+    } else {
+        ui->cbMountIsEast->setChecked(false);
+    }
+
     if ((wasInGoTo == true) && (isInGoTo == false)) { // slew has stopped
         this->terminateGoTo(false);
     }
@@ -988,12 +1007,13 @@ void MainWindow::syncMount(float lra, float lde) {
 void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, absShortRATravel, speedFactorRA, speedFactorDecl,TRamp, SRamp,
            SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps, mstepRatio,
-           convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA; // variables for assessing travel time and so on
+           convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA, targetHA, localHA; // variables for assessing travel time and so on
     qint64 timestampGOTOStarted; // various time stamps
     qint64 timeEstimatedInRAInMS = 0; // estimate for travel time in RA [ms]
     qint64 timeEstimatedInDeclInMS = 0; // estimate for travel time in Decl [ms]
     long int RASteps, DeclSteps; // microsteps for travel plus a correction measure
     int timeForProcessingEventQueue = 100; // should be the same as the time for the event queue given in this->timer
+    bool scopeIsNorth = false;
 
     g_AllData->setCelestialSpeed(0); // make sure that the drive speed is sidereal
     ui->rbSiderealSpeed->setChecked(true);
@@ -1005,6 +1025,7 @@ void MainWindow::startGoToObject(void) {
     }
     this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1));
     // make a sync to the topicalposition
+
     travelRA=((g_AllData->getActualScopePosition(0))+g_AllData->getCelestialSpeed()*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
     if (fabs(travelRA) > 180) {
         absShortRATravel = 360.0 - fabs(travelRA);
@@ -1015,6 +1036,38 @@ void MainWindow::startGoToObject(void) {
         }
     } // determine the shorter travel path
     travelDecl=this->decl-g_AllData->getActualScopePosition(1); // travel in both axes based on current position
+
+    localHA = (g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
+    while (localHA < 0) {
+        localHA += 360;
+    }
+    while (localHA > 360) {
+        localHA -= 360;
+    }
+    targetHA = localHA+travelRA;
+    if (targetHA > 360){
+        targetHA -= 360;
+    }
+    if (targetHA < 360) {
+        targetHA += 360;
+    }// calculated the estimated hour angle at target position
+
+    if (fabs(g_AllData->getActualScopePosition(1)) > fabs(g_AllData->getSiteCoords(0))) {
+        scopeIsNorth = true;
+    } else {
+        scopeIsNorth = false;
+    } // define hemisphere of scope position
+
+    if (this->checkForFlip(g_AllData->getMFlipParams(1),scopeIsNorth,localHA,targetHA,ui->sbDegToMFlip->value()) == true) {
+        if (g_AllData->getMFlipParams(1) == false) {
+            travelRA = 180 - travelRA;
+        } else {
+            travelRA=180 + travelRA;
+        }
+        travelDecl=(90 - g_AllData->getActualScopePosition(1))*2-travelDecl;
+    } // modified travel for meridian flip if needed
+
+
     this->targetRA = this->ra;
     this->targetDecl = this->decl; // destination as given by LX200 or the menu of TSC
     if (travelRA < 0) {
@@ -1023,9 +1076,9 @@ void MainWindow::startGoToObject(void) {
         this->mountMotion.RADriveDirection = 1;
     } // determine direction in RA
     if (travelDecl < 0) {
-        this->mountMotion.DeclDriveDirection = -1;
+        this->mountMotion.DeclDriveDirection = -1*g_AllData->getMFlipDecSign();
     } else {
-        this->mountMotion.DeclDriveDirection = 1;
+        this->mountMotion.DeclDriveDirection = 1*g_AllData->getMFlipDecSign();
     } // determine direction in declination
 
     this->raState = slew;
@@ -1091,7 +1144,7 @@ void MainWindow::startGoToObject(void) {
     this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
     timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
     ui->pbStartTracking->setEnabled(false);
-    this->StepperDriveDecl->travelForNSteps(DeclSteps,this->mountMotion.DeclDriveDirection,round(speedFactorDecl/mstepRatio),0);
+    this->StepperDriveDecl->travelForNSteps(DeclSteps,this->mountMotion.DeclDriveDirection*g_AllData->getMFlipDecSign(),round(speedFactorDecl/mstepRatio),0);
     this->mountMotion.GoToIsActiveInDecl=true;
     this->mountMotion.DeclGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync(); // now, all drives are started and timestamps were taken
 }
@@ -1128,6 +1181,50 @@ void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
     this->deState = guideTrack;
     this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value(),
                                                                 ((double)(round(ui->sbCurrMaxDecl_AMIS->value()))));
+}
+
+//------------------------------------------------------------------
+// a routine that checks whether a merdiian flip is necessary
+bool MainWindow::checkForFlip(bool isEast, bool isNorth, float ha, float gha, int hamax) {
+    bool doFlip = false;
+
+    qDebug() << "-------------------------";
+    qDebug() << "Check parameters for MF:";
+    qDebug() << "Is East: " << isEast;
+    qDebug() << "Is North: " << isNorth;
+    qDebug() << "Hour Angle: " << ha;
+    qDebug() << "Destination HA: " << gha;
+    qDebug() << "Max. HA over Meridian: " << hamax;
+    qDebug() << "-------------------------";
+
+    if (g_AllData->getMFlipParams(0) == false) {
+        return false; // if no meridian flip is needed by the mount ... don't do it
+    } else {
+        if (isEast == false) {
+            if (((ha > hamax) && (ha < 180) && (isNorth == false)) || ((gha > hamax) && (gha < 180))) {
+                doFlip = true;
+                qDebug() << "MF - Go east from south ...";
+            }
+        } else {
+            if (((ha > (360-hamax)) && (isNorth == false)) || ((gha < (360-hamax)) && (isNorth == false))) {
+                doFlip = true;
+                qDebug() << "MF - Go west from south ...";
+            }
+        }
+
+        if (isEast == false) {
+            if (((ha > hamax) && (isNorth == true)) || ((gha > hamax) && (gha < 180))) {
+                doFlip = true;
+                qDebug() << "MF - Go east from north ...";
+            }
+        } else {
+            if (((ha < -hamax) && (isNorth == true)) || ((gha < (360-hamax)) && (gha < 180))) {
+                doFlip = true;
+                qDebug() << "MF - Go west from north ...";
+            }
+        }
+    }
+    return doFlip;
 }
 
 //------------------------------------------------------------------
@@ -3312,8 +3409,8 @@ void MainWindow::declinationMoveHandboxUp(void) {
         maxDeclSteps=180.0/g_AllData->getGearData(7 )*g_AllData->getMicroSteppingRatio((short)this->deState)*
                 g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*
                 g_AllData->getGearData(6 ); // travel 180° at most
-        this->mountMotion.DeclDriveDirection=1;
-        this->StepperDriveDecl->travelForNSteps(maxDeclSteps,this->mountMotion.DeclDriveDirection, this->mountMotion.DeclSpeedFactor,1);
+        this->mountMotion.DeclDriveDirection=1*g_AllData->getMFlipDecSign();
+        this->StepperDriveDecl->travelForNSteps(maxDeclSteps,this->mountMotion.DeclDriveDirection*g_AllData->getMFlipDecSign(), this->mountMotion.DeclSpeedFactor,1);
     } else {
         this->mountMotion.DeclDriveIsMoving=false;
         this->deState=guideTrack;
@@ -3329,6 +3426,12 @@ void MainWindow::declinationMoveHandboxUp(void) {
             ui->sbMoveSpeed->setEnabled(false);
         }
         this->mountMotion.DeclDriveIsMoving=false;
+
+        if (g_AllData->getMFlipParams(2) == true) { // a meridian flip ocurred, and upon stop, the direction needs to be switched
+            g_AllData->setMFlipParams(2, false); // reset the flag that indicates a change in directions
+            this->mountMotion.DeclDriveDirection *= -1*g_AllData->getMFlipDecSign();
+            g_AllData->switchDeclinationSign();
+        }
     }
 }
 
@@ -3347,11 +3450,11 @@ void MainWindow::declinationMoveHandboxDown(void) {
         ui->pbDeclUp->setEnabled(0);
         this->setControlsForDeclTravel(false);
         this->mountMotion.DeclDriveIsMoving=true;
-        this->mountMotion.DeclDriveDirection = -1;
+        this->mountMotion.DeclDriveDirection = -1*g_AllData->getMFlipDecSign();
         maxDeclSteps=180.0/g_AllData->getGearData(7 )*g_AllData->getMicroSteppingRatio((short)this->deState) *
                 g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*
                 g_AllData->getGearData(6 ); // travel 180° at most
-        this->StepperDriveDecl->travelForNSteps(maxDeclSteps,this->mountMotion.DeclDriveDirection,this->mountMotion.DeclSpeedFactor,1);
+        this->StepperDriveDecl->travelForNSteps(maxDeclSteps,this->mountMotion.DeclDriveDirection*g_AllData->getMFlipDecSign(),this->mountMotion.DeclSpeedFactor,1);
     } else {
         this->deState=guideTrack;
         this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio((short)this->deState));
@@ -3366,6 +3469,12 @@ void MainWindow::declinationMoveHandboxDown(void) {
             ui->sbMoveSpeed->setEnabled(false);
         }
         this->mountMotion.DeclDriveIsMoving=false;
+
+        if (g_AllData->getMFlipParams(2) == true) { // a meridian flip ocurred, and upon stop, the direction needs to be switched
+            g_AllData->setMFlipParams(2, false); // reset the flag that indicates a change in directions
+            this->mountMotion.DeclDriveDirection *= -1*g_AllData->getMFlipDecSign();
+            g_AllData->switchDeclinationSign();
+        }
     }
 }
 //--------------------------------------------------------------
@@ -3418,14 +3527,12 @@ void MainWindow::RAMoveHandboxFwd(void) {
             ui->sbMoveSpeed->setEnabled(true);
         }
     }
-
 }
 
 //---------------------------------------------------------------------
 void MainWindow::RAMoveHandboxBwd(void) {
     long maxRASteps;
     double bwdFactor;
-
 
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
@@ -3473,8 +3580,6 @@ void MainWindow::RAMoveHandboxBwd(void) {
             ui->sbMoveSpeed->setEnabled(true);
         }
     }
-    qDebug() << "HandboxMotion done____________________________________";
-
 }
 
 //--------------------------------------------------------------
@@ -3486,7 +3591,6 @@ void MainWindow::killHandBoxMotion(void) {
     this->emergencyStop();
     ui->fMainHBCtrl->setEnabled(true); // disable handcontrol widget
     ui->fHBSpeeds->setEnabled(true);
-    ui->pbMeridianFlip->setEnabled(true);
     this->mountMotion.btMoveNorth = false;
     this->mountMotion.btMoveEast = false;
     this->mountMotion.btMoveSouth = false;
@@ -3731,7 +3835,7 @@ void MainWindow::declinationPulseGuide(long pulseDurationInMS, short direction) 
     } // if the decl drive was moving, it is now set to stop
     this->setCorrectionSpeed();
     ui->rbCorrSpeed->setChecked(true); // switch to correction speed
-    this->mountMotion.DeclDriveDirection=direction;
+    this->mountMotion.DeclDriveDirection=direction*g_AllData->getMFlipDecSign();
     this->mountMotion.DeclMoveElapsedTimeInMS = g_AllData->getTimeSinceLastSync();
     this->mountMotion.DeclDriveIsMoving=true;
 
@@ -3911,7 +4015,6 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->rbSiderealSpeed->setEnabled(isEnabled);
     ui->rbLunarSpeed->setEnabled(isEnabled);
     ui->rbSolarSpeed->setEnabled(isEnabled);
-    ui->pbMeridianFlip->setEnabled(isEnabled);
     ui->cbIsOnNorthernHemisphere->setEnabled(isEnabled);
     ui->pbConveyCoordinates->setEnabled(isEnabled);
     ui->sbRAhours->setEnabled(isEnabled);
@@ -4341,39 +4444,6 @@ void MainWindow::setTrackingRate(void) {
 }
 
 //----------------------------------------------------------------------
-// carry out a meridian flip for german mounts
-void MainWindow::doMeridianFlip(void) {
-    QString lestr;
-    double targetRA, targetDecl;
-
-    if ((this->guidingState.guidingIsOn==false) && (this->guidingState.calibrationIsRunning==false)
-             && (mountMotion.GoToIsActiveInDecl==false) && (mountMotion.GoToIsActiveInRA == false)) {
-        if ((mountMotion.GoToIsActiveInRA==false) || (mountMotion.GoToIsActiveInDecl== false)) {
-            if (g_AllData->wasMountSynced() == true) {
-                QCoreApplication::processEvents(QEventLoop::AllEvents,2000);
-                targetRA=g_AllData->getActualScopePosition(0)-180.0;
-                if (targetRA < 0.0) {
-                    targetRA+=360.0;
-                }
-                this->ra = targetRA;
-                targetDecl = g_AllData->getActualScopePosition(1)+180.0;
-                this->decl = targetDecl;
-                lestr.append(this->generateCoordinateString(this->ra,true));
-                ui->lineEditRA->setText(lestr);
-                ui->leLX200RA->setText(lestr);
-                lestr.clear();
-                lestr.append(this->generateCoordinateString(this->decl,false));
-                lestr = QString::number(this->decl, 'g', 8);
-                ui->lineEditDecl->setText(lestr);
-                ui->leLX200Decl->setText(lestr);
-                this->startGoToObject();
-                g_AllData->incrementActualScopePosition(0.0, -180.0);
-            }
-        }
-    }
-}
-
-//----------------------------------------------------------------------
 // slot that responds to the strings received from the handbox  tcp/ip.
 // the arduino sends a string consisting of 5 characters. "1000" is north,
 // "0001" is east, "0010" is south and "0100" is west. the fifth value is 0
@@ -4417,7 +4487,6 @@ void MainWindow::handleHandbox(void) {
             // just to make sure that the handbox does not mess up a motion initiated from the GUI
             ui->fMainHBCtrl->setEnabled(false); // disable handcontrol widget
             ui->fHBSpeeds->setEnabled(false);
-            ui->pbMeridianFlip->setEnabled(false);
             this->repaint();
             this->waitForNMSecs(500);
             if (dirCommand->compare("1000") == 0) { // start motions according the first 4 digits.
@@ -4456,7 +4525,6 @@ void MainWindow::handleHandbox(void) {
             }
             ui->fMainHBCtrl->setEnabled(true); // disable handcontrol widget
             ui->fHBSpeeds->setEnabled(true);
-            ui->pbMeridianFlip->setEnabled(true);
         } // stop the respective motions
     }
 
@@ -5378,13 +5446,11 @@ void MainWindow::handleSerialLXCB(void) {
 
 void MainWindow::mountIsGerman(void) {
     if (ui->cbIsGEM->isChecked() == true) {
-        ui->pbMeridianFlip->setEnabled(true);
         ui->cbMountIsEast->setEnabled(true);
         g_AllData->setMFlipParams(0,true); //0 is "isGEM", 1 is "isEast"
         g_AllData->setMFlipParams(1,true);
         ui->cbMountIsEast->setChecked(true);
     } else {
-        ui->pbMeridianFlip->setEnabled(false);
         ui->cbMountIsEast->setEnabled(false);
         g_AllData->setMFlipParams(0,false); //0 is "isGEM", 1 is "isEast"
     }
@@ -5395,8 +5461,10 @@ void MainWindow::mountIsGerman(void) {
 void MainWindow::mountIsEast(void) {
     if (ui->cbMountIsEast->isChecked() == true) {
         g_AllData->setMFlipParams(1,true);
+        g_AllData->setDeclinationSign(1); // sets the declination sign
     } else {
         g_AllData->setMFlipParams(1,false);
+        g_AllData->setDeclinationSign(-1); // sets the declination sign
     }
 }
 
