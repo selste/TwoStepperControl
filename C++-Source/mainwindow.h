@@ -388,7 +388,7 @@ private:
     void readTCPHandboxData(void);
     void sendDataToTCPHandbox(QString);
     QString* generateCoordinateString(float, bool);
-    bool checkForFlip(bool, bool, float, float, int);
+    short checkForFlip(bool, float, float);
 
 signals:
     void dslrExposureDone(void);

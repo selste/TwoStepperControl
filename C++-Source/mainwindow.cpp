@@ -1013,7 +1013,7 @@ void MainWindow::startGoToObject(void) {
     qint64 timeEstimatedInDeclInMS = 0; // estimate for travel time in Decl [ms]
     long int RASteps, DeclSteps; // microsteps for travel plus a correction measure
     int timeForProcessingEventQueue = 100; // should be the same as the time for the event queue given in this->timer
-    bool scopeIsNorth = false;
+    short flipResult = 0;
 
     g_AllData->setCelestialSpeed(0); // make sure that the drive speed is sidereal
     ui->rbSiderealSpeed->setChecked(true);
@@ -1052,17 +1052,12 @@ void MainWindow::startGoToObject(void) {
         targetHA += 360;
     }// calculated the estimated hour angle at target position
 
-    if (fabs(g_AllData->getActualScopePosition(1)) > fabs(g_AllData->getSiteCoords(0))) {
-        scopeIsNorth = true;
-    } else {
-        scopeIsNorth = false;
-    } // define hemisphere of scope position
-
-    if (this->checkForFlip(g_AllData->getMFlipParams(1),scopeIsNorth,localHA,targetHA,ui->sbDegToMFlip->value()) == true) {
-        if (g_AllData->getMFlipParams(1) == false) {
-            travelRA = 180 - travelRA;
+    flipResult = this->checkForFlip(g_AllData->getMFlipParams(1),localHA,targetHA);
+    if (flipResult != 0) {
+        if (flipResult == -1) {
+            travelRA = -(180 - travelRA);
         } else {
-            travelRA=180 + travelRA;
+            travelRA= 180 + travelRA;
         }
         travelDecl=(90 - g_AllData->getActualScopePosition(1))*2-travelDecl;
     } // modified travel for meridian flip if needed
@@ -1184,46 +1179,75 @@ void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
 }
 
 //------------------------------------------------------------------
-// a routine that checks whether a merdiian flip is necessary
-bool MainWindow::checkForFlip(bool isEast, bool isNorth, float ha, float gha, int hamax) {
-    bool doFlip = false;
+// a routine that checks whether a merdiian flip is necessary; returns 0 for no flip, 1, for a flip to west, -1 for a flip to east
+short MainWindow::checkForFlip(bool isEast, float ha, float gha) {
+    short doFlip = 0;
+    short oQuad = 1, tQuad = 1;
 
-    qDebug() << "-------------------------";
-    qDebug() << "Check parameters for MF:";
-    qDebug() << "Is East: " << isEast;
-    qDebug() << "Is North: " << isNorth;
-    qDebug() << "Hour Angle: " << ha;
-    qDebug() << "Destination HA: " << gha;
-    qDebug() << "Max. HA over Meridian: " << hamax;
-    qDebug() << "-------------------------";
+    if (gha > 360) {
+        gha -=360;
+    }
+    if (gha < 0) {
+        gha +=360;
+    }
 
     if (g_AllData->getMFlipParams(0) == false) {
-        return false; // if no meridian flip is needed by the mount ... don't do it
+        return 0; // if no meridian flip is needed by the mount ... don't do it
     } else {
-        if (isEast == false) {
-            if (((ha > hamax) && (ha < 180) && (isNorth == false)) || ((gha > hamax) && (gha < 180))) {
-                doFlip = true;
-                qDebug() << "MF - Go east from south ...";
-            }
-        } else {
-            if (((ha > (360-hamax)) && (isNorth == false)) || ((gha < (360-hamax)) && (isNorth == false))) {
-                doFlip = true;
-                qDebug() << "MF - Go west from south ...";
-            }
+        if ((ha >= 0) && (ha < 90)) {
+            oQuad = 1;
+        }
+        if ((ha >= 90) && (ha < 180)) {
+            oQuad = 2;
+        }
+        if ((ha >= 180) && (ha < 270)) {
+            oQuad = 3;
+        }
+        if ((ha >= 270) && (ha < 360)) {
+            oQuad = 4;
         }
 
-        if (isEast == false) {
-            if (((ha > hamax) && (isNorth == true)) || ((gha > hamax) && (gha < 180))) {
-                doFlip = true;
-                qDebug() << "MF - Go east from north ...";
+        if ((gha >= 0) && (gha < 90)) {
+            tQuad = 1;
+        }
+        if ((gha >= 90) && (gha < 180)) {
+            tQuad = 2;
+        }
+        if ((gha >= 180) && (gha < 270)) {
+            tQuad = 3;
+        }
+        if ((gha >= (270)) && (gha < 360)) {
+            tQuad = 4;
+        }
+        if (isEast == true) {
+            if ((oQuad == 1) || (oQuad == 2)){
+                if ((tQuad == 1) || (tQuad == 2)) {
+                    doFlip = 0;
+                }
+                if ((tQuad == 3) || (tQuad == 4)) {
+                    doFlip = 1; // go to west position
+                }
+            }
+            if ((oQuad == 3) || (oQuad == 4)) {
+                doFlip = 1;
             }
         } else {
-            if (((ha < -hamax) && (isNorth == true)) || ((gha < (360-hamax)) && (gha < 180))) {
-                doFlip = true;
-                qDebug() << "MF - Go west from north ...";
+            if ((oQuad == 3) || (oQuad == 4)) {
+                if ((tQuad == 3) || (tQuad == 4)) {
+                    doFlip = 0;
+                }
+                if ((tQuad == 1) || (tQuad == 2)) {
+                    doFlip = -1;
+                }
+            }
+            if ((oQuad == 1) || (oQuad == 2)) {
+                doFlip = -1;
             }
         }
     }
+    qDebug() << "Flip result: ---------------------------";
+    qDebug() << "HA: " << oQuad << ", GHA: " << tQuad << ", Flip Result: " << doFlip;
+    qDebug() << "----------------------------------------";
     return doFlip;
 }
 
