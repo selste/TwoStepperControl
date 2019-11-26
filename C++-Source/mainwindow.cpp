@@ -189,6 +189,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbUTCOffs->setValue(g_AllData->getSiteCoords(2));
     ui->lcdHAPark->display(g_AllData->getParkingPosition(0));
     ui->lcdDecPark->display(g_AllData->getParkingPosition(1));
+    ui->sbNoFlip->setValue(g_AllData->getMaxDeclForNoFlip());
     ui->cbIsGEM->setChecked(g_AllData->getMFlipParams(0));
     ui->cbMountIsEast->setChecked(g_AllData->getMFlipParams(1));
     if (ui->cbIsGEM->isChecked() == true) {
@@ -439,6 +440,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbCurrMaxRA_AMIS, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentRA())); // process input on stepper parameters in gear-tab
     connect(ui->sbAMaxDecl_AMIS, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
     connect(ui->sbCurrMaxDecl_AMIS, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
+    connect(ui->sbNoFlip, SIGNAL(valueChanged(int)), this, SLOT(setDecForNoFlip())); // store the maximum declination for not doing a meridian flip
     connect(ui->rbCorrSpeed,SIGNAL(released()), this, SLOT(setCorrectionSpeed())); // set speed for slow manual motion
     connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed())); // set speed for faster manual motion
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
@@ -1052,7 +1054,7 @@ void MainWindow::startGoToObject(void) {
         targetHA += 360;
     }// calculated the estimated hour angle at target position
 
-    flipResult = this->checkForFlip(g_AllData->getMFlipParams(1),localHA,targetHA);
+    flipResult = this->checkForFlip(g_AllData->getMFlipParams(1),localHA,targetHA, g_AllData->getActualScopePosition(1), this->decl);
     if (flipResult != 0) {
         if (flipResult == -1) {
             travelRA = -(180 - travelRA);
@@ -1179,10 +1181,11 @@ void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
 }
 
 //------------------------------------------------------------------
-// a routine that checks whether a merdiian flip is necessary; returns 0 for no flip, 1, for a flip to west, -1 for a flip to east
-short MainWindow::checkForFlip(bool isEast, float ha, float gha) {
+// a routine that checks whether a meridian flip is necessary; returns 0 for no flip, 1, for a flip to west, -1 for a flip to east
+short MainWindow::checkForFlip(bool isEast, float ha, float gha, float dec, float gDec) {
     short doFlip = 0;
     short oQuad = 1, tQuad = 1;
+    short maxDecl;
 
     if (gha > 360) {
         gha -=360;
@@ -1245,9 +1248,15 @@ short MainWindow::checkForFlip(bool isEast, float ha, float gha) {
             }
         }
     }
-    qDebug() << "Flip result: ---------------------------";
-    qDebug() << "HA: " << oQuad << ", GHA: " << tQuad << ", Flip Result: " << doFlip;
-    qDebug() << "----------------------------------------";
+//    qDebug() << "Flip result: ---------------------------";
+//    qDebug() << "HA: " << oQuad << ", GHA: " << tQuad << ", Flip Result: " << doFlip;
+//    qDebug() << "----------------------------------------";
+    maxDecl = g_AllData->getMaxDeclForNoFlip();
+    if ((dec < maxDecl) && (gDec < maxDecl)) {
+        doFlip = 0;
+        qDebug() << "Disable Meridian flip because of low declination...";
+    } // check if you are below the maximum declination for not carrying out a flip
+
     return doFlip;
 }
 
@@ -5466,7 +5475,7 @@ void MainWindow::handleSerialLXCB(void) {
 }
 
 //-------------------------------------------------------------------------
-// two slots for handling the meridian flip ...
+// three slots for handling the meridian flip ...
 
 void MainWindow::mountIsGerman(void) {
     if (ui->cbIsGEM->isChecked() == true) {
@@ -5490,6 +5499,11 @@ void MainWindow::mountIsEast(void) {
         g_AllData->setMFlipParams(1,false);
         g_AllData->setDeclinationSign(-1); // sets the declination sign
     }
+}
+//-------------------------------------------------------------------------
+void MainWindow::setDecForNoFlip(void) {
+    g_AllData->setMaxDeclForNoFlip(ui->sbNoFlip->value());
+    g_AllData->storeGlobalData(); // save the value to the preferences
 }
 
 

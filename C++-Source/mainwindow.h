@@ -180,6 +180,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void handleSerialLXCB(void);
     void mountIsGerman(void);
     void mountIsEast(void);
+    void setDecForNoFlip(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
@@ -388,7 +389,7 @@ private:
     void readTCPHandboxData(void);
     void sendDataToTCPHandbox(QString);
     QString* generateCoordinateString(float, bool);
-    short checkForFlip(bool, float, float);
+    short checkForFlip(bool, float, float, float, float);
 
 signals:
     void dslrExposureDone(void);

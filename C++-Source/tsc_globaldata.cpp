@@ -87,6 +87,8 @@ TSC_GlobalData::TSC_GlobalData() {
         this->motionSpeed = 50;
         this->parkingHA = 0.0;
         this->parkingDecl = 0.0;
+        this->meridianFlipState.mfIsActive = false;
+        this->meridianFlipState.maxDeclForNoFlip = 0;
     }
 }
 
@@ -139,6 +141,17 @@ bool TSC_GlobalData::getMFlipParams(short what) {
 //------------------------------------------------
 short TSC_GlobalData::getMFlipDecSign(void) {
     return this->meridianFlipState.declSign;
+}
+
+//-----------------------------------------------
+// store and retrieve maximum declination for not doing a flip
+void TSC_GlobalData::setMaxDeclForNoFlip(short dec) {
+    this->meridianFlipState.maxDeclForNoFlip = dec;
+}
+
+//-----------------------------------------------
+short TSC_GlobalData::getMaxDeclForNoFlip(void) {
+    return this->meridianFlipState.maxDeclForNoFlip;
 }
 
 //-----------------------------------------------
@@ -924,6 +937,10 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Flag whether meridian flip is is to be carried out\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr.append(std::to_string(this->meridianFlipState.maxDeclForNoFlip));
+    ostr.append("// Max. Declination for NOT doing a meridian flip.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -1130,6 +1147,11 @@ bool TSC_GlobalData::loadGlobalData(void) {
     } else {
         this->meridianFlipState.mfIsActive = true;
     }
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isMaxDeclNoFlip(line);
+    isMaxDeclNoFlip >> this->meridianFlipState.maxDeclForNoFlip;
+    std::getline(infile, line, '\n');
     infile.close(); // close the reading file for preferences
     return true;
 }

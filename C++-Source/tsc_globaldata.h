@@ -106,6 +106,8 @@ public:
     void setDeclinationSign(short);
     void switchDeclinationSign(void);
     int getMicroSteppingRatio(short); // 0 for guiding/tracking, 1 for moving, 2 for slewing
+    void setMaxDeclForNoFlip(short);
+    short getMaxDeclForNoFlip(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -206,6 +208,7 @@ private:
         bool scopeIsEast = true;
         short declSign = 1;
         bool declSwitchChangePending = false;
+        short maxDeclForNoFlip;
     };
 
     struct initialStarPosStruct initialStarPos;
