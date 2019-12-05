@@ -76,11 +76,9 @@ void QtKineticStepper::changeMicroSteps(double ms) {
 //-----------------------------------------------------------------------------
 
 void QtKineticStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double lcurr) {
-    double smax, amax, smin;
+    double amax;
 
-    smax = 25000;
     amax = 20000;
-    smin = 0;
     if (lacc > amax) {
         this->acc = amax;
     } else {

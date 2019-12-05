@@ -75,11 +75,9 @@ void QtContinuousStepper::changeMicroSteps(double ms) {
 //-----------------------------------------------------------------------------
 
 void QtContinuousStepper::setInitialParamsAndComputeBaseSpeed(double lacc, double lcurr) {
-    double smax, amax, smin;
+    double amax;
 
-    smax = 25000;
     amax = 20000;
-    smin = 0;
     if (lacc > amax) {
         this->acc = amax;
     } else {
@@ -115,7 +113,6 @@ void QtContinuousStepper::startTracking(void) {
 
 //-----------------------------------------------
 void QtContinuousStepper::travelForNSteps(long steps,short direction, int factor, bool isHBSlew) {
-    const short directionfactor = -1; // switch *(-1) to change drive directions
 
     this->hBoxSlewEnded = false;
     this->isHBoxSlew = isHBSlew;
@@ -137,10 +134,8 @@ void QtContinuousStepper::travelForNSteps(long steps,short direction, int factor
 
 //-----------------------------------------------
 void QtContinuousStepper::travelForNSteps(short direction, float factor) {
-    const short directionfactor = -1; // switch *(-1) to change drive directions
 
     this->speedMax=round(factor*g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
-
     if (direction < 0) {
         direction = -1;
     } else {

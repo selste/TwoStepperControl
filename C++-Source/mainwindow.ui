@@ -959,7 +959,7 @@
            </size>
           </property>
           <property name="text">
-           <string>South</string>
+           <string>Down</string>
           </property>
          </widget>
         </item>
@@ -978,7 +978,7 @@
            </size>
           </property>
           <property name="text">
-           <string>East</string>
+           <string>Left</string>
           </property>
          </widget>
         </item>
@@ -1003,7 +1003,7 @@
            </size>
           </property>
           <property name="text">
-           <string>North</string>
+           <string>Up</string>
           </property>
          </widget>
         </item>
@@ -1022,7 +1022,7 @@
            </size>
           </property>
           <property name="text">
-           <string>West</string>
+           <string>Right</string>
           </property>
          </widget>
         </item>
@@ -1395,22 +1395,9 @@
            <bool>false</bool>
           </property>
           <property name="text">
-           <string>Mount is East</string>
+           <string> GEM left of pier</string>
           </property>
          </widget>
-        </item>
-        <item row="2" column="2">
-         <spacer name="horizontalSpacer_5">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
@@ -7993,7 +7980,7 @@ data</string>
          <enum>Qt::Horizontal</enum>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>5</x>

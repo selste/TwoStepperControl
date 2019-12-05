@@ -2,6 +2,7 @@
 #include <libusb-1.0/libusb.h>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QMessageBox>
 
 //-------------------------------------------------------------------------------
 // open USB devices with given VID and send one byte - the <ACK> character;
@@ -15,6 +16,7 @@ usbCommunications::usbCommunications(int whichVID) {
     ssize_t idx;
     unsigned char *replyData = new unsigned char[64];
     int noOfBytesRead;
+    QMessageBox noDriveBoxMsg;
 
     this->commandData[0]= new unsigned char[32];
     this->commandData[1]= new unsigned char[32];
@@ -25,6 +27,9 @@ usbCommunications::usbCommunications(int whichVID) {
     if(retVal < 0) {
         this->initErr = true;
         this->usbConnAvailable = false;
+        noDriveBoxMsg.setWindowTitle("Critical driver error");
+        noDriveBoxMsg.setText("USB Connection not available.");
+        noDriveBoxMsg.exec();
         return;
     } else {
         this->usbConnAvailable = true;
@@ -34,6 +39,9 @@ usbCommunications::usbCommunications(int whichVID) {
     if(this->devCnt < 0) {
         this->gotDeviceList = false;
         this->usbConnAvailable = false;
+        noDriveBoxMsg.setWindowTitle("Critical driver error");
+        noDriveBoxMsg.setText("Could not retrieve a list of devices.");
+        noDriveBoxMsg.exec();
         return;
     } else {
         this->gotDeviceList = true;
@@ -50,6 +58,9 @@ usbCommunications::usbCommunications(int whichVID) {
                 if(deviceHandles[0] == NULL) {
                     this->usbDeviceIsOpen = false;
                     this->usbConnAvailable = false;
+                    noDriveBoxMsg.setWindowTitle("Critical driver error");
+                    noDriveBoxMsg.setText("Could not open USB device #1.");
+                    noDriveBoxMsg.exec();
                     return;
                 } else {
                     this->usbDeviceIsOpen = true;
@@ -60,6 +71,9 @@ usbCommunications::usbCommunications(int whichVID) {
                 if(deviceHandles[1] == NULL) {
                     this->usbDeviceIsOpen = false;
                     this->usbConnAvailable = false;
+                    noDriveBoxMsg.setWindowTitle("Critical driver error");
+                    noDriveBoxMsg.setText("Could not open USB device #2.");
+                    noDriveBoxMsg.exec();
                     return;
                 } else {
                     this->usbDeviceIsOpen = true;
@@ -67,6 +81,11 @@ usbCommunications::usbCommunications(int whichVID) {
                 }
             }
         }
+    }
+    if (numberOfFoundDevices < 2) {
+        noDriveBoxMsg.setWindowTitle("Critical driver error");
+        noDriveBoxMsg.setText("There are less than 2 driver boards connected - exiting!");
+        noDriveBoxMsg.exec();
     }
     if(libusb_kernel_driver_active(deviceHandles[0], 0) == 1) { // find out if kernel driver is attached
         this->kernelDriverActive = true;

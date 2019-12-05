@@ -983,11 +983,35 @@ void MainWindow::syncMount(void) {
     ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
     ui->pbGoToPark->setEnabled(true);
     ui->pbStorePark->setEnabled(true);
+    if (g_AllData->getMFlipParams(0) == true) { //check if flip is enabled
+        ui->cbMountIsEast->setEnabled(true);
+        connect(ui->cbMountIsEast, SIGNAL(stateChanged(int)), this, SLOT(mountIsEast())); // act whether the mount is set to east-west
+    } // and re-enable the left of pier/right of pier thing
+}
+
+//-----------------------------------------------------------------
+// same as above, but not called as a slot
+void MainWindow::syncMountFromGoTo(void) {
+    if (this->StepperDriveRA->getStopped() == false) { // stop tracking
+        this->stopRATracking();
+    }
+    if (this->mountMotion.DeclDriveIsMoving == true) {
+        this->mountMotion.DeclDriveIsMoving=false;
+        this->StepperDriveDecl->stopDrive();
+    } // stop the declination drive as well ...
+    g_AllData->setSyncPosition(this->ra, this->decl);
+    // convey right ascension and declination to the global parameters;
+    // a microtimer starts ...
+    this->startRATracking(); // start tracking again
+    ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
+    ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
+    ui->pbGoToPark->setEnabled(true);
+    ui->pbStorePark->setEnabled(true);
 }
 
 //------------------------------------------------------------------
 // synchronizes the mount to coordinates provided and sets the monotonic timer to zero
-void MainWindow::syncMount(float lra, float lde) {
+void MainWindow::syncMount(float lra, float lde, bool isEmergencyStop) {
     if (this->StepperDriveRA->getStopped() == false) { // stop tracking
         this->stopRATracking();
     }
@@ -998,7 +1022,9 @@ void MainWindow::syncMount(float lra, float lde) {
     g_AllData->setSyncPosition(lra, lde);
     // convey right ascension and declination to the global parameters;
     // a microtimer starts ...
-    this->startRATracking(); // start tracking again
+    if (isEmergencyStop == false) {
+        this->startRATracking(); // start tracking again
+    }
     ui->pbGoTo->setEnabled(true); // enable GOTO as we now have a reference position
     ui->gbScopeParking->setEnabled(true); // enable the park position as the scope is now synced
     ui->pbGoToPark->setEnabled(true);
@@ -1010,7 +1036,7 @@ void MainWindow::startGoToObject(void) {
     double travelRA, travelDecl, absShortRATravel, speedFactorRA, speedFactorDecl,TRamp, SRamp,
            SAtFullSpeed, TAtFullSpeed, earthTravelDuringGOTOinMSteps, mstepRatio,
            convertDegreesToMicrostepsDecl,convertDegreesToMicrostepsRA, targetHA, localHA; // variables for assessing travel time and so on
-    qint64 timestampGOTOStarted; // various time stamps
+  //  qint64 timestampGOTOStarted; // various time stamps
     qint64 timeEstimatedInRAInMS = 0; // estimate for travel time in RA [ms]
     qint64 timeEstimatedInDeclInMS = 0; // estimate for travel time in Decl [ms]
     long int RASteps, DeclSteps; // microsteps for travel plus a correction measure
@@ -1025,7 +1051,7 @@ void MainWindow::startGoToObject(void) {
     if (this->ccdCameraIsAcquiring == true) { // slewing and transfer of FITS images at the same time cause erratic behaviour,
         this->stopCCDAcquisition();           // the guiding camera acquisition is terminated if active
     }
-    this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1));
+    this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1),false);
     // make a sync to the topicalposition
 
     travelRA=((g_AllData->getActualScopePosition(0))+g_AllData->getCelestialSpeed()*g_AllData->getTimeSinceLastSync()/1000.0)-this->ra;
@@ -1139,7 +1165,7 @@ void MainWindow::startGoToObject(void) {
     this->StepperDriveRA->travelForNSteps(RASteps,this->mountMotion.RADriveDirection,round(speedFactorRA/mstepRatio),false);
     this->mountMotion.GoToIsActiveInRA=true;
     this->mountMotion.RAGoToElapsedTimeInMS=g_AllData->getTimeSinceLastSync();
-    timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
+    //timestampGOTOStarted = g_AllData->getTimeSinceLastSync();
     ui->pbStartTracking->setEnabled(false);
     this->StepperDriveDecl->travelForNSteps(DeclSteps,this->mountMotion.DeclDriveDirection*g_AllData->getMFlipDecSign(),round(speedFactorDecl/mstepRatio),0);
     this->mountMotion.GoToIsActiveInDecl=true;
@@ -1162,10 +1188,10 @@ void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
     this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
     if (this->isInParking == false) {
         if (calledAsEmergencyStop == false) {
-            this->syncMount(); // sync the mount to desired position
+            this->syncMountFromGoTo(); // sync the mount to desired position
         } else {
-            this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1));
-            // in an emergency stop, sync the mount top actual position
+            this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1),true);
+            // in an emergency stop, sync the mount to actual position
         }
         this->setControlsForRATracking(false);
 

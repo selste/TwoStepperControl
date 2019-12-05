@@ -64,7 +64,8 @@ private slots: // callbacks for (mainly) GUI widgets
     void changeCCDGain(void);
     void storeCCDData(void);
     void syncMount(void);
-    void syncMount(float, float);
+    void syncMount(float, float, bool);
+    void syncMountFromGoTo(void);
     void storeGearData(void);
     void storeDriveData(void);
     void catalogChosen(QListWidgetItem*);
