@@ -48,6 +48,7 @@ TSC_GlobalData::TSC_GlobalData() {
     this->LX200IPAddress = new QString("127.0.0.1");
     this->HandboxIPAddress = new QString("127.0.0.1");
     this->celestialSpeed=0.0041780746; // default speed is sidereal speed
+    this->useTimeFromLX200 = false;
     if (this->loadGlobalData() == false) {
         this->gearData.planetaryRatioRA=9;
         this->gearData.gearRatioRA=1;
@@ -97,6 +98,16 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete LX200IPAddress;
+}
+
+//----------------------------------------------
+short TSC_GlobalData::setTimeFromLX200Flag(bool what) {
+    this->useTimeFromLX200 = what;
+}
+
+//----------------------------------------------
+bool TSC_GlobalData::getTimeFromLX200Flag(void) {
+    return this->useTimeFromLX200;
 }
 
 //----------------------------------------------
@@ -941,6 +952,15 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Max. Declination for NOT doing a meridian flip.\n");
     outfile << ostr.data();
     ostr.clear();
+    if (this->useTimeFromLX200 == true) {
+        boolFlag = 1;
+    } else {
+        boolFlag = 0;
+    }
+    ostr.append(std::to_string(boolFlag));
+    ostr.append("// Flag whether to allow for getting a time via LX200 ...\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -1151,6 +1171,15 @@ bool TSC_GlobalData::loadGlobalData(void) {
     std::getline(infile, line, delimiter);
     std::istringstream isMaxDeclNoFlip(line);
     isMaxDeclNoFlip >> this->meridianFlipState.maxDeclForNoFlip;
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isLX200Time(line);
+    isLX200Time >> boolFlag;
+    if (boolFlag == 0) {
+        this->useTimeFromLX200 = false;
+    } else {
+        this->useTimeFromLX200 = true;
+    }
     std::getline(infile, line, '\n');
     infile.close(); // close the reading file for preferences
     return true;

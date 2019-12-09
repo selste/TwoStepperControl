@@ -108,6 +108,8 @@ public:
     int getMicroSteppingRatio(short); // 0 for guiding/tracking, 1 for moving, 2 for slewing
     void setMaxDeclForNoFlip(short);
     short getMaxDeclForNoFlip(void);
+    short setTimeFromLX200Flag(bool);
+    bool getTimeFromLX200Flag(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -130,6 +132,7 @@ private:
     float parkingDecl;
     short driverBoardType;
     bool useLX200SerialOnStartup = false;
+    bool useTimeFromLX200 = true;
 
     struct initialStarPosStruct {
         float screenx;

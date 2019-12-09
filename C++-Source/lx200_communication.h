@@ -48,15 +48,27 @@ private:
     QString *incomingCommand;
     QString *subCmd;
     QString *lastSubCmd;
+    QString *timeString;
+    QString *dateString;
     double receivedRAFromLX;
     double receivedDeclFromLX;
+    double llong;
+    double llat;
+    int lutc;
     bool handleBasicLX200Protocol(QString);
     bool gotRACoordinates;
     bool gotDeclCoordinates;
+    bool gotDate;
+    bool gotTime;
+    bool gotLat;
+    bool gotLong;
+    bool gotUTCOffset;
     bool sendSimpleCoordinates; // use either ddd.mm or ddd.mm.ss
     void assembleDeclinationString(void);
     void assembleRAString(void);
     void sendCommand(short what);
+    void setSystemDateAndTime(void);
+    void setLocalization(void);
 
     struct LX200CommandStruct {
         QString slewRA;
@@ -86,9 +98,12 @@ private:
         QString getLatitude;
         QString getLongitude;
         QString getUTCOffset;
+        QString setUTCOffset;
         QString getLocalTime;
         QString setLocalTime;
+        QString setLocalDate;
         QString setLongitude;
+        QString setLatitude;
     };
     struct LX200CommandStruct LX200Commands;
 signals:
@@ -112,6 +127,7 @@ signals:
     void RS232findSpeed(void);
     void RS232gotoSpeed(void);
     void polarAlignmentSignal(void);
+    void localizationSet(void);
     void clientRASent(QString*);
     void clientDeclSent(QString*);
     void clientCommandSent(QString*);

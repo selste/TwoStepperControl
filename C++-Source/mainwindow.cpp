@@ -194,9 +194,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->cbMountIsEast->setChecked(g_AllData->getMFlipParams(1));
     if (ui->cbIsGEM->isChecked() == true) {
         ui->cbMountIsEast->setEnabled(true);
-    } else {
-        //g_AllData->switchDeclinationSign();
     }
+    ui->cbTimeFromLX200->setChecked(g_AllData->getTimeFromLX200Flag());
     msRat = g_AllData->getMicroSteppingRatio(0);
     switch (msRat) {
         case 4: ui->rbNormal_4_AMIS->setChecked(true); break;
@@ -433,6 +432,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->cbSerialLX200Default, SIGNAL(stateChanged(int)), this, SLOT(handleSerialLXCB())); // store the checkbox state for serial LX200
     connect(ui->cbIsGEM, SIGNAL(stateChanged(int)), this, SLOT(mountIsGerman())); // toggle whether mount is a GEM or not
     connect(ui->cbMountIsEast, SIGNAL(stateChanged(int)), this, SLOT(mountIsEast())); // act whether the mount is set to east-west
+    connect(ui->cbTimeFromLX200, SIGNAL(stateChanged(int)), this, SLOT(setTimeFromLX200Flag())); // check whether time from LX200 is accepted or not
     connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
@@ -602,6 +602,7 @@ void MainWindow::connectLX200Events(bool doConnect) {
         connect(this->lx200Comm,SIGNAL(clientRASent(QString*)), this, SLOT(handleRAviaTCP(QString*)),Qt::QueuedConnection);
         connect(this->lx200Comm,SIGNAL(clientDeclSent(QString*)), this, SLOT(handleDeclviaTCP(QString*)),Qt::QueuedConnection);
         connect(this->lx200Comm,SIGNAL(clientCommandSent(QString*)), this, SLOT(handleCommandviaTCP(QString*)),Qt::QueuedConnection);
+        connect(this->lx200Comm,SIGNAL(localizationSet()), this, SLOT(updateLocalization()), Qt::QueuedConnection);
     }
 }
 
@@ -1632,6 +1633,15 @@ void MainWindow::deployINDICommand(void) {
     }
     if (ui->rbSLXPress->isChecked() == true) {
         retval = system("indiserver -v indi_sx_ccd &");
+    }
+    if (ui->rbToUpTek->isChecked() == true) {
+        retval = system("indiserver -v indi_toupcam_ccd &");
+    }
+    if (ui->rbNightscape->isChecked() == true) {
+        retval = system("indiserver -v indi_nightscape_ccd &");
+    }
+    if (ui->rbAltair->isChecked() == true) {
+        retval = system("indiserver -v indi_altair_ccd &");
     }
 
     if (retval == 0) {
@@ -3421,6 +3431,25 @@ void MainWindow::shutDownPort(void) {
     this->lx200Comm->clearReplyString();
 }
 
+//---------------------------------------------------------------------
+// update display of longitude, latitude and UTC offset via LX200
+void MainWindow::updateLocalization(void) {
+    double llong, llat;
+    int lutcoffs;
+    QString *dataStr;
+
+    dataStr = new QString();
+    llong = g_AllData->getSiteCoords(1);
+    llat = g_AllData->getSiteCoords(0);
+    lutcoffs = (int)g_AllData->getSiteCoords(2);
+    dataStr->setNum(llat);
+    ui->leLat->setText(dataStr->toLatin1());
+    dataStr->clear();
+    dataStr->setNum(llong);
+    ui->leLong->setText(dataStr->toLatin1());
+    ui->sbUTCOffs->setValue(lutcoffs);
+    delete dataStr;
+}
 
 //---------------------------------------------------------------------
 // enable or disable the serial port
@@ -4182,6 +4211,9 @@ void MainWindow::setINDIrbuttons(bool isEnabled) {
     ui->rbMeadeDSI->setEnabled(isEnabled);
     ui->rbQSI->setEnabled(isEnabled);
     ui->rbSBIG->setEnabled(isEnabled);
+    ui->rbToUpTek->setEnabled(isEnabled);
+    ui->rbNightscape->setEnabled(isEnabled);
+    ui->rbAltair->setEnabled(isEnabled);
     ui->pbTerminateCal->setEnabled(false); // this one is only active when the system calibrates the autoguider
 }
 
@@ -4942,7 +4974,6 @@ void MainWindow::getTemperature(void) {
     this->commSPIParams.guiData->clear();
     this->commSPIParams.guiData->append("p");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-    qDebug() << "received SPI cmd 1";
     this->waitForNMSecs(25);
     if (this->spiDrOnChan0->getResponse() == 'p') {
         this->commSPIParams.guiData->clear();
@@ -4981,9 +5012,6 @@ void MainWindow::getTemperature(void) {
         lastC = '0';
     }
     temp.append(lastC);
-
-    qDebug() << "read all temperature SPI data";
-
     lTmp=temp.toDouble();
     if (lTmp < 80) {
         if (lTmp > -40) {
@@ -5526,10 +5554,20 @@ void MainWindow::mountIsEast(void) {
         g_AllData->setDeclinationSign(-1); // sets the declination sign
     }
 }
+
 //-------------------------------------------------------------------------
 void MainWindow::setDecForNoFlip(void) {
     g_AllData->setMaxDeclForNoFlip(ui->sbNoFlip->value());
     g_AllData->storeGlobalData(); // save the value to the preferences
 }
 
-
+//-------------------------------------------------------------------------
+// a slot for storing whether location and time can be set from LX200
+void MainWindow::setTimeFromLX200Flag(void) {
+    if (ui->cbTimeFromLX200->isChecked() == true) {
+        g_AllData->setTimeFromLX200Flag(true);
+    } else {
+        g_AllData->setTimeFromLX200Flag(false);
+    }
+    g_AllData->storeGlobalData(); // save the value to the preferences
+}

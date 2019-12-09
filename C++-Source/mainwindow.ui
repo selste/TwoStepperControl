@@ -2746,7 +2746,7 @@
     </widget>
     <widget class="QWidget" name="INDITab">
      <attribute name="title">
-      <string>INDI/CCD</string>
+      <string>CCD</string>
      </attribute>
      <widget class="QGroupBox" name="gbINDI">
       <property name="geometry">
@@ -2925,44 +2925,72 @@
         <x>10</x>
         <y>10</y>
         <width>351</width>
-        <height>211</height>
+        <height>271</height>
        </rect>
       </property>
       <property name="title">
        <string>Start a local INDI Server</string>
       </property>
-      <widget class="QPushButton" name="pbStartINDIServer">
+      <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
-         <x>0</x>
-         <y>170</y>
-         <width>160</width>
-         <height>40</height>
+         <x>10</x>
+         <y>210</y>
+         <width>328</width>
+         <height>42</height>
         </rect>
        </property>
-       <property name="minimumSize">
-        <size>
-         <width>160</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>160</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Start INDI Server </string>
-       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_32">
+        <item>
+         <widget class="QPushButton" name="pbStartINDIServer">
+          <property name="minimumSize">
+           <size>
+            <width>160</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>160</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Start INDI Server </string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbKillINDIServer">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>160</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>160</width>
+            <height>40</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Kill INDI Server </string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
+      <widget class="QWidget" name="">
        <property name="geometry">
         <rect>
-         <x>12</x>
-         <y>37</y>
-         <width>304</width>
-         <height>128</height>
+         <x>10</x>
+         <y>38</y>
+         <width>299</width>
+         <height>161</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout_12">
@@ -3092,44 +3120,46 @@
           </property>
          </widget>
         </item>
+        <item row="4" column="0">
+         <widget class="QRadioButton" name="rbAltair">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Altair</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QRadioButton" name="rbToUpTek">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>ToUpTek</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="2">
+         <widget class="QRadioButton" name="rbNightscape">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Nightscape</string>
+          </property>
+         </widget>
+        </item>
        </layout>
-      </widget>
-      <widget class="QPushButton" name="pbKillINDIServer">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>170</x>
-         <y>170</y>
-         <width>160</width>
-         <height>40</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>160</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>160</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Kill INDI Server </string>
-       </property>
       </widget>
      </widget>
      <widget class="QGroupBox" name="gbINDIServer">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>240</y>
+        <y>310</y>
         <width>761</width>
-        <height>181</height>
+        <height>131</height>
        </rect>
       </property>
       <property name="title">
@@ -3144,7 +3174,7 @@
          <x>0</x>
          <y>30</y>
          <width>651</width>
-         <height>141</height>
+         <height>91</height>
         </rect>
        </property>
        <property name="font">
@@ -3162,7 +3192,7 @@
          <x>660</x>
          <y>30</y>
          <width>101</width>
-         <height>141</height>
+         <height>91</height>
         </rect>
        </property>
        <property name="text">
@@ -5019,7 +5049,7 @@
     </widget>
     <widget class="QWidget" name="photoTab">
      <attribute name="title">
-      <string>Photo/AuxDrives</string>
+      <string>DSLR/Aux</string>
      </attribute>
      <widget class="QGroupBox" name="gbAuxdrives">
       <property name="geometry">
@@ -6688,6 +6718,448 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="settingsTab">
+     <attribute name="title">
+      <string>Location</string>
+     </attribute>
+     <widget class="QGroupBox" name="gbCoordinates">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>10</y>
+        <width>341</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Coordinates</string>
+      </property>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>291</width>
+         <height>176</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_13">
+        <item>
+         <layout class="QGridLayout" name="gridLayout_11">
+          <item row="0" column="0">
+           <widget class="QLabel" name="lCName">
+            <property name="text">
+             <string>Name:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="leControllerName">
+            <property name="inputMethodHints">
+             <set>Qt::ImhLatinOnly</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lLat">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>100</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Latitude:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="leLat">
+            <property name="minimumSize">
+             <size>
+              <width>80</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>150</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="inputMethodHints">
+             <set>Qt::ImhFormattedNumbersOnly</set>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="lLong">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>100</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Longitude:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="leLong">
+            <property name="minimumSize">
+             <size>
+              <width>150</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>30</height>
+             </size>
+            </property>
+            <property name="inputMethodHints">
+             <set>Qt::ImhFormattedNumbersOnly</set>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="lUTCOffset">
+            <property name="text">
+             <string>Offset to UTC [hrs]:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QSpinBox" name="sbUTCOffs">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <property name="minimum">
+             <number>-12</number>
+            </property>
+            <property name="maximum">
+             <number>12</number>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pbStoreSiteData">
+          <property name="text">
+           <string>Store Data</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="gbDateAndTime">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>321</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Date and Time</string>
+      </property>
+      <widget class="QCheckBox" name="cbTimeFromLX200">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>190</y>
+         <width>251</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Allow time/position from LX200</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="">
+       <property name="geometry">
+        <rect>
+         <x>11</x>
+         <y>41</y>
+         <width>285</width>
+         <height>136</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_14">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lTZTime">
+          <property name="text">
+           <string>Time (UT):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="leTime">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lTZDate">
+          <property name="text">
+           <string>Date (UT):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="leDate">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="lJulianDate">
+          <property name="text">
+           <string>Julian Date:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="teJulianDate">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="lSiderealTime">
+          <property name="text">
+           <string>Local sidereal time:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="teLSTime">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="Line" name="line_5">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>10</y>
+        <width>20</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+     <widget class="Line" name="line_11">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>240</y>
+        <width>741</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="gbScopeParking">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>260</y>
+        <width>731</width>
+        <height>131</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Scope Parking</string>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>14</x>
+         <y>40</y>
+         <width>649</width>
+         <height>68</height>
+        </rect>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_10">
+        <item row="0" column="0">
+         <widget class="QLabel" name="lHAPark">
+          <property name="text">
+           <string>Park Pos. Hour Angle:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLCDNumber" name="lcdHAPark">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="digitCount">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QPushButton" name="pbSyncToPark">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>200</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Sync to Parking Position</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QPushButton" name="pbGoToPark">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string>Go to Parking Position</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="lDeclPark">
+          <property name="text">
+           <string>Park Pos. Declination:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLCDNumber" name="lcdDecPark">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="layoutDirection">
+           <enum>Qt::RightToLeft</enum>
+          </property>
+          <property name="digitCount">
+           <number>10</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="pbStorePark">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>200</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Store Parking Position</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </widget>
     <widget class="QWidget" name="gearTab">
      <attribute name="title">
       <string>Settings</string>
@@ -8037,430 +8509,6 @@ data</string>
          </item>
         </layout>
        </widget>
-      </widget>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="settingsTab">
-     <attribute name="title">
-      <string>Location</string>
-     </attribute>
-     <widget class="QGroupBox" name="gbCoordinates">
-      <property name="geometry">
-       <rect>
-        <x>380</x>
-        <y>10</y>
-        <width>341</width>
-        <height>221</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Coordinates</string>
-      </property>
-      <widget class="QPushButton" name="pbStoreSiteData">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>180</y>
-         <width>311</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Store Data</string>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>30</y>
-         <width>311</width>
-         <height>35</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_32">
-        <item>
-         <widget class="QLabel" name="lCName">
-          <property name="text">
-           <string>Name:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="leControllerName">
-          <property name="inputMethodHints">
-           <set>Qt::ImhLatinOnly</set>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>11</x>
-         <y>71</y>
-         <width>311</width>
-         <height>104</height>
-        </rect>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_11">
-        <item row="0" column="0">
-         <widget class="QLabel" name="lLat">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Latitude:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="leLat">
-          <property name="minimumSize">
-           <size>
-            <width>80</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>150</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="inputMethodHints">
-           <set>Qt::ImhFormattedNumbersOnly</set>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="lLong">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Longitude:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="leLong">
-          <property name="minimumSize">
-           <size>
-            <width>150</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>80</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="inputMethodHints">
-           <set>Qt::ImhFormattedNumbersOnly</set>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="lUTCOffset">
-          <property name="text">
-           <string>UTC Offset [Hours]:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QSpinBox" name="sbUTCOffs">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-          <property name="minimum">
-           <number>-12</number>
-          </property>
-          <property name="maximum">
-           <number>12</number>
-          </property>
-          <property name="value">
-           <number>1</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="gbDateAndTime">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>10</y>
-        <width>321</width>
-        <height>221</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Date and Time</string>
-      </property>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>31</y>
-         <width>295</width>
-         <height>182</height>
-        </rect>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_14">
-        <item row="0" column="0">
-         <widget class="QLabel" name="lTZTime">
-          <property name="text">
-           <string>Time (UT):</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="lTZDate">
-          <property name="text">
-           <string>Date (UT):</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="lJulianDate">
-          <property name="text">
-           <string>Julian Date:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QLineEdit" name="teJulianDate">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="lSiderealTime">
-          <property name="text">
-           <string>Local sidereal time:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QLineEdit" name="teLSTime">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="leDate">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="leTime">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-     <widget class="Line" name="line_5">
-      <property name="geometry">
-       <rect>
-        <x>340</x>
-        <y>10</y>
-        <width>20</width>
-        <height>221</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
-     <widget class="Line" name="line_11">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>230</y>
-        <width>741</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-     <widget class="QGroupBox" name="gbScopeParking">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>260</y>
-        <width>531</width>
-        <height>161</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Scope Parking</string>
-      </property>
-      <widget class="QPushButton" name="pbGoToPark">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>330</x>
-         <y>80</y>
-         <width>191</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Go to Parking Position</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pbStorePark">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>330</x>
-         <y>120</y>
-         <width>191</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Store Parking Position</string>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>40</y>
-         <width>311</width>
-         <height>81</height>
-        </rect>
-       </property>
-       <layout class="QFormLayout" name="formLayout_6">
-        <item row="0" column="0">
-         <widget class="QLabel" name="lHAPark">
-          <property name="text">
-           <string>Park Pos. Hour Angle:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLCDNumber" name="lcdHAPark">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
-          <property name="digitCount">
-           <number>10</number>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="lDeclPark">
-          <property name="text">
-           <string>Park Pos. Declination:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLCDNumber" name="lcdDecPark">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
-          <property name="digitCount">
-           <number>10</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QPushButton" name="pbSyncToPark">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="geometry">
-        <rect>
-         <x>330</x>
-         <y>40</y>
-         <width>191</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Sync to Parking Position</string>
-       </property>
       </widget>
      </widget>
     </widget>

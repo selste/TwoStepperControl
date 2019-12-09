@@ -182,6 +182,8 @@ private slots: // callbacks for (mainly) GUI widgets
     void mountIsGerman(void);
     void mountIsEast(void);
     void setDecForNoFlip(void);
+    void setTimeFromLX200Flag(void);
+    void updateLocalization(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
