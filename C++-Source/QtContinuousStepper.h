@@ -17,12 +17,10 @@
 #ifndef QTCONTINUOUSSTEPPER_H
 #define QTCONTINUOUSSTEPPER_H
 
-#include <phidget21.h>
 #include <QString>
 
 class QtContinuousStepper {
 private:
-    CPhidgetStepperHandle SH;
     int errorOpen; // error received when opening a communication channel
     int errorCreate; // error received when creating a contact to the controller of the drive
     int snumifk; // an identifier for the controller, can be a serial number or something similar

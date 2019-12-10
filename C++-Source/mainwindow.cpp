@@ -2834,13 +2834,12 @@ void MainWindow::connectHandboxToIPSocket(void) {
     ipaddress = new QString(g_AllData->getHandboxIPAddress()->toLatin1());
     this->HBServerAddress->setAddress(*ipaddress);
     delete ipaddress;
-    hbport = (qint16)(ui->sbHBTCPIPPort->value());
+    hbport = 49153;
     if (this->HBServer->listen(*HBServerAddress,hbport) != true) {
     } else {
         ui->pbTCPHBEnable->setEnabled(false);
         ui->pbTCPHBDisable->setEnabled(true);
         ui->listWidgetIPAddresses_2->setEnabled(false);
-        ui->sbHBTCPIPPort->setEnabled(false);
     }
 }
 
@@ -2867,7 +2866,6 @@ void MainWindow::disconnectHandboxFromIPSocket(void) {
     ui->cbTCPHandboxEnabled->setChecked(false);
     ui->pbTCPHBEnable->setEnabled(true);
     ui->pbTCPHBDisable->setEnabled(false);
-    ui->sbHBTCPIPPort->setEnabled(true);
     this->tcpHandboxIsConnected = false;
 }
 
