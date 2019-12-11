@@ -1,0 +1,85 @@
+*Pick And Place List
+*Company=
+*Author=
+*eMail=
+*
+*Project=AMIS30543_Teensy_2
+*Date=12:55:17
+*CreatedBy=Fritzing 0.9.3b.04.19.5c895d327c44a3114e5fcc9d8260daf0cbb52806
+*
+*
+*Coordinates in mm, always center of component
+*Origin 0/0=Lower left corner of PCB
+*Rotation in degree (0-360, math. pos.)
+*
+*No;Value;Package;X;Y;Rotation;Side;Name
+1;;;24.885;-47.9527;0;Bottom;Via2
+2;;;62.7338;-42.6751;0;Bottom;Via7
+3;;;27.0156;-64.779;0;Bottom;Hole15
+4;;THT;21.1818;-15.238;0;Bottom;GND/VMOT
+5;;;48.3574;-17.2667;0;Bottom;Via29
+6;;;51.3038;-52.1804;0;Bottom;Via12
+7;;THT;19.3048;-2.02996;90;Bottom;E/COM
+8;;THT;42.5178;-42.924;90;Bottom;VD(Out)/IORef1
+9;;;24.4844;-69.5933;0;Bottom;Hole3
+10;;;70.0247;-52.3124;180;Bottom;Teensy 4
+11;;;82.6644;-71.8513;0;Bottom;Via39
+12;;;40.079;-53.0762;0;Bottom;TXT1
+13;;;62.858;-66.3225;0;Bottom;Via23
+14;;;40.0253;-60.843;0;Bottom;TXT1
+15;;;85.952;-15.7683;0;Bottom;Hole12
+16;;;28.0261;-4.8364;0;Bottom;Via44
+17;;;57.0188;-40.1295;0;Bottom;Via10
+18;;;24.5155;-10.3803;0;Bottom;Hole11
+19;;;40.1298;-55.7488;0;Bottom;TXT1
+20;;;48.1204;-38.0749;0;Bottom;Via36
+21;;;48.8767;-37.0815;0;Bottom;Via34
+22;;;52.54;-11.5347;0;Bottom;Via17
+23;;;40.1592;-65.8214;0;Bottom;TXT1
+24;;;24.4844;-44.1933;0;Bottom;Hole2
+25;;;77.995;-68.5766;180;Bottom;D1
+26;;;85.952;-64.7677;0;Bottom;Hole14
+27;;;27.0156;-15.7796;0;Bottom;Hole13
+28;;THT;21.1818;-49.274;0;Bottom;VMOT/GND1
+29;;;39.9955;-58.1534;0;Bottom;TXT1
+30;;;12.7879;-4.06998;0;Bottom;Via41
+31;;THT;82.6498;-68.578;0;Bottom;-
+32;;;38.4859;-47.9398;0;Bottom;TXT1
+33;;;53.1806;-39.1163;0;Bottom;Via38
+34;;;24.5155;-35.7803;0;Bottom;Hole10
+35;;;48.3574;-7.85456;0;Bottom;Via31
+36;;;64.0349;-62.8738;0;Bottom;Via4
+37;;THT;28.3648;-2.02996;90;Bottom;N/S/W
+38;;THT;43.7878;-24.128;0;Bottom;AMIS 30543
+39;;;40.2297;-63.1487;0;Bottom;TXT1
+40;;;67.1676;-11.5347;0;Bottom;Via15
+41;;;51.4308;-7.0982;0;Bottom;Via30
+42;;;57.0132;-38.0749;0;Bottom;Via32
+43;;;47.8382;-27.6722;0;Bottom;Via26
+44;;;7.96398;-14.4843;0;Bottom;Via43
+45;;THT;21.1818;-59.434;0;Bottom;AA'BB'
+46;;;48.0809;-46.4654;0;Bottom;Via11
+47;;;53.1722;-42.6751;0;Bottom;Via9
+48;;;70.3041;-28.3094;180;Bottom;Teensy 4
+49;;;52.54;-5.85078;0;Bottom;Via18
+50;;;29.7929;-47.9527;0;Bottom;Via1
+51;;rj11-6;6.5133;-12.571;90;Bottom;ST4
+52;;;49.3988;-9.88656;0;Bottom;Via28
+53;;;12.7879;-1.00431;0;Bottom;Via42
+54;;THT;73.2518;-68.578;0;Bottom;-
+55;;THT;43.7878;-58.164;0;Bottom;AMIS 30544
+56;;THT;11.2758;-62.609;180;Bottom;AA'BB'
+57;;;40.7262;-31.7588;0;Bottom;Via40
+58;;;50.9116;-30.7456;0;Bottom;Via35
+59;;;83.4969;-61.7985;0;Bottom;Via5
+60;;THT;42.5178;-8.88796;90;Bottom;VD(Out)/IORef
+61;;THT;67.0006;-68.5775;-90;Bottom;Fuse
+62;;THT;57.0946;-68.5775;-90;Bottom;GND/+
+63;;;62.6972;-8.39078;0;Bottom;Via16
+64;;THT;11.2758;-34.161;180;Bottom;AA'BB'
+65;;;82.8817;-32.2583;0;Bottom;Via24
+66;;;39.908;-50.2935;0;Bottom;TXT1
+67;;;66.6567;-70.8635;0;Bottom;Via22
+68;;;39.8459;-45.4506;0;Bottom;TXT1
+69;;THT;21.1818;-25.398;0;Bottom;AA'BB'
+70;;;47.8382;-30.7456;0;Bottom;Via25
