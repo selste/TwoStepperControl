@@ -52,6 +52,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     QString *currentYear; // sets the actual equinox
     QString *helper;
     QList<QHostAddress> ipAddressList;
+    int isEastFlagFromFile;
     int listIter;
     bool foundDefaultIPForLX200 = false;
     bool foundDefaultIPForHBox = false;
@@ -413,6 +414,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leDeclPlanetary->setValidator(new QDoubleValidator(-10000,10000,10,this));
     ui->leDeclStepSize->setValidator(new QDoubleValidator(0,100,10,this));
     ui->leDeclWorm->setValidator(new QIntValidator(0,10000,this));
+
     // connecting signals and slots
     connect(this->timer, SIGNAL(timeout()), this, SLOT(updateReadings())); // this is the event queue
     connect(this->LX200Timer, SIGNAL(timeout()), this, SLOT(readLX200Port())); // this is the event for reading LX200
@@ -449,6 +451,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbSiderealSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set sidereal tracking rate
     connect(ui->rbLunarSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set lunar tracking rate
     connect(ui->rbSolarSpeed, SIGNAL(released()),this, SLOT(setTrackingRate())); // set solar tracking rate
+    connect(ui->rbParkToSouthHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
+    connect(ui->rbParkToWestHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
+    connect(ui->rbParkToEastHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
+    connect(ui->rbParkPolaris, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
     connect(ui->rbNoFinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo1FinderFocuser , SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo2FinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams())); // store the auxiliary drive which is used for the guider when the drive no. is changed
@@ -546,6 +552,22 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->currentDeclString = new QString();
     this->currentHAString = new QString();
     this->coordString = new QString();
+    // read the last state (east/west) of the GEM
+    std::string line;   // define a line that is read until \n is encountered
+    std::ifstream infile(".GEMState.tsl");  // read that special file ...
+    if (infile.is_open()) {
+        std::getline(infile, line);
+        std::istringstream isEastFlag(line);   // convert 'line' to a stream so that the first line
+        isEastFlag >> isEastFlagFromFile;
+        infile.close();
+        if (isEastFlagFromFile == 1) {
+            ui->cbMountIsEast->setChecked(true);
+            g_AllData->setMFlipParams(1,true);
+        } else {
+            ui->cbMountIsEast->setChecked(false);
+            g_AllData->setMFlipParams(1,false);
+        }
+    }
 }
 
 //------------------------------------------------------------------
@@ -1308,6 +1330,33 @@ void MainWindow::determineParkingPosition(void) {
 }
 
 //------------------------------------------------------------------
+// sets a few selected park positions
+void MainWindow::presetParkingPosition(void) {
+    float parkHA, parkDecl;
+
+    if (ui->rbParkToSouthHorizon->isChecked() == true) {
+        parkDecl = -(90-g_AllData->getSiteCoords(0));
+        parkHA = 0.0;
+    }
+    if (ui->rbParkToWestHorizon->isChecked() == true) {
+        parkDecl = 0.0;
+        parkHA = 6.0*15;
+    }
+    if (ui->rbParkToEastHorizon->isChecked() == true) {
+        parkDecl = 0.0;
+        parkHA = 18.0*15;
+    }
+    if (ui->rbParkPolaris->isChecked() == true) {
+        parkDecl = 89.9;
+        parkHA = 18.0*15;
+    }
+    ui->lcdHAPark->display(parkHA);
+    ui->lcdDecPark->display(parkDecl);
+    g_AllData->setParkingPosition(parkHA, parkDecl);
+    g_AllData->storeGlobalData(); // ... and stored it to the preferences file
+}
+
+//------------------------------------------------------------------
 // this routine parks the telescope at the stored parking position
 void MainWindow::gotoParkPosition(void) {
     this->ra   = g_AllData->getLocalSTime()*15 - g_AllData->getParkingPosition(0);
@@ -1327,6 +1376,19 @@ void MainWindow::syncParkPosition(void) {
 //------------------------------------------------------------------
 // handles shutdown of the program
 void MainWindow::shutDownProgram() {
+    bool isEast;
+
+    isEast = ui->cbMountIsEast->isChecked();
+    std::ofstream outfile(".GEMState.tsl");
+    std::string ostr;
+    if (isEast == true) {
+        ostr.append("1");
+    } else {
+        ostr.append("0");
+    }
+    outfile << ostr.data();
+    outfile.close(); // close the file
+    ostr.clear();  // save the state of the GEM in a separate file at shutdown
     this->ccdCameraIsAcquiring=false;
     this->waitForNMSecs((ui->sbExposureTime->value())*1000);
     camera_client->sayGoodbyeToINDIServer();
@@ -5544,12 +5606,15 @@ void MainWindow::mountIsGerman(void) {
 
 //-------------------------------------------------------------------------
 void MainWindow::mountIsEast(void) {
-    if (ui->cbMountIsEast->isChecked() == true) {
-        g_AllData->setMFlipParams(1,true);
-        g_AllData->setDeclinationSign(1); // sets the declination sign
-    } else {
-        g_AllData->setMFlipParams(1,false);
-        g_AllData->setDeclinationSign(-1); // sets the declination sign
+
+    if (ui->cbIsGEM->isChecked() == true) {
+        if (ui->cbMountIsEast->isChecked() == true) {
+            g_AllData->setMFlipParams(1,true);
+            g_AllData->setDeclinationSign(1); // sets the declination sign
+        } else {
+            g_AllData->setMFlipParams(1,false);
+            g_AllData->setDeclinationSign(-1); // sets the declination sign
+        }
     }
 }
 

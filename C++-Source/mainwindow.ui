@@ -584,19 +584,6 @@
         <item row="0" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_38">
           <item>
-           <spacer name="horizontalSpacer_8">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
            <widget class="QLabel" name="lGoTo">
             <property name="text">
              <string>V-GoTo</string>
@@ -706,22 +693,12 @@
         <item row="3" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_37">
           <item>
-           <spacer name="horizontalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
            <widget class="QLabel" name="label_9">
             <property name="text">
              <string>V-Guide</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -1101,7 +1078,7 @@
       <property name="geometry">
        <rect>
         <x>410</x>
-        <y>230</y>
+        <y>238</y>
         <width>361</width>
         <height>191</height>
        </rect>
@@ -1109,42 +1086,13 @@
       <property name="title">
        <string>ST 4</string>
       </property>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>190</x>
-         <y>0</y>
-         <width>156</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_41">
-        <item>
-         <widget class="QCheckBox" name="cbSTFourIsWorking">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lSTFourIsWorking">
-          <property name="text">
-           <string>ST4 is operational</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
       <widget class="QFrame" name="frame_3">
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>27</y>
+         <y>25</y>
          <width>361</width>
-         <height>151</height>
+         <height>160</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -1293,7 +1241,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>110</y>
+          <y>100</y>
           <width>274</width>
           <height>25</height>
          </rect>
@@ -1321,6 +1269,35 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="layoutWidget_25">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>130</y>
+          <width>156</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_41">
+         <item>
+          <widget class="QCheckBox" name="cbSTFourIsWorking">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lSTFourIsWorking">
+           <property name="text">
+            <string>ST4 is operational</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
      <widget class="QGroupBox" name="gbLogLX">
@@ -1341,8 +1318,8 @@
       <widget class="QPlainTextEdit" name="teLX200Data">
        <property name="geometry">
         <rect>
-         <x>3</x>
-         <y>62</y>
+         <x>-1</x>
+         <y>67</y>
          <width>201</width>
          <height>81</height>
         </rect>
@@ -1516,7 +1493,7 @@
       </property>
       <widget class="QWidget" name="tabLXTCP">
        <attribute name="title">
-        <string>LX 200 TCP/IP</string>
+        <string>LX 200 and Handbox TCP/IP</string>
        </attribute>
        <widget class="QListWidget" name="listWidgetIPAddresses">
         <property name="geometry">
@@ -1637,6 +1614,9 @@
          </item>
          <item>
           <widget class="QLineEdit" name="leDefaultIPAddressLX200">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -1761,143 +1741,317 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QGroupBox" name="gbHandbox">
+     <widget class="QTabWidget" name="tabHandbox">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="geometry">
        <rect>
         <x>410</x>
         <y>10</y>
         <width>361</width>
-        <height>231</height>
+        <height>220</height>
        </rect>
       </property>
-      <property name="title">
-       <string>TCP/IP Handbox</string>
+      <property name="currentIndex">
+       <number>1</number>
       </property>
-      <widget class="QWidget" name="layoutWidget_13">
-       <property name="geometry">
-        <rect>
-         <x>220</x>
-         <y>30</y>
-         <width>128</width>
-         <height>34</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_39">
-        <item>
-         <widget class="QLabel" name="lPortHBox">
-          <property name="text">
-           <string>Port: 49153</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+      <widget class="QWidget" name="tab_hb">
+       <attribute name="title">
+        <string>Handbox</string>
+       </attribute>
+       <widget class="QGroupBox" name="gbHandbox">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>2</y>
+          <width>360</width>
+          <height>181</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>TCP/IP Handbox</string>
+        </property>
+        <widget class="QWidget" name="layoutWidget_2">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>117</y>
+           <width>171</width>
+           <height>24</height>
+          </rect>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_36">
+          <item>
+           <widget class="QCheckBox" name="cbTCPHandboxEnabled">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lHandboxConnected">
+            <property name="text">
+             <string>Handbox connected</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QListWidget" name="listWidgetIPAddresses_2">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>27</y>
+           <width>190</width>
+           <height>81</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QWidget" name="layoutWidget_24">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>145</y>
+           <width>341</width>
+           <height>34</height>
+          </rect>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_20">
+          <item>
+           <widget class="QLabel" name="lIPHBox">
+            <property name="text">
+             <string>IP chosen:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="leDefaultIPAddressHBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>194</x>
+           <y>5</y>
+           <width>147</width>
+           <height>137</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QPushButton" name="pbTCPHBEnable">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Enable HB</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pbTCPHBDisable">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Disable HB</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pbTCPHBKillMotion">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Stop Motion</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_39">
+            <item>
+             <widget class="QLabel" name="lPortHBox">
+              <property name="text">
+               <string>Port: </string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="leHandBoxDisplay">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>25</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>49152</string>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </widget>
       </widget>
-      <widget class="QWidget" name="layoutWidget_2">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>130</y>
-         <width>171</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_36">
-        <item>
-         <widget class="QCheckBox" name="cbTCPHandboxEnabled">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lHandboxConnected">
-          <property name="text">
-           <string>Handbox connected</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QListWidget" name="listWidgetIPAddresses_2">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>40</y>
-         <width>200</width>
-         <height>81</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>219</x>
-         <y>66</y>
-         <width>137</width>
-         <height>104</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <widget class="QPushButton" name="pbTCPHBEnable">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Enable Handbox</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pbTCPHBDisable">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Disable Handbox</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pbTCPHBKillMotion">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="text">
-           <string>Stop Motion</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>183</y>
-         <width>341</width>
-         <height>34</height>
-        </rect>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_20">
-        <item>
-         <widget class="QLabel" name="lIPHBox">
-          <property name="text">
-           <string>IP chosen:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="leDefaultIPAddressHBox">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
+      <widget class="QWidget" name="tab_hbsetup">
+       <attribute name="title">
+        <string>Setup Handbox</string>
+       </attribute>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>6</x>
+          <y>145</y>
+          <width>316</width>
+          <height>32</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_42">
+         <item>
+          <widget class="QPushButton" name="pbConnectToHandboxUSB">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Connect to HB via USB</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pbStoreToHandboxUSB">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Store data to HB</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>3</x>
+          <y>11</y>
+          <width>351</width>
+          <height>58</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_17">
+         <item row="0" column="0">
+          <widget class="QLabel" name="lWLANName">
+           <property name="text">
+            <string>WLAN-Name:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="leHBoxWLANName">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="lWLANPwd">
+           <property name="text">
+            <string>WLAN-Pwd:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="leHBoxWLANPWD">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>3</x>
+          <y>73</y>
+          <width>208</width>
+          <height>34</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_43">
+         <item>
+          <widget class="QLabel" name="lHandboxPort">
+           <property name="text">
+            <string>Port for Handbox:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="sbHBoxPort">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimum">
+            <number>49152</number>
+           </property>
+           <property name="maximum">
+            <number>65535</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </widget>
@@ -2314,9 +2468,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>310</y>
+        <y>270</y>
         <width>761</width>
-        <height>131</height>
+        <height>151</height>
        </rect>
       </property>
       <property name="title">
@@ -2331,7 +2485,7 @@
          <x>0</x>
          <y>30</y>
          <width>651</width>
-         <height>91</height>
+         <height>121</height>
         </rect>
        </property>
        <property name="font">
@@ -2549,6 +2703,11 @@
        </property>
       </widget>
      </widget>
+    </widget>
+    <widget class="QWidget" name="tab_ps">
+     <attribute name="title">
+      <string>Platesolving</string>
+     </attribute>
     </widget>
     <widget class="QWidget" name="camTab">
      <attribute name="title">
@@ -4228,7 +4387,7 @@
         <rect>
          <x>10</x>
          <y>30</y>
-         <width>351</width>
+         <width>361</width>
          <height>321</height>
         </rect>
        </property>
@@ -4368,7 +4527,7 @@
          <rect>
           <x>8</x>
           <y>10</y>
-          <width>331</width>
+          <width>341</width>
           <height>181</height>
          </rect>
         </property>
@@ -5154,10 +5313,10 @@
      <widget class="QTabWidget" name="tablDSLRTimer">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>10</y>
+        <x>0</x>
+        <y>20</y>
         <width>361</width>
-        <height>391</height>
+        <height>411</height>
        </rect>
       </property>
       <property name="currentIndex">
@@ -5838,7 +5997,7 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>160</y>
+          <y>180</y>
           <width>231</width>
           <height>25</height>
          </rect>
@@ -6172,7 +6331,7 @@
         <x>20</x>
         <y>260</y>
         <width>731</width>
-        <height>131</height>
+        <height>161</height>
        </rect>
       </property>
       <property name="title">
@@ -6314,6 +6473,62 @@
          </spacer>
         </item>
        </layout>
+      </widget>
+      <widget class="QFrame" name="frame_2">
+       <property name="geometry">
+        <rect>
+         <x>15</x>
+         <y>110</y>
+         <width>651</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>6</x>
+          <y>6</y>
+          <width>587</width>
+          <height>30</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_49">
+         <item>
+          <widget class="QRadioButton" name="rbParkToSouthHorizon">
+           <property name="text">
+            <string>Set South Horizon</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbParkToWestHorizon">
+           <property name="text">
+            <string>Set West Horizon</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbParkToEastHorizon">
+           <property name="text">
+            <string>Set East Horizon</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbParkPolaris">
+           <property name="text">
+            <string>Set Polaris</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </widget>
@@ -6795,16 +7010,14 @@
       <widget class="QPushButton" name="pbStoreGears">
        <property name="geometry">
         <rect>
-         <x>470</x>
-         <y>130</y>
-         <width>91</width>
-         <height>121</height>
+         <x>400</x>
+         <y>120</y>
+         <width>161</width>
+         <height>41</height>
         </rect>
        </property>
        <property name="text">
-        <string>Store
-gear
-data</string>
+        <string>Store gear data</string>
        </property>
       </widget>
       <widget class="QGroupBox" name="groupBox_3">
@@ -6892,7 +7105,7 @@ data</string>
         <rect>
          <x>3</x>
          <y>170</y>
-         <width>461</width>
+         <width>561</width>
          <height>80</height>
         </rect>
        </property>
@@ -6906,68 +7119,79 @@ data</string>
         <attribute name="title">
          <string>Track and Guide</string>
         </attribute>
-        <widget class="QWidget" name="layoutWidget_5">
+        <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
-           <x>11</x>
-           <y>10</y>
-           <width>488</width>
-           <height>29</height>
+           <x>2</x>
+           <y>8</y>
+           <width>551</width>
+           <height>31</height>
           </rect>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_35">
+         <layout class="QHBoxLayout" name="horizontalLayout_48">
           <item>
-           <widget class="QRadioButton" name="rbNormal_4_AMIS">
-            <property name="text">
-             <string>1/4</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_35">
+            <item>
+             <widget class="QRadioButton" name="rbNormal_4_AMIS">
+              <property name="text">
+               <string>1/4</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNormal_8_AMIS">
+              <property name="text">
+               <string>1/8</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNormal_16_AMIS">
+              <property name="text">
+               <string>1/16</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNormal_32_AMIS">
+              <property name="text">
+               <string>1/32</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNormal_64_AMIS">
+              <property name="text">
+               <string>1/64</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNormal_128_AMIS">
+              <property name="text">
+               <string>1/128</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rbNormal_256_AMIS">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>1/256</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="QRadioButton" name="rbNormal_8_AMIS">
+           <widget class="QLabel" name="lMSteps">
             <property name="text">
-             <string>1/8</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="rbNormal_16_AMIS">
-            <property name="text">
-             <string>1/16</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="rbNormal_32_AMIS">
-            <property name="text">
-             <string>1/32</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="rbNormal_64_AMIS">
-            <property name="text">
-             <string>1/64</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="rbNormal_128_AMIS">
-            <property name="text">
-             <string>1/128</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="rbNormal_256_AMIS">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string>1/256</string>
+             <string>MSteps</string>
             </property>
            </widget>
           </item>
@@ -7128,7 +7352,7 @@ data</string>
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>541</width>
+        <width>401</width>
         <height>151</height>
        </rect>
       </property>
@@ -7395,33 +7619,6 @@ data</string>
          </layout>
         </widget>
        </widget>
-       <widget class="QPushButton" name="pbStoreDrive">
-        <property name="geometry">
-         <rect>
-          <x>399</x>
-          <y>10</y>
-          <width>121</width>
-          <height>91</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>50</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>5000</width>
-          <height>4000</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Store
-drive
-data</string>
-        </property>
-       </widget>
       </widget>
      </widget>
      <widget class="QGroupBox" name="gbGeneralSettings">
@@ -7439,10 +7636,10 @@ data</string>
       <widget class="QFrame" name="fGenSettings">
        <property name="geometry">
         <rect>
-         <x>8</x>
+         <x>0</x>
          <y>30</y>
-         <width>181</width>
-         <height>161</height>
+         <width>191</width>
+         <height>141</height>
         </rect>
        </property>
        <property name="frameShape">
@@ -7451,120 +7648,108 @@ data</string>
        <property name="frameShadow">
         <enum>QFrame::Raised</enum>
        </property>
-       <widget class="QRadioButton" name="rbSiderealSpeed">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
-          <x>8</x>
-          <y>19</y>
-          <width>174</width>
-          <height>25</height>
+          <x>1</x>
+          <y>10</y>
+          <width>190</width>
+          <height>120</height>
          </rect>
         </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777214</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Sidereal Speed</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QRadioButton" name="rbLunarSpeed">
-        <property name="geometry">
-         <rect>
-          <x>8</x>
-          <y>56</y>
-          <width>174</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Lunar Speed</string>
-        </property>
-       </widget>
-       <widget class="QRadioButton" name="rbSolarSpeed">
-        <property name="geometry">
-         <rect>
-          <x>8</x>
-          <y>93</y>
-          <width>174</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Solar Speed</string>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
-        <property name="geometry">
-         <rect>
-          <x>8</x>
-          <y>130</y>
-          <width>174</width>
-          <height>25</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Northern Hemisphere</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_17">
+         <item>
+          <widget class="QRadioButton" name="rbSiderealSpeed">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777214</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Sidereal Speed</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbLunarSpeed">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Lunar Speed</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rbSolarSpeed">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Solar Speed</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="cbIsOnNorthernHemisphere">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>25</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Northern Hemisphere</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QGroupBox" name="gbMFlip">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>200</y>
-         <width>171</width>
-         <height>201</height>
+         <x>0</x>
+         <y>180</y>
+         <width>181</width>
+         <height>151</height>
         </rect>
        </property>
        <property name="title">
@@ -7575,7 +7760,7 @@ data</string>
          <rect>
           <x>5</x>
           <y>32</y>
-          <width>161</width>
+          <width>171</width>
           <height>27</height>
          </rect>
         </property>
@@ -7667,6 +7852,33 @@ data</string>
         </layout>
        </widget>
       </widget>
+     </widget>
+     <widget class="QPushButton" name="pbStoreDrive">
+      <property name="geometry">
+       <rect>
+        <x>420</x>
+        <y>50</y>
+        <width>151</width>
+        <height>111</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>50</width>
+        <height>30</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>5000</width>
+        <height>4000</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Store
+drive
+data</string>
+      </property>
      </widget>
     </widget>
    </widget>
