@@ -452,8 +452,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbLunarSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set lunar tracking rate
     connect(ui->rbSolarSpeed, SIGNAL(released()),this, SLOT(setTrackingRate())); // set solar tracking rate
     connect(ui->rbParkToSouthHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
-    connect(ui->rbParkToWestHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
-    connect(ui->rbParkToEastHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
     connect(ui->rbParkPolaris, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
     connect(ui->rbNoFinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo1FinderFocuser , SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
@@ -1332,19 +1330,11 @@ void MainWindow::determineParkingPosition(void) {
 //------------------------------------------------------------------
 // sets a few selected park positions
 void MainWindow::presetParkingPosition(void) {
-    float parkHA, parkDecl;
+    float parkHA = 0, parkDecl = 0;
 
     if (ui->rbParkToSouthHorizon->isChecked() == true) {
         parkDecl = -(90-g_AllData->getSiteCoords(0));
         parkHA = 0.0;
-    }
-    if (ui->rbParkToWestHorizon->isChecked() == true) {
-        parkDecl = 0.0;
-        parkHA = 6.0*15;
-    }
-    if (ui->rbParkToEastHorizon->isChecked() == true) {
-        parkDecl = 0.0;
-        parkHA = 18.0*15;
     }
     if (ui->rbParkPolaris->isChecked() == true) {
         parkDecl = 89.9;
@@ -1567,6 +1557,7 @@ void MainWindow::setINDISAddrAndPort(void) {
     QString saddr;
     int sport, gainVal;
     bool isServerUp = 0;
+    QMessageBox noCamBoxMsg;
 
     ui->pbConnectToServer->setEnabled(false);
     saddr=ui->leINDIServer->text();
@@ -1576,17 +1567,34 @@ void MainWindow::setINDISAddrAndPort(void) {
     // set a global flag on the server state
     if (isServerUp==true) {
         this->waitForNMSecs(500);
-        ui->gbStartINDI->setEnabled(false);
-        ui->pbExpose->setEnabled(true);
-        ui->cbIndiIsUp->setChecked(true);
-        ui->cbStoreGuideCamImgs->setEnabled(true);
         QCoreApplication::processEvents(QEventLoop::AllEvents,2000);   // process events before sleeping for a second
         this->waitForNMSecs(1000);
-        this->getCCDParameters();
-        storeCCDData();
-        gainVal=ui->sbCCDGain->value();
-        camera_client->sendGain(gainVal);
-        ui->pbDisconnectFromServer->setEnabled(true);
+        isServerUp = this->getCCDParameters();
+        if (isServerUp == true) {
+            ui->gbStartINDI->setEnabled(false);
+            ui->pbExpose->setEnabled(true);
+            ui->cbIndiIsUp->setChecked(true);
+            ui->cbStoreGuideCamImgs->setEnabled(true);
+            storeCCDData();
+            gainVal=ui->sbCCDGain->value();
+            camera_client->sendGain(gainVal);
+            ui->pbDisconnectFromServer->setEnabled(true);
+        } else {
+            ui->pbConnectToServer->setEnabled(true);
+            ui->pbExpose->setEnabled(false);
+            ui->cbIndiIsUp->setChecked(false);
+            ui->cbStoreGuideCamImgs->setEnabled(false);
+            noCamBoxMsg.setWindowTitle("Critical INDI error");
+            noCamBoxMsg.setText("Camera not available - is it connected?");
+            noCamBoxMsg.exec();
+            camera_client->sayGoodbyeToINDIServer();
+            this->disconnectFromINDIServer();
+            this->killRunningINDIServer();
+            this->waitForNMSecs(1000);
+            delete camera_client;
+            camera_client = new ccd_client();
+            this->waitForNMSecs(1000);
+        }
     } else {
           ui->pbConnectToServer->setEnabled(true);
     }
@@ -1655,6 +1663,7 @@ void MainWindow::handleServerMessage(void) {
 // type of server is defined by radiobuttons ...
 void MainWindow::deployINDICommand(void) {
     int retval = 0;
+
 
     ui->sbCCDGain->setEnabled(true);
     ui->sbExposureTime->setEnabled(true);

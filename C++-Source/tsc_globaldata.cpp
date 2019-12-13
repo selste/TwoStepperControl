@@ -101,7 +101,7 @@ TSC_GlobalData::~TSC_GlobalData(void){
 }
 
 //----------------------------------------------
-short TSC_GlobalData::setTimeFromLX200Flag(bool what) {
+void TSC_GlobalData::setTimeFromLX200Flag(bool what) {
     this->useTimeFromLX200 = what;
 }
 

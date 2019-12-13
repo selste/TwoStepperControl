@@ -108,7 +108,7 @@ public:
     int getMicroSteppingRatio(short); // 0 for guiding/tracking, 1 for moving, 2 for slewing
     void setMaxDeclForNoFlip(short);
     short getMaxDeclForNoFlip(void);
-    short setTimeFromLX200Flag(bool);
+    void setTimeFromLX200Flag(bool);
     bool getTimeFromLX200Flag(void);
 
 private:

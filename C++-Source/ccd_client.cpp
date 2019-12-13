@@ -70,9 +70,9 @@ void ccd_client::setCameraName(QString camName) {
 //------------------------------------------
 bool ccd_client::setINDIServer(QString addr, int port) {
     bool serverconnected;
+
     QByteArray ba = addr.toLatin1(); // convert the server tcp/ip address to a byte array
     const char *c_str2 = ba.data();  // cast the qbytearray data to a string
-
     this->setServer(c_str2, port); // set the server
     serverconnected= this->connectServer();
     return serverconnected;
@@ -140,6 +140,7 @@ void ccd_client::sendGain(int gain) {
 //------------------------------------------
 void ccd_client::newDevice(INDI::BaseDevice *dp) {
 
+    qDebug() << "New device: " << (dp->getDeviceName());
     this->ccd = dp;
     this->ccdINDIName->clear();
     this->ccdINDIName->append(dp->getDeviceName());
@@ -176,10 +177,14 @@ void ccd_client::newMessage(INDI::BaseDevice *dp, int messageID) {
 bool ccd_client::getCCDParameters(void) {
     INumberVectorProperty *ccd_params;
 
+    if (ccd==NULL) {
+        qDebug() << "NO CCD!";
+        return false;
+    }
     if (ccd->isConnected()) {
         ccd_params = ccd->getNumber("CCD_INFO");
-        if (ccd_params == NULL)     {
-            return 0;
+        if (ccd_params == NULL) {
+            return false;
         }
             this->pixSizeX = IUFindNumber(ccd_params,"CCD_PIXEL_SIZE_X")->value;
             this->pixSizeY = IUFindNumber(ccd_params,"CCD_PIXEL_SIZE_Y")->value;
@@ -187,10 +192,10 @@ bool ccd_client::getCCDParameters(void) {
             this->frameSizeY = IUFindNumber(ccd_params,"CCD_MAX_Y")->value;
             this->bitsPerPixel = IUFindNumber(ccd_params, "CCD_BITSPERPIXEL")->value;
     } else {
-        return 0;
+        return false;
     }
     g_AllData->setCameraParameters(this->pixSizeX,this->pixSizeY,this->frameSizeX,this->frameSizeY);
-    return 1;
+    return true;
 }
 
 //------------------------------------------

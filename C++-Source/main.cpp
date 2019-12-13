@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     MainWindow w;
 
     for (ii=1; ii < argc; ii++) {
-        if (argv[ii][0] = '-') {
+        if (argv[ii][0] == '-') {
             switch (argv[ii][1]) {
             case 'w': framelessWindow = false; break;
             }
@@ -37,5 +37,17 @@ int main(int argc, char *argv[]) {
         w.setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     }
     w.show();
+
+    QFile f(":qdarkstyle/style.qss");
+    if (!f.exists()) {
+        qDebug() << "Unable to set stylesheet, file not found\n";
+    }
+    else
+    {
+        f.open(QFile::ReadOnly | QFile::Text);
+        QTextStream ts(&f);
+        qApp->setStyleSheet(ts.readAll());
+    }
+
     return a.exec();
 }
