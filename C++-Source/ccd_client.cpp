@@ -33,6 +33,16 @@ using namespace std;
 extern TSC_GlobalData *g_AllData;
 
 //------------------------------------------
+bool ccd_client::probeForCCD(void) {
+    if (ccd==NULL) {
+        qDebug() << "NO CCD!";
+        return false;
+    } else {
+        return true;
+    }
+}
+
+//------------------------------------------
 ccd_client::ccd_client() {
     QRgb cval;
 
@@ -80,6 +90,7 @@ bool ccd_client::setINDIServer(QString addr, int port) {
 
 //------------------------------------------
 void ccd_client::disconnectFromServer(void) {
+    this->ccd = NULL;
     this->disconnectServer();
 }
 
@@ -88,6 +99,9 @@ void ccd_client::takeExposure(int expTime) {
     float fexpt;
     QElapsedTimer *localTimer;
 
+    if (this->probeForCCD() == false) {
+         return;
+    }
     if (ccd->isConnected()) {
         ccd_exposure = ccd->getNumber("CCD_EXPOSURE");
         if (ccd_exposure == NULL)     {
@@ -116,6 +130,9 @@ void ccd_client::sendGain(int gain) {
     float fgain;
     QElapsedTimer *localTimer;
 
+    if (this->probeForCCD() == false) {
+         return;
+    }
     if (ccd->isConnected()) {
         fgain=(float)gain;
         ccd_gain = ccd->getNumber("CCD_GAIN");
@@ -177,9 +194,8 @@ void ccd_client::newMessage(INDI::BaseDevice *dp, int messageID) {
 bool ccd_client::getCCDParameters(void) {
     INumberVectorProperty *ccd_params;
 
-    if (ccd==NULL) {
-        qDebug() << "NO CCD!";
-        return false;
+    if (this->probeForCCD() == false) {
+         return false;
     }
     if (ccd->isConnected()) {
         ccd_params = ccd->getNumber("CCD_INFO");

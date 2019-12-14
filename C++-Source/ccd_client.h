@@ -38,6 +38,7 @@ class ccd_client:public QObject, public INDI::BaseClient {
     void setStoreImageFlag(bool);
     void setCameraName(QString);
     void disconnectFromServer(void);
+    bool probeForCCD(void);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);

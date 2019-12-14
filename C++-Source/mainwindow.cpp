@@ -1569,7 +1569,7 @@ void MainWindow::setINDISAddrAndPort(void) {
         this->waitForNMSecs(500);
         QCoreApplication::processEvents(QEventLoop::AllEvents,2000);   // process events before sleeping for a second
         this->waitForNMSecs(1000);
-        isServerUp = this->getCCDParameters();
+        isServerUp = camera_client->probeForCCD();
         if (isServerUp == true) {
             ui->gbStartINDI->setEnabled(false);
             ui->pbExpose->setEnabled(true);
@@ -1589,10 +1589,6 @@ void MainWindow::setINDISAddrAndPort(void) {
             noCamBoxMsg.exec();
             camera_client->sayGoodbyeToINDIServer();
             this->disconnectFromINDIServer();
-            this->killRunningINDIServer();
-            this->waitForNMSecs(1000);
-            delete camera_client;
-            camera_client = new ccd_client();
             this->waitForNMSecs(1000);
         }
     } else {
