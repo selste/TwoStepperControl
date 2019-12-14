@@ -140,6 +140,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     pinMode (27, OUTPUT); // setting BCM-pins 18 and 16 to output mode for dslr-control
         // now setting all the parameters in the "Drive"-tab. settings are from pref-file, except for the stepper speed, which is
         // calculated from  gear parameters
+    system("sudo timedatectl set-ntp 0");
     g_AllData->setDriveParams(0,0,this->StepperDriveRA->getKineticsFromController(3)); // velocity limit - this is set to sidereal speed for right ascension in the constructor of the stepper class ...
     g_AllData->setDriveParams(1,0,this->StepperDriveDecl->getKineticsFromController(3)); // velocity limit - this is set to sidereal speed for declination in the constructor of the stepper class ...
     this->StepperDriveRA->setStepperParams((g_AllData->getDriveParams(0,1)),1); // acceleration in RA
@@ -1368,6 +1369,9 @@ void MainWindow::syncParkPosition(void) {
 void MainWindow::shutDownProgram() {
     bool isEast;
 
+    qDebug() << "Shutting down TSC...";
+    system("sudo timedatectl set-ntp 1");
+    qDebug() << "Storing position...";
     isEast = ui->cbMountIsEast->isChecked();
     std::ofstream outfile(".GEMState.tsl");
     std::string ostr;
@@ -1379,25 +1383,30 @@ void MainWindow::shutDownProgram() {
     outfile << ostr.data();
     outfile.close(); // close the file
     ostr.clear();  // save the state of the GEM in a separate file at shutdown
+    qDebug() << "Shutting down camera...";
     this->ccdCameraIsAcquiring=false;
     this->waitForNMSecs((ui->sbExposureTime->value())*1000);
     camera_client->sayGoodbyeToINDIServer();
     delete camera_client;
+    qDebug() << "Shutting down drives...";
     this->StepperDriveRA->shutDownDrive();
     this->StepperDriveDecl->shutDownDrive();
     if (this->auxBoardIsAvailable == true) {
         emergencyStopAuxDrives();
     }
+    qDebug() << "Freeing memory ...";
     delete currentRAString;
     delete currentDeclString;
     delete currentHAString;
     delete coordString;
-    delete spiDrOnChan0;
-    delete spiDrOnChan1;
     delete textEntry;
-    delete lx200Comm;
     delete camImg;
     delete guideStarPrev;
+    qDebug() << "Freeing SPI ...";
+    delete spiDrOnChan0;
+    delete spiDrOnChan1;
+    qDebug() << "Freeing LX200...";
+    delete lx200Comm;
     delete LXServer;
     delete LXSocket;
     delete LXServerAddress;
@@ -1406,15 +1415,16 @@ void MainWindow::shutDownProgram() {
     delete HBServer;
     delete HBServerAddress;
     delete tcpHBData;
-    delete UTDate;
-    delete UTTime;
     delete lx200SerialPort;
     delete lx200SerialData;
-    delete g_AllData;
+    qDebug() << "Freeing timers ...";
+    delete UTDate;
+    delete UTTime;
     delete timer;
     delete st4State.raCorrTime;
     delete st4State.deCorrTime;
-    amisInterface->closeUSBConnection();
+    delete g_AllData;
+    qDebug() << "Closing USB bus ...";
     delete amisInterface;
     exit(0);
 }

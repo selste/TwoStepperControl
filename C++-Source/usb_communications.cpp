@@ -135,15 +135,18 @@ usbCommunications::usbCommunications(int whichVID) {
 // shutdown the connection and free the USB device
 void usbCommunications::closeUSBConnection(void) {
 
-    libusb_release_interface(this->deviceHandles[0], 0); // release the claimed interface
-    libusb_release_interface(this->deviceHandles[1], 0); // release the claimed interface
-    libusb_close(this->deviceHandles[0]); // close the device we opened
-    libusb_close(this->deviceHandles[1]); // close the device we opened
-    libusb_exit(this->usbContext);
     this->usbConnAvailable = false;
     delete this->dataReceived[0];
     delete this->dataReceived[1];
     delete this->startupResponse;
+    libusb_release_interface(this->deviceHandles[0], 0); // release the claimed interface
+    libusb_release_interface(this->deviceHandles[1], 0); // release the claimed interface
+    qDebug() << "USB Interfaces released ...";
+    libusb_close(this->deviceHandles[0]); // close the device we opened
+    libusb_close(this->deviceHandles[1]); // close the device we opened
+    qDebug() << "libUSB closed ...";
+    libusb_exit(this->usbContext);
+    qDebug() << "libUSB exited...";
 }
 
 //----------------------------------------------------------------------------------------------------

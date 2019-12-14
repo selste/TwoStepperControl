@@ -725,7 +725,7 @@ void lx200_communication::setSystemDateAndTime(void) {
     // clock was set to local time ... now comes the trick -
     // convert local time and date to GM time, and set the HW clock to UTC
     time(&rawtime);
-    rawtime = rawtime+this->lutc*3600+0.2; // 200 ms were spent waiting for the replies from LX200
+    rawtime = rawtime+this->lutc*3600+2.2; // 200 ms were spent waiting for the replies from LX200, two seconds are lost in communication
     ptm = gmtime(&rawtime);
     year = ptm->tm_year+1900;
     month = ptm->tm_mon + 1;

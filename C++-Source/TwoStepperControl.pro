@@ -16,6 +16,8 @@ RESOURCES += qdarkstyle/style.qrc
 CONFIG += c++11
 CONFIG += j4
 
+
+
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
