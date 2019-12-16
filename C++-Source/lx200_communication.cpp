@@ -117,9 +117,9 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
     }
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
-   /* if (this->incomingCommand->length() > 0) {
+    if (this->incomingCommand->length() > 0) {
         qDebug() << "Received: " << this->incomingCommand->toLatin1();
-    } */
+    }
 
 
     subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
@@ -183,6 +183,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         lx200cmd->append(commandList[cmdCounter]);
 
         if (lx200cmd->startsWith(this->LX200Commands.slewRA,Qt::CaseSensitive)==1) {
+            assembledString->clear();
             numSubStr->clear();
             if (sendSimpleCoordinates==false) {
                 numSubStr->append(lx200cmd->right(8));
@@ -201,12 +202,12 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             this->receivedRAFromLX =(rah+ram/60.0+ras/3600.0)*15.0;
             numSubStr->clear();
             gotRACoordinates = true;
-            assembledString->append(QString::number(1));
-            assembledString->append("#");
+            assembledString->append("1");
             this->sendCommand(2);
             // got RA coordinates from LX200 ...
         }
         if (lx200cmd->startsWith(this->LX200Commands.slewDecl ,Qt::CaseSensitive)==1) {
+            assembledString->clear();
             numSubStr->clear();
             if (sendSimpleCoordinates==false) {
                 numSubStr->append(lx200cmd->right(9));
@@ -230,13 +231,12 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             this->receivedDeclFromLX =declSign*(fabs(decldeg)+declmin/60.0+declsec/3600.0);
             numSubStr->clear();
             this->gotDeclCoordinates = true;
-            assembledString->append(QString::number(1));
-            assembledString->append("#");
+            assembledString->append("1");
             this->sendCommand(2);
-            // got Decl coordinates from LX200 ...
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.slewPossible, Qt::CaseSensitive)==0) {         
             if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {
+                assembledString->clear();
                 waitTimer = new QElapsedTimer();
                 waitTimer->start();
                 do {
@@ -245,14 +245,16 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
-             //   assembledString->append(QString::number(0));
-             //   assembledString->append("#");
+                assembledString->append("0");
+                this->sendCommand(2);
                 emit RS232slew();
-             //   this->sendCommand(2);
+                QCoreApplication::processEvents(QEventLoop::AllEvents,25);
+
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.syncCommand, Qt::CaseSensitive)==0) {
             if ((this->gotDeclCoordinates==true) && (this->gotRACoordinates==true)) {           
+                assembledString->clear();
                 waitTimer = new QElapsedTimer();
                 waitTimer->start();
                 do {
@@ -261,10 +263,11 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
                 delete waitTimer; // just wait for 25 ms ...
                 this->gotDeclCoordinates=false;
                 this->gotRACoordinates=false;
-                assembledString->append("M31 EX GAL MAG 35 SZ178.0'#");
+                assembledString->append("---#");
                 // now set the global coordinates in g_AllData to receivedRA and received Decl
-                emit RS232sync();
                 this->sendCommand(2);
+                emit RS232sync();
+                QCoreApplication::processEvents(QEventLoop::AllEvents,25);
             }
         }
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getDecl, Qt::CaseSensitive)==0) {
@@ -406,10 +409,6 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
         if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getLocalTime, Qt::CaseSensitive)==0) {
             // nothing yet
         }
-        if (QString::compare(lx200cmd->toLatin1(),this->LX200Commands.getDate, Qt::CaseSensitive)==0) {
-            // nothing yet
-        }
-
         if (lx200cmd->startsWith(this->LX200Commands.setLongitude, Qt::CaseSensitive) == 1) {
             assembledString->clear();
             numSubStr->clear();
@@ -426,7 +425,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             if ((this->gotLong == true) && (this->gotLat == true) && (this->gotUTCOffset == true)) {
                 this->setLocalization();
             }
-            assembledString->append("1#");
+            assembledString->append("1");
             this->sendCommand(2);
         }
         if (lx200cmd->startsWith(this->LX200Commands.setLatitude, Qt::CaseSensitive) == 1) {
@@ -447,7 +446,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             if ((this->gotLong == true) && (this->gotLat == true) && (this->gotUTCOffset == true)) {
                 this->setLocalization();
             }
-            assembledString->append("1#");
+            assembledString->append("1");
             this->sendCommand(2);
             numSubStr->clear();
 
@@ -462,13 +461,13 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             if ((this->gotLong == true) && (this->gotLat == true) && (this->gotUTCOffset == true)) {
                 this->setLocalization();
             }
-            assembledString->append("1#");
+            assembledString->append("1");
             this->sendCommand(2);
             numSubStr->clear();
         }
         if (lx200cmd->startsWith(LX200Commands.setLocalTime,Qt::CaseSensitive) == true) { // receives local time and sets the pi & it's hardware clock to this time
             assembledString->clear();
-            assembledString->append("1#");
+            assembledString->append("1");
             this->sendCommand(2);
             numSubStr->clear();
             numSubStr->append(lx200cmd->right(lx200cmd->length()-2));
@@ -526,7 +525,7 @@ bool lx200_communication::handleBasicLX200Protocol(QString cmd) {
             }
             waitTimer = new QElapsedTimer();
             assembledString->clear();
-            assembledString->append("1#");
+            assembledString->append("1");
             this->sendCommand(2);
             waitTimer->start();
             do {
@@ -558,14 +557,17 @@ void lx200_communication::sendCommand(short what) {
     if (what == 0) {
         emit this->logRASent();
         emit this->clientRASent(msgRAString);
-    } else if (what == 1) {
+     } else if (what == 1) {
         emit this->logDeclSent();
         emit this->clientDeclSent(msgDeclString);
-    } else {
-        emit this->logCommandSent();
-        emit this->clientCommandSent(assembledString);
-        QCoreApplication::processEvents(QEventLoop::AllEvents,500);
+     } else {
+        if (assembledString->length() != 0) {
+            emit this->logCommandSent();
+            emit this->clientCommandSent(assembledString);
+            qDebug() << "reply: " << assembledString->toLatin1();
+        }
     }
+    QCoreApplication::processEvents(QEventLoop::AllEvents,500);
 }
 
 //-----------------------------------------------
