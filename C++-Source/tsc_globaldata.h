@@ -110,6 +110,8 @@ public:
     short getMaxDeclForNoFlip(void);
     void setTimeFromLX200Flag(bool);
     bool getTimeFromLX200Flag(void);
+    bool getDriverAvailability(void);
+    void setDriverAvailability(bool);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -133,6 +135,7 @@ private:
     short driverBoardType;
     bool useLX200SerialOnStartup = false;
     bool useTimeFromLX200 = true;
+    bool driversAvailable = false;
 
     struct initialStarPosStruct {
         float screenx;

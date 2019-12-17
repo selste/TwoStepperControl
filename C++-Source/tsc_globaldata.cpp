@@ -100,6 +100,17 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete LX200IPAddress;
 }
 
+
+//----------------------------------------------
+bool TSC_GlobalData::getDriverAvailability(void) {
+    return this->driversAvailable;
+}
+
+//----------------------------------------------
+void TSC_GlobalData::setDriverAvailability(bool da) {
+    this->driversAvailable = da;
+}
+
 //----------------------------------------------
 void TSC_GlobalData::setTimeFromLX200Flag(bool what) {
     this->useTimeFromLX200 = what;

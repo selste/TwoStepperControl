@@ -3,6 +3,9 @@
 #include <QDebug>
 #include <QElapsedTimer>
 #include <QMessageBox>
+#include "tsc_globaldata.h"
+
+extern TSC_GlobalData *g_AllData;
 
 //-------------------------------------------------------------------------------
 // open USB devices with given VID and send one byte - the <ACK> character;
@@ -27,9 +30,10 @@ usbCommunications::usbCommunications(int whichVID) {
     if(retVal < 0) {
         this->initErr = true;
         this->usbConnAvailable = false;
-        noDriveBoxMsg.setWindowTitle("Critical driver error");
-        noDriveBoxMsg.setText("USB Connection not available.");
+        noDriveBoxMsg.setWindowTitle("TSC critical driver error");
+        noDriveBoxMsg.setText("USB Connection not available. Continue with limited functionality.");
         noDriveBoxMsg.exec();
+        g_AllData->setDriverAvailability(false);
         return;
     } else {
         this->usbConnAvailable = true;
@@ -39,9 +43,10 @@ usbCommunications::usbCommunications(int whichVID) {
     if(this->devCnt < 0) {
         this->gotDeviceList = false;
         this->usbConnAvailable = false;
-        noDriveBoxMsg.setWindowTitle("Critical driver error");
-        noDriveBoxMsg.setText("Could not retrieve a list of devices.");
+        noDriveBoxMsg.setWindowTitle("TSC critical driver error");
+        noDriveBoxMsg.setText("Could not retrieve a list of devices. Continue with limited functionality.");
         noDriveBoxMsg.exec();
+        g_AllData->setDriverAvailability(false);
         return;
     } else {
         this->gotDeviceList = true;
@@ -58,9 +63,10 @@ usbCommunications::usbCommunications(int whichVID) {
                 if(deviceHandles[0] == NULL) {
                     this->usbDeviceIsOpen = false;
                     this->usbConnAvailable = false;
-                    noDriveBoxMsg.setWindowTitle("Critical driver error");
-                    noDriveBoxMsg.setText("Could not open USB device #1.");
+                    noDriveBoxMsg.setWindowTitle("TSC critical driver error");
+                    noDriveBoxMsg.setText("Could not open USB device #1. Continue with limited functionality.");
                     noDriveBoxMsg.exec();
+                    g_AllData->setDriverAvailability(false);
                     return;
                 } else {
                     this->usbDeviceIsOpen = true;
@@ -71,8 +77,9 @@ usbCommunications::usbCommunications(int whichVID) {
                 if(deviceHandles[1] == NULL) {
                     this->usbDeviceIsOpen = false;
                     this->usbConnAvailable = false;
-                    noDriveBoxMsg.setWindowTitle("Critical driver error");
-                    noDriveBoxMsg.setText("Could not open USB device #2.");
+                    noDriveBoxMsg.setWindowTitle("TSC critical driver error");
+                    noDriveBoxMsg.setText("Could not open USB device #2. Continue with limited functionality.");
+                    g_AllData->setDriverAvailability(false);
                     noDriveBoxMsg.exec();
                     return;
                 } else {
@@ -83,9 +90,11 @@ usbCommunications::usbCommunications(int whichVID) {
         }
     }
     if (numberOfFoundDevices < 2) {
-        noDriveBoxMsg.setWindowTitle("Critical driver error");
-        noDriveBoxMsg.setText("There are less than 2 driver boards connected - exiting!");
+        noDriveBoxMsg.setWindowTitle("TSC critical driver error");
+        noDriveBoxMsg.setText("There are less than 2 driver boards connected. Continue with limited functionality.");
         noDriveBoxMsg.exec();
+        g_AllData->setDriverAvailability(false);
+        return;
     }
     if(libusb_kernel_driver_active(deviceHandles[0], 0) == 1) { // find out if kernel driver is attached
         this->kernelDriverActive = true;
@@ -127,6 +136,7 @@ usbCommunications::usbCommunications(int whichVID) {
     }
     libusb_free_device_list(this->deviceList, 1); // free the list and unref the devices in it
     qDebug() << "usb constructor successful.";
+    g_AllData->setDriverAvailability(true);
 }
 
 
@@ -135,18 +145,21 @@ usbCommunications::usbCommunications(int whichVID) {
 // shutdown the connection and free the USB device
 void usbCommunications::closeUSBConnection(void) {
 
-    this->usbConnAvailable = false;
-    delete this->dataReceived[0];
-    delete this->dataReceived[1];
-    delete this->startupResponse;
-    libusb_release_interface(this->deviceHandles[0], 0); // release the claimed interface
-    libusb_release_interface(this->deviceHandles[1], 0); // release the claimed interface
-    qDebug() << "USB Interfaces released ...";
-    libusb_close(this->deviceHandles[0]); // close the device we opened
-    libusb_close(this->deviceHandles[1]); // close the device we opened
-    qDebug() << "libUSB closed ...";
-    libusb_exit(this->usbContext);
-    qDebug() << "libUSB exited...";
+
+    if (g_AllData->getDriverAvailability() == true) {
+        this->usbConnAvailable = false;
+        delete this->dataReceived[0];
+        delete this->dataReceived[1];
+        delete this->startupResponse;
+        libusb_release_interface(this->deviceHandles[0], 0); // release the claimed interface
+        libusb_release_interface(this->deviceHandles[1], 0); // release the claimed interface
+        qDebug() << "USB Interfaces released ...";
+        libusb_close(this->deviceHandles[0]); // close the device we opened
+        libusb_close(this->deviceHandles[1]); // close the device we opened
+        qDebug() << "libUSB closed ...";
+        libusb_exit(this->usbContext);
+        qDebug() << "libUSB exited...";
+    }
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -186,17 +199,23 @@ bool usbCommunications::sendCommand(QString theCmd, bool isRA) {
         this->commandData[idx][cntr] = (unsigned char)(theCmd.at(cntr).toLatin1());
     } // converted the QString to unsigned char ...
 
-    retVal = libusb_bulk_transfer(this->deviceHandles[idx], (0x03 | LIBUSB_ENDPOINT_OUT), this->commandData[idx], cmdLen, &noOfBytesWritten, 1000); // finding out endpoints is done by running lsusb -v -d VID:PID
-    if(retVal == 0 && noOfBytesWritten == cmdLen) {
-        this->writeError = false;
+    if (g_AllData->getDriverAvailability() == true) {
+        retVal = libusb_bulk_transfer(this->deviceHandles[idx], (0x03 | LIBUSB_ENDPOINT_OUT), this->commandData[idx], cmdLen, &noOfBytesWritten, 1000); // finding out endpoints is done by running lsusb -v -d VID:PID
+        if(retVal == 0 && noOfBytesWritten == cmdLen) {
+            this->writeError = false;
+        } else {
+            this->writeError = true;
+            this->usbConnAvailable = false; // if a write error occurs, it is assumed that the connection is broken
+            qDebug() << "Write error!";
+        }
+        this->receiveReply(isRA);
+        this->commandData[idx][0] ='\0';
+        return this->writeErr;
     } else {
-        this->writeError = true;
-        this->usbConnAvailable = false; // if a write error occurs, it is assumed that the connection is broken
-        qDebug() << "Write error!";
+        this->writeError=true;
+        return this->writeErr;
     }
-    this->receiveReply(isRA);
-    this->commandData[idx][0] ='\0';
-    return this->writeErr;
+
     // return values of libusb_bulk_transfer are
     //enum libusb_error {LIBUSB_SUCCESS = 0, LIBUSB_ERROR_IO = -1, LIBUSB_ERROR_INVALID_PARAM = -2,
     // LIBUSB_ERROR_ACCESS = -3, LIBUSB_ERROR_NO_DEVICE = -4, LIBUSB_ERROR_NOT_FOUND = -5, LIBUSB_ERROR_BUSY = -6,
@@ -219,38 +238,43 @@ bool usbCommunications::receiveReply(bool isRA) {
     } else {
         idx = this->indexForDecl;
     }
-    waitingTimer = new QElapsedTimer();
-    waitingTimer->start();
-    do {
-        retVal = libusb_bulk_transfer(this->deviceHandles[idx], (0x84 | LIBUSB_ENDPOINT_IN), replyData, 64, &noOfBytesRead, 250); // finding out endpoints is done by running lsusb -v -d VID:PID
+    if (g_AllData->getDriverAvailability() == true) {
+        waitingTimer = new QElapsedTimer();
+        waitingTimer->start();
+        do {
+            retVal = libusb_bulk_transfer(this->deviceHandles[idx], (0x84 | LIBUSB_ENDPOINT_IN), replyData, 64, &noOfBytesRead, 250); // finding out endpoints is done by running lsusb -v -d VID:PID
+            if (noOfBytesRead > 0) {
+                readLoopDone = true;
+            }
+            if (waitingTimer->elapsed() > 250) {
+                readLoopDone = true;
+            } // i had trouble reading data on first try, this also depends on the device; so i try reading until the timeout comes
+        } while (readLoopDone == false);
+        delete waitingTimer;
+        this->dataReceived[idx]->clear();
         if (noOfBytesRead > 0) {
-            readLoopDone = true;
+            for (cntr = 0; cntr < noOfBytesRead; cntr++) {
+                this->dataReceived[idx]->append((QChar)replyData[cntr]);
+            }
         }
-        if (waitingTimer->elapsed() > 250) {
-            readLoopDone = true;
-        } // i had trouble reading data on first try, this also depends on the device; so i try reading until the timeout comes
-    } while (readLoopDone == false);
-    delete waitingTimer;
-    this->dataReceived[idx]->clear();
-    if (noOfBytesRead > 0) {
-        for (cntr = 0; cntr < noOfBytesRead; cntr++) {
-            this->dataReceived[idx]->append((QChar)replyData[cntr]);
-        }
-    }
-    delete replyData;
-    if (retVal == 0) {
-        this->readError = false;
-        return true;
-    } else {
-        if (retVal != -7) { // timeout errors are ignored
-            this->readError = true;
-            return false;
-        } else {
-            this->dataReceived[idx]->clear();
-            this->dataReceived[idx]->append("Timeout from USB");
+        delete replyData;
+        if (retVal == 0) {
             this->readError = false;
             return true;
+        } else {
+            if (retVal != -7) { // timeout errors are ignored
+                this->readError = true;
+                return false;
+            } else {
+                this->dataReceived[idx]->clear();
+                this->dataReceived[idx]->append("Timeout from USB");
+                this->readError = false;
+                return true;
+            }
         }
+    } else {
+        this->readError = true;
+        return false;
     }
 }
 
