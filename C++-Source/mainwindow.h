@@ -22,6 +22,7 @@
 #include <QFile>
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
+#include <QTimeZone>
 #include <stdlib.h>
 #include "QtContinuousStepper.h"
 #include "QtKineticStepper.h"
@@ -279,6 +280,7 @@ private:
     QTimer *tcpHandBoxSendTimer;
     QDate *UTDate;
     QTime *UTTime;
+    QTimeZone *timeZone;
     double julianDay;
     lx200_communication *lx200Comm;
     QPixmap *camImg;

@@ -26,6 +26,7 @@
 #include <QtNetwork/QHostAddress>
 #include <QtNetwork/QNetworkInterface>
 #include <QTime>
+#include <QTimeZone>
 #include <QDate>
 #include <math.h>
 #include <unistd.h>
@@ -58,9 +59,25 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     bool foundDefaultIPForHBox = false;
     short auxMicrostepDenom, guiderFocusDrive;
     int msRat;
+    QMessageBox timeZoneWrongMsg;
 
     ui->setupUi(this); // making the widget
     g_AllData =new TSC_GlobalData(); // instantiate the global class with parameters
+    this->timeZone = new QTimeZone(QTimeZone::systemTimeZone()); // check whether the timezone is UTC
+    if (this->timeZone->offsetFromUtc(QDateTime::currentDateTime()) != 0) {
+        qDebug() << "TimeZoneOffset: " << this->timeZone->offsetFromUtc(QDateTime::currentDateTime());
+        timeZoneWrongMsg.setWindowTitle("TSC critical timezone error");
+        timeZoneWrongMsg.setText("Timezone is not UTC - I am trying to fix this with the data available. Check system time in the 'Location'-tab.");
+        timeZoneWrongMsg.exec();
+        system("sudo timedatectl set-timezone UTC");
+        usleep(2000);
+        system("sudo hwclock -w");
+        usleep(250);
+    }
+
+
+
+
     this->timer = new QTimer(); // start the event timer ... this is NOT the microtimer for the mount
     this->timer->start(100); // check all 100 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
