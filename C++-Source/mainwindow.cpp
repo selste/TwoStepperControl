@@ -702,7 +702,6 @@ void MainWindow::updateReadings() {
     if (this->dslrStates.dslrExposureIsRunning == true) { // check a timer and update display of the remaining time ...
         this->updateDSLRGUIAndCountdown();
     }
-
     if (this->mountMotion.RATrackingIsOn == true) { // standard mode - mount compensates for earth motion
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
         this->mountMotion.RAtrackingElapsedTimeInMS+=topicalTime; // total time elapsed in tracking mode
@@ -711,6 +710,13 @@ void MainWindow::updateReadings() {
                 (1000.0*g_AllData->getMicroSteppingRatio((short)this->raState)*totalGearRatio); // compute travel in decimal degrees
         g_AllData->incrementActualScopePosition(relativeTravelRA, 0.0); // update position in global struct on RA
     }
+    if (this->StepperDriveRA->getStopped() == true) { // handle updates if the ra-stepper is not moving at all
+        topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAtrackingElapsedTimeInMS; // check the monotonic timer
+        this->mountMotion.RAtrackingElapsedTimeInMS+=topicalTime; // total time elapsed in tracking mode
+        relativeTravelRA = 0;
+        g_AllData->incrementActualScopePosition(relativeTravelRA, 0.0); // update position in global struct on RA
+    }
+
     if (this->mountMotion.RADriveIsMoving == true) { // mount moves at non-sidereal rate - but not in GOTO
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAMoveElapsedTimeInMS;
         this->mountMotion.RAMoveElapsedTimeInMS+=topicalTime;
