@@ -1,4 +1,4 @@
-// sketch for controlling an Pololu AMIS 30543 stepper controller board with a Teensy 3.6 microcontroller.
+// sketch for controlling an Pololu AMIS 30543 stepper controller board with a Teensy 4 microcontroller.
 // wolfgang birkfellner, 2018. wbirkfellner@gmail.com
 // this is the RIGHT ASCENSION drive
 
@@ -7,11 +7,11 @@
 #include <AccelStepper.h>
 #include <stdlib.h>
 
-const uint8_t amisDirPin = 24;
-const uint8_t amisStepPin = 25;
+const uint8_t amisDirPin = 2;
+const uint8_t amisStepPin = 1;
 const uint8_t amisSlaveSelect = 10;
-const uint8_t amisErrPin = 11;
-const uint8_t resetPin = 26;
+const uint8_t amisErrPin = 3;
+const uint8_t resetPin = 0;
 
 AMIS30543 stepper;
 AccelStepper accelStepper(AccelStepper::DRIVER, amisStepPin, amisDirPin);
