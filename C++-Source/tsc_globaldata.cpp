@@ -765,15 +765,7 @@ void TSC_GlobalData::storeGlobalData(void) {
     std::ofstream outfile("TSC_Preferences.tsp");
     short boolFlag = 0;
 
-    std::string ostr = std::to_string(this->driveData.RAControllerID);
-    ostr.append("// Phidget 1067 Board Serial Number for RA.\n");
-    outfile << ostr.data();
-    ostr.clear();
-    ostr = std::to_string(this->driveData.DeclControllerID);
-    ostr.append("// Phidget 1067 Board Serial Number for Declination.\n");
-    outfile << ostr.data();
-    ostr.clear();
-    ostr = std::to_string(this->gearData.planetaryRatioRA);
+    std::string ostr = std::to_string(this->gearData.planetaryRatioRA);
     ostr.append("// Gear ratio for planetary connected to RA-stepper.\n");
     outfile << ostr.data();
     ostr.clear();
@@ -986,14 +978,6 @@ bool TSC_GlobalData::loadGlobalData(void) {
     if (!infile.is_open()) {
         return false;
     }
-    std::getline(infile, line, delimiter);
-    std::istringstream isRAID(line);   // convert 'line' to a stream so that the first line
-    isRAID >> this->driveData.RAControllerID;
-    std::getline(infile, line, '\n'); // read the comment ...
-    std::getline(infile, line, delimiter); // ... and dump it to the next data which are meaningful.
-    std::istringstream isDeclID(line);
-    isDeclID >> this->driveData.DeclControllerID;
-    std::getline(infile, line, '\n');
     std::getline(infile, line, delimiter);
     std::istringstream ispRatRA(line);
     ispRatRA >> this->gearData.planetaryRatioRA;

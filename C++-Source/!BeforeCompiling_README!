@@ -1,0 +1,4 @@
+If you have downloaded TSC from Github, 
+you need to untar the "rc" file in the 
+"qdarkstyle" folder before opening the .pro file
+with QtCreator!!!

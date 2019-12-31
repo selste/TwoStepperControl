@@ -75,9 +75,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         usleep(250);
     }
 
-
-
-
     this->timer = new QTimer(); // start the event timer ... this is NOT the microtimer for the mount
     this->timer->start(100); // check all 100 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
@@ -950,7 +947,7 @@ void MainWindow::updateTimeAndDate(void) {
     ui->leTime->setText(this->UTTime->currentTime().toString());
     ui->leDate->setText(this->UTDate->currentDate().toString("dd/MM/yyyy"));
     this->julianDay = this->UTDate->toJulianDay()-0.5;
-    ui->teJulianDate->setText(QString::number(long(this->julianDay)));
+    ui->teJulianDay->setText(QString::number(((long)(this->julianDay))));
     secSinceMidnight=UTTime->currentTime().hour()*3600.0+UTTime->currentTime().minute()*60.0+UTTime->currentTime().second()+UTTime->currentTime().msec()/1000.0;
     lstX=(this->julianDay-2451545.0)/36525.0;
     lst=6.697374558 + 2400.051336*lstX + 0.000025862*lstX*lstX + 1.00273791*(secSinceMidnight/3600.0) + g_AllData->getSiteCoords(1)/15.0;
@@ -1249,6 +1246,7 @@ void MainWindow::terminateGoTo(bool calledAsEmergencyStop) {
     this->deState = guideTrack;
     this->StepperDriveDecl->setInitialParamsAndComputeBaseSpeed((double)ui->sbAMaxDecl_AMIS->value(),
                                                                 ((double)(round(ui->sbCurrMaxDecl_AMIS->value()))));
+    this->meridianFlipDisabledForPolarParking = false; // if this was a flip to the north pole, it is done now ...
 }
 
 //------------------------------------------------------------------
@@ -1265,6 +1263,9 @@ short MainWindow::checkForFlip(bool isEast, float ha, float gha, float dec, floa
         gha +=360;
     }
 
+    if (this->meridianFlipDisabledForPolarParking == true) {
+        return 0; // no flip for going to the north pole
+    }
     if (g_AllData->getMFlipParams(0) == false) {
         return 0; // if no meridian flip is needed by the mount ... don't do it
     } else {
@@ -1294,34 +1295,104 @@ short MainWindow::checkForFlip(bool isEast, float ha, float gha, float dec, floa
             tQuad = 4;
         }
         if (isEast == true) {
-            if ((oQuad == 1) || (oQuad == 2)){
-                if ((tQuad == 1) || (tQuad == 2)) {
-                    doFlip = 0;
-                }
-                if ((tQuad == 3) || (tQuad == 4)) {
-                    doFlip = 1; // go to west position
-                }
-            }
-            if ((oQuad == 3) || (oQuad == 4)) {
-                doFlip = 1;
+            switch (oQuad) {
+                case 1:
+                    switch (tQuad) {
+                    case 1:
+                    case 2:
+                        doFlip = 0;
+                        break;
+                    case 3:
+                    case 4:
+                        doFlip = 1;
+                        break;
+                    }
+                    break;
+                case 2:
+                    switch (tQuad) {
+                    case 1:
+                    case 2:
+                        doFlip = 0;
+                        break;
+                    case 3:
+                    case 4:
+                        doFlip = 1;
+                        break;
+                    }
+                    break;
+                case 3:
+                    switch (tQuad) {
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                        doFlip = -1;
+                        break;
+                    }
+                    break;
+                case 4:
+                switch (tQuad) {
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                        doFlip = 1;
+                        break;
+                    }
+                    break;
             }
         } else {
-            if ((oQuad == 3) || (oQuad == 4)) {
-                if ((tQuad == 3) || (tQuad == 4)) {
-                    doFlip = 0;
-                }
-                if ((tQuad == 1) || (tQuad == 2)) {
-                    doFlip = -1;
-                }
-            }
-            if ((oQuad == 1) || (oQuad == 2)) {
-                doFlip = -1;
+            switch (oQuad) {
+                case 1:
+                    switch (tQuad) {
+                        case 1:
+                        case 2:
+                        case 3:
+                        case 4:
+                            doFlip = -1;
+                        break;
+                    }
+                break;
+                case 2:
+                    switch (tQuad) {
+                        case 1:
+                        case 2:
+                        case 3:
+                        case 4:
+                            doFlip = -1;
+                        break;
+                    }
+                break;
+                case 3:
+                    switch (tQuad) {
+                        case 1:
+                        case 2:
+                            doFlip = 1;
+                        break;
+                        case 3:
+                        case 4:
+                            doFlip = 0;
+                        break;
+                    }
+                break;
+                case 4:
+                    switch (tQuad) {
+                        case 1:
+                        case 2:
+                            doFlip = -1;
+                        break;
+                        case 3:
+                        case 4:
+                            doFlip = -1;
+                        break;
+                    }
+                break;
             }
         }
     }
-//    qDebug() << "Flip result: ---------------------------";
-//    qDebug() << "HA: " << oQuad << ", GHA: " << tQuad << ", Flip Result: " << doFlip;
-//    qDebug() << "----------------------------------------";
+    qDebug() << "Flip result: ---------------------------";
+    qDebug() << "Left of Pier: "<< isEast << "Origin: " << oQuad << ", Target: " << tQuad << ", Flip Result: " << doFlip;
+    qDebug() << "----------------------------------------";
     maxDecl = g_AllData->getMaxDeclForNoFlip();
     if ((dec < maxDecl) && (gDec < maxDecl)) {
         doFlip = 0;
@@ -1375,8 +1446,12 @@ void MainWindow::presetParkingPosition(void) {
 void MainWindow::gotoParkPosition(void) {
     this->ra   = g_AllData->getLocalSTime()*15 - g_AllData->getParkingPosition(0);
     this->decl = g_AllData->getParkingPosition(1);
+    if (fabs(this->decl) > 85) {
+        this->meridianFlipDisabledForPolarParking = true;
+    }
     this->startGoToObject();
     this->isInParking = true;
+
 }
 
 //------------------------------------------------------------------
