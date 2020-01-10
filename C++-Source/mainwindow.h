@@ -185,7 +185,9 @@ private slots: // callbacks for (mainly) GUI widgets
     void setDecForNoFlip(void);
     void setTimeFromLX200Flag(void);
     void updateLocalization(void);
-    void presetParkingPosition(void);
+    void presetParkingPositionPolaris(void);
+    void presetParkingPositionSouthH(void);
+    void getDriveError(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
@@ -278,6 +280,7 @@ private:
     QTimer *auxDriveUpdateTimer;
     QTimer *tempUpdateTimer;
     QTimer *tcpHandBoxSendTimer;
+    QTimer *checkDriveTimer;
     QDate *UTDate;
     QTime *UTTime;
     QTimeZone *timeZone;
@@ -310,6 +313,7 @@ private:
     bool ccdCameraIsAcquiring;
     bool auxBoardIsAvailable = 0;
     bool tcpHandboxIsConnected = 0;
+    bool trackingBeforeHandboxMotionStarted = false; // a flag that indicates what was the RA motion before a handbox motion started
     bool auxDriveIsStartingUp = false; // a flag that suppresses GUI updates when one of the focus motors comes up
     bool calibrationToBeTerminated = 0; // a flag that is set when the calibration process is stopped prematurely
     bool isInParking = false; // set to true if parking was initiated

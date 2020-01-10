@@ -173,6 +173,18 @@ double QtKineticStepper::getKineticsFromController(short whichOne) {
 }
 
 //-----------------------------------------------------------------------------
+bool QtKineticStepper::getErrorFromDriver(void) {
+    double retval;
+
+    retval = (double)(this->sendCommandToAMIS("f1").toLong());
+    if (round(retval) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//-----------------------------------------------------------------------------
 
 void QtKineticStepper::setStepperParams(double val, short whichOne) {
 

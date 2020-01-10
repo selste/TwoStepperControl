@@ -189,6 +189,19 @@ double QtContinuousStepper::getKineticsFromController(short whichOne) {
     return retval;
 }
 
+
+//-----------------------------------------------------------------------------
+bool QtContinuousStepper::getErrorFromDriver(void) {
+    double retval;
+
+    retval = (double)(this->sendCommandToAMIS("f1").toLong());
+    if (round(retval) == 0) {
+        return true;
+    } else {
+        return false;
+    }
+
+}
 //-----------------------------------------------------------------------------
 
 void QtContinuousStepper::setStepperParams(double val, short whichOne) {

@@ -117,9 +117,9 @@ void lx200_communication::handleDataFromClient(QString cmdData) {
     }
     this->lastSubCmd->clear();
     this->lastSubCmd->append(this->incomingCommand->toLatin1());
-    if (this->incomingCommand->length() > 0) {
-        qDebug() << "Received: " << this->incomingCommand->toLatin1();
-    }
+//    if (this->incomingCommand->length() > 0) {
+//        qDebug() << "Received: " << this->incomingCommand->toLatin1();
+//    }
 
     subCmdList = new QStringList(this->incomingCommand->split("#:", QString::SkipEmptyParts));
     if (subCmdList->isEmpty()==false) {

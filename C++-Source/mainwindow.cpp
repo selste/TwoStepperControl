@@ -15,7 +15,7 @@
 // device - driven actions. these are timing tasks, management of the GUI and
 // operations such as goto, guiding, reacting to user inputs and handboxes and
 // interaction with external programs via ST4 and LX200.
-// w. birkfellner, 2017-19
+// w. birkfellner, 2017-20
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -87,6 +87,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->tempUpdateTimer->start(30000);
     this->tcpHandBoxSendTimer = new QTimer();
     this->tcpHandBoxSendTimer->start(2000);
+    this->checkDriveTimer = new QTimer();
+    this->checkDriveTimer->start(5000);
     this->UTDate = new QDate(QDate::currentDate());
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
@@ -437,6 +439,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->tempUpdateTimer, SIGNAL(timeout()), this, SLOT(getTemperature())); // this one polls temperature data from the HAT arduino
     connect(this->tcpHandBoxSendTimer, SIGNAL(timeout()), this, SLOT(sendDataToTCPHandboxSlot())); // send status of TSC to the TCP-IP handbox if connected
     connect(this->auxDriveUpdateTimer, SIGNAL(timeout()),this, SLOT(updateAuxDriveStatus())); // event for checking focusmotors and updating the GUI information
+    connect(this->checkDriveTimer, SIGNAL(timeout()), this, SLOT(getDriveError())); // check the AMIS boards for internalk errors
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
     connect(ui->listWidgetIPAddresses,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressChosen())); // selection of IP address for LX 200
@@ -466,8 +469,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbSiderealSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set sidereal tracking rate
     connect(ui->rbLunarSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set lunar tracking rate
     connect(ui->rbSolarSpeed, SIGNAL(released()),this, SLOT(setTrackingRate())); // set solar tracking rate
-    connect(ui->rbParkToSouthHorizon, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
-    connect(ui->rbParkPolaris, SIGNAL(released()), this, SLOT(presetParkingPosition())); // set a parking position
+    connect(ui->pbParkToSouthHorizon, SIGNAL(clicked()), this, SLOT(presetParkingPositionPolaris())); // set a parking position
+    connect(ui->pbParkPolaris, SIGNAL(clicked()), this, SLOT(presetParkingPositionSouthH())); // set a parking position
     connect(ui->rbNoFinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo1FinderFocuser , SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo2FinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams())); // store the auxiliary drive which is used for the guider when the drive no. is changed
@@ -717,14 +720,12 @@ void MainWindow::updateReadings() {
     if (this->mountMotion.RADriveIsMoving == true) { // mount moves at non-sidereal rate - but not in GOTO
         topicalTime = g_AllData->getTimeSinceLastSync() - this->mountMotion.RAMoveElapsedTimeInMS;
         this->mountMotion.RAMoveElapsedTimeInMS+=topicalTime;
-        totalGearRatio = g_AllData->getGearData(0 )*g_AllData->getGearData(1 )*g_AllData->getGearData(2 );
+        totalGearRatio = g_AllData->getGearData(0)*g_AllData->getGearData(1)*g_AllData->getGearData(2);
         relativeTravelRA=this->mountMotion.RADriveDirection*
                 this->StepperDriveRA->getKineticsFromController(3)*topicalTime*g_AllData->getGearData(3 )/
                 (1000.0*g_AllData->getMicroSteppingRatio((short)(this->raState))*totalGearRatio);
         g_AllData->incrementActualScopePosition(relativeTravelRA, 0.0);  // same as above - compute travel in decimal degrees and update it
         if (this->StepperDriveRA->hasHBoxSlewEnded() == true) {
-            // this is a little bit strange; handboxslew is 180 degrees maximum. if this occurs,
-            // it has to be handled like pressing the stop button
             this->mountMotion.RADriveIsMoving = false;
             if (this->mountMotion.RATrackingIsOn == false) {
                 this->setControlsForRATravel(true);
@@ -1298,46 +1299,34 @@ short MainWindow::checkForFlip(bool isEast, float ha, float gha, float dec, floa
             switch (oQuad) {
                 case 1:
                     switch (tQuad) {
-                    case 1:
-                    case 2:
-                        doFlip = 0;
-                        break;
-                    case 3:
-                    case 4:
-                        doFlip = 1;
-                        break;
+                    case 1: doFlip = 0; break;
+                    case 2: doFlip = 0; break;
+                    case 3: doFlip = 1; break;
+                    case 4: doFlip = 1; break;
                     }
                     break;
                 case 2:
                     switch (tQuad) {
-                    case 1:
-                    case 2:
-                        doFlip = 0;
-                        break;
-                    case 3:
-                    case 4:
-                        doFlip = 1;
-                        break;
+                    case 1: doFlip = 0; break;
+                    case 2: doFlip = 0; break;
+                    case 3: doFlip = -1; break;
+                    case 4: doFlip = -1; break;
                     }
                     break;
                 case 3:
                     switch (tQuad) {
-                    case 1:
-                    case 2:
-                    case 3:
-                    case 4:
-                        doFlip = -1;
-                        break;
+                    case 1: doFlip = -1; break;
+                    case 2: doFlip = -1; break;
+                    case 3: doFlip = -1; break;
+                    case 4: doFlip = -1; break;
                     }
                     break;
                 case 4:
                 switch (tQuad) {
-                    case 1:
-                    case 2:
-                    case 3:
-                    case 4:
-                        doFlip = 1;
-                        break;
+                    case 1: doFlip = 1; break;
+                    case 2: doFlip = 1; break;
+                    case 3: doFlip = 1; break;
+                    case 4: doFlip = 1; break;
                     }
                     break;
             }
@@ -1345,46 +1334,34 @@ short MainWindow::checkForFlip(bool isEast, float ha, float gha, float dec, floa
             switch (oQuad) {
                 case 1:
                     switch (tQuad) {
-                        case 1:
-                        case 2:
-                        case 3:
-                        case 4:
-                            doFlip = -1;
-                        break;
+                        case 1: doFlip = -1; break;
+                        case 2: doFlip = -1; break;
+                        case 3: doFlip = -1; break;
+                        case 4: doFlip = -1; break;
                     }
                 break;
                 case 2:
                     switch (tQuad) {
-                        case 1:
-                        case 2:
-                        case 3:
-                        case 4:
-                            doFlip = -1;
-                        break;
+                        case 1: doFlip = -1; break;
+                        case 2: doFlip = -1; break;
+                        case 3: doFlip = -1; break;
+                        case 4: doFlip = -1; break;
                     }
                 break;
                 case 3:
                     switch (tQuad) {
-                        case 1:
-                        case 2:
-                            doFlip = 1;
-                        break;
-                        case 3:
-                        case 4:
-                            doFlip = 0;
-                        break;
+                        case 1: doFlip = 1; break;
+                        case 2: doFlip = 1; break;
+                        case 3: doFlip = 0; break;
+                        case 4: doFlip = 0; break;
                     }
                 break;
                 case 4:
                     switch (tQuad) {
-                        case 1:
-                        case 2:
-                            doFlip = -1;
-                        break;
-                        case 3:
-                        case 4:
-                            doFlip = -1;
-                        break;
+                        case 1: doFlip = -1; break;
+                        case 2: doFlip = -1; break;
+                        case 3: doFlip = 0; break;
+                        case 4: doFlip = 0; break;
                     }
                 break;
             }
@@ -1424,17 +1401,24 @@ void MainWindow::determineParkingPosition(void) {
 
 //------------------------------------------------------------------
 // sets a few selected park positions
-void MainWindow::presetParkingPosition(void) {
+void MainWindow::presetParkingPositionPolaris(void) {
     float parkHA = 0, parkDecl = 0;
 
-    if (ui->rbParkToSouthHorizon->isChecked() == true) {
-        parkDecl = -(90-g_AllData->getSiteCoords(0));
-        parkHA = 0.0;
-    }
-    if (ui->rbParkPolaris->isChecked() == true) {
-        parkDecl = 89.9;
-        parkHA = 18.0*15;
-    }
+    parkDecl = 89.9;
+    parkHA = 18.0*15;
+    ui->lcdHAPark->display(parkHA);
+    ui->lcdDecPark->display(parkDecl);
+    g_AllData->setParkingPosition(parkHA, parkDecl);
+    g_AllData->storeGlobalData(); // ... and stored it to the preferences file
+}
+
+//------------------------------------------------------------------
+// sets a few selected park positions
+void MainWindow::presetParkingPositionSouthH(void) {
+    float parkHA = 0, parkDecl = 0;
+
+    parkDecl = -(90-g_AllData->getSiteCoords(0));
+    parkHA = 0.0;
     ui->lcdHAPark->display(parkHA);
     ui->lcdDecPark->display(parkDecl);
     g_AllData->setParkingPosition(parkHA, parkDecl);
@@ -1519,12 +1503,28 @@ void MainWindow::shutDownProgram() {
     delete UTDate;
     delete UTTime;
     delete timer;
+    delete checkDriveTimer;
     delete st4State.raCorrTime;
     delete st4State.deCorrTime;
     delete g_AllData;
     qDebug() << "Closing USB bus ...";
     delete amisInterface;
     exit(0);
+}
+
+//---------------------------------------------------------------------
+// calle to check whether the error flag on the AMIS drivers is up ...
+void MainWindow::getDriveError(void) {
+    bool isError;
+
+    isError = this->StepperDriveRA->getErrorFromDriver();
+    if (isError == true) {
+        ui->cbErrRA->setChecked(true);
+    }
+    isError = this->StepperDriveDecl->getErrorFromDriver();
+    if (isError == true) {
+        ui->cbErrDecl->setChecked(true);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -3745,6 +3745,7 @@ void MainWindow::RAMoveHandboxFwd(void) {
 
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
+        this->trackingBeforeHandboxMotionStarted = true;
     }
 
     ui->rbCorrSpeed->setEnabled(false);
@@ -3779,14 +3780,18 @@ void MainWindow::RAMoveHandboxFwd(void) {
                                                                      ((double)(ui->sbCurrMaxRA_AMIS->value())));
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
+            ui->pbStartTracking->setEnabled(true);
         }
-        this->startRATracking();
+        if (this->trackingBeforeHandboxMotionStarted == true) {
+            this->startRATracking();
+        }
         ui->pbRAMinus->setEnabled(1);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         }
+        this->trackingBeforeHandboxMotionStarted = false;
     }
 }
 
@@ -3797,6 +3802,7 @@ void MainWindow::RAMoveHandboxBwd(void) {
 
     if (this->mountMotion.RATrackingIsOn == true) {
         this->stopRATracking();
+        this->trackingBeforeHandboxMotionStarted = true;
     }
 
     ui->rbCorrSpeed->setEnabled(false);
@@ -3832,14 +3838,18 @@ void MainWindow::RAMoveHandboxBwd(void) {
                                                                      ((double)(ui->sbCurrMaxRA_AMIS->value())));
         if (this->mountMotion.RATrackingIsOn == false) {
             this->setControlsForRATravel(true);
+            ui->pbStartTracking->setEnabled(true);
         }
-        this->startRATracking();
+        if (this->trackingBeforeHandboxMotionStarted == true) {
+            this->startRATracking();
+        }
         ui->pbRAPlus->setEnabled(1);
         ui->rbCorrSpeed->setEnabled(true);
         ui->rbMoveSpeed->setEnabled(true);
         if (ui->rbMoveSpeed->isChecked()==false) {
             ui->sbMoveSpeed->setEnabled(true);
         }
+        this->trackingBeforeHandboxMotionStarted = false;
     }
 }
 
