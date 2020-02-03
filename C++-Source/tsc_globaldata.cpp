@@ -33,6 +33,16 @@ TSC_GlobalData::TSC_GlobalData() {
     cameraParameters.pixelSizeMicronsY=5.2;
     cameraParameters.chipWidth=1280;
     cameraParameters.chipHeight=1024;
+    cameraParameters.bitDepth = 8;
+    mainCameraDisplaySize.width=400;
+    mainCameraDisplaySize.height=300;
+    mainCameraDisplaySize.scalingFactor=1;
+    mainCCDParamsPS.pixelSizeMicronsX=3.8;
+    mainCCDParamsPS.pixelSizeMicronsY=3.8;
+    mainCCDParamsPS.chipWidth=4656;
+    mainCCDParamsPS.chipHeight=3520;
+    mainCCDParamsPS.bitDepth = 16;
+
     this->currentCameraImage = new QImage();
     this->monotonicGlobalTimer=new QElapsedTimer();
     this->monotonicGlobalTimer->start();
@@ -49,6 +59,14 @@ TSC_GlobalData::TSC_GlobalData() {
     this->HandboxIPAddress = new QString("127.0.0.1");
     this->celestialSpeed=0.0041780746; // default speed is sidereal speed
     this->useTimeFromLX200 = false;
+
+    this->psParams.psInProgress = false;
+    this->psParams.psSuccess = false;
+    this->psParams.astrometryError = false;
+    this->psParams.searchRadiusInDeg = 3.0;
+    this->psParams.pathToImages = new QString("/home/pi/TwoStepperControl-master/build-TwoStepperControl-Desktop-Release/TSC_Images/");
+    this->psParams.pathToFITSToBeSolved = new QString();
+
     if (this->loadGlobalData() == false) {
         this->gearData.planetaryRatioRA=9;
         this->gearData.gearRatioRA=1;
@@ -98,9 +116,64 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete currentCameraImage;
     delete monotonicGlobalTimer;
     delete LX200IPAddress;
+    delete psParams.pathToImages;
+    delete psParams.pathToFITSToBeSolved;
 }
 
+//-----------------------------------------------
+// 0 is "inProgress", 1 is "Success", 2 is "AstrometryError"
+void TSC_GlobalData::setBooleanPSParams(short what, bool val) {
+    switch(what) {
+        case 0: this->psParams.psInProgress = val; break;
+        case 1: this->psParams.psSuccess = val; break;
+        case 2: this->psParams.astrometryError = val; break;
+    }
+}
 
+//-----------------------------------------------
+// 0 is "inProgress", 1 is "Success", 2 is "AstrometryError"
+bool TSC_GlobalData::getBooleanPSParams(short what) {
+    switch (what) {
+        case 0: return this->psParams.psInProgress; break;
+        case 1: return this->psParams.psSuccess; break;
+        case 2: return this->psParams.astrometryError; break;
+    }
+    return false;
+}
+
+//-------------------------------------------------
+// just setting the search radius for platesolving in degrees
+void TSC_GlobalData::setPSSearchRad(double sr) {
+    this->psParams.searchRadiusInDeg = sr;
+}
+
+//-------------------------------------------------
+double TSC_GlobalData::getPSSearchRad(void) {
+    return this->psParams.searchRadiusInDeg;
+}
+
+//-----------------------------------------------
+QString TSC_GlobalData::getPathToImageToBeSolved(void) {
+    return this->psParams.pathToFITSToBeSolved->toLatin1();
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setPathToImageToBeSolved(QString pthimg) {
+    this->psParams.pathToFITSToBeSolved->clear();
+    this->psParams.pathToFITSToBeSolved->append(pthimg);
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setPathToImages(QString pth) {
+
+    this->psParams.pathToImages->clear();
+    this->psParams.pathToImages->append(pth);
+}
+
+//-----------------------------------------------
+QString TSC_GlobalData::getPathToImages(void) {
+    return this->psParams.pathToImages->toLatin1();
+}
 //----------------------------------------------
 bool TSC_GlobalData::getDriverAvailability(void) {
     return this->driversAvailable;
@@ -462,13 +535,21 @@ QImage* TSC_GlobalData::getCameraImage(void) {
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setINDIState(bool serverConnected) {
-    this->INDIServerIsConnected = serverConnected;
+void TSC_GlobalData::setINDIState(bool serverConnected, bool isMainCCD) {
+    if (isMainCCD == false) {
+        this->INDIServerIsConnected = serverConnected;
+    } else {
+        this->INDIServerForMainCCDIsConnected = serverConnected;
+    }
 }
 
 //-----------------------------------------------
-bool TSC_GlobalData::getINDIState(void) {
-    return this->INDIServerIsConnected;
+bool TSC_GlobalData::getINDIState(bool isMainCCD) {
+    if (isMainCCD == false) {
+        return this->INDIServerIsConnected;
+    } else {
+        return this->INDIServerForMainCCDIsConnected;
+    }
 }
 
 //-----------------------------------------------
@@ -503,56 +584,110 @@ float TSC_GlobalData::getInitialStarPosition(short what) {
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setCameraDisplaySize(int w, int h) {
-    this->cameraDisplaySize.width=w;
-    this->cameraDisplaySize.height=h;
+void TSC_GlobalData::setCameraDisplaySize(int w, int h, bool isMainCCD) {
+    if (isMainCCD == false) {
+        this->cameraDisplaySize.width=w;
+        this->cameraDisplaySize.height=h;
+    } else {
+        this->mainCameraDisplaySize.width=w;
+        this->mainCameraDisplaySize.height=h;
+    }
 }
 
 //-----------------------------------------------
-int TSC_GlobalData::getCameraDisplaySize(short what) {
+int TSC_GlobalData::getCameraDisplaySize(short what,bool isMainCCD) {
     int retval;
+
 
     switch (what) {
     case 0:
-        retval = this->cameraDisplaySize.width;
+        if (isMainCCD == false) {
+            retval = this->cameraDisplaySize.width;
+        } else {
+            retval = this->mainCameraDisplaySize.width;
+        }
         break;
     case 1:
-        retval = this->cameraDisplaySize.height;
+        if (isMainCCD == false) {
+            retval = this->cameraDisplaySize.height;
+        } else {
+            retval = this->mainCameraDisplaySize.width;
+        }
         break;
     default:
         retval=-1;
     }
     return retval;
 }
-
 //-----------------------------------------------
-float TSC_GlobalData::getCameraImageScalingFactor(void) {
-    return this->cameraDisplaySize.scalingFactor;
+int TSC_GlobalData::getCameraBitDepth(bool isMainCCD) {
+    if (isMainCCD == false) {
+        return cameraParameters.bitDepth;
+    } else {
+        return mainCCDParamsPS.bitDepth;
+    }
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setCameraImageScalingFactor(float sf) {
-    this->cameraDisplaySize.scalingFactor = sf;
+void TSC_GlobalData::setCameraBitDepth(int bd, bool isMainCCD) {
+    if (isMainCCD == false) {
+        this->cameraParameters.bitDepth = bd;
+    } else {
+        this->mainCCDParamsPS.bitDepth = bd;
+    }
 }
 
 //-----------------------------------------------
-void TSC_GlobalData::setCameraParameters(float psmx, float psmy, int cw, int ch) {
-    this->cameraParameters.pixelSizeMicronsX=psmx;
-    this->cameraParameters.pixelSizeMicronsY=psmy;
-    this->cameraParameters.chipWidth=cw;
-    this->cameraParameters.chipHeight=ch;
+float TSC_GlobalData::getCameraImageScalingFactor(bool isMainCCD) {
+    if (isMainCCD == false) {
+        return this->cameraDisplaySize.scalingFactor;
+    } else {
+        return this->mainCameraDisplaySize.scalingFactor;
+    }
 }
 
 //-----------------------------------------------
-float TSC_GlobalData::getCameraPixelSize(short what) {
+void TSC_GlobalData::setCameraImageScalingFactor(float sf, bool isMainCCD) {
+    if (isMainCCD == false) {
+        this->cameraDisplaySize.scalingFactor = sf;
+    } else {
+        this->mainCameraDisplaySize.scalingFactor = sf;
+    }
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setCameraParameters(float psmx, float psmy, int cw, int ch, bool isMainCCD) {
+    if (isMainCCD == false) {
+        this->cameraParameters.pixelSizeMicronsX=psmx;
+        this->cameraParameters.pixelSizeMicronsY=psmy;
+        this->cameraParameters.chipWidth=cw;
+        this->cameraParameters.chipHeight=ch;
+    } else {
+        this->mainCCDParamsPS.pixelSizeMicronsX=psmx;
+        this->mainCCDParamsPS.pixelSizeMicronsY=psmy;
+        this->mainCCDParamsPS.chipWidth=cw;
+        this->mainCCDParamsPS.chipHeight=ch;
+    }
+}
+
+//-----------------------------------------------
+float TSC_GlobalData::getCameraPixelSize(short what, bool isMainCCD) {
     float retval;
 
     switch (what) {
     case 0:
-        retval = this->cameraParameters.pixelSizeMicronsX;
+        if (isMainCCD == false) {
+            retval = this->cameraParameters.pixelSizeMicronsX;
+        } else {
+            retval = this->mainCCDParamsPS.pixelSizeMicronsX;
+        }
         break;
     case 1:
-        retval = this->cameraParameters.pixelSizeMicronsY;
+        if (isMainCCD == false) {
+            retval = this->cameraParameters.pixelSizeMicronsY;
+        } else {
+            retval = this->mainCCDParamsPS.pixelSizeMicronsY;
+        }
         break;
     default:
         retval=-1;
@@ -561,15 +696,23 @@ float TSC_GlobalData::getCameraPixelSize(short what) {
 }
 
 //-----------------------------------------------
-int TSC_GlobalData::getCameraChipPixels(short what) {
+int TSC_GlobalData::getCameraChipPixels(short what, bool isMainCCD) {
     int retval;
 
     switch (what) {
     case 0:
-        retval = this->cameraParameters.chipWidth;
+        if (isMainCCD == false) {
+            retval = this->cameraParameters.chipWidth;
+        } else {
+            retval = this->mainCCDParamsPS.chipWidth;
+        }
         break;
     case 1:
-        retval = this->cameraParameters.chipHeight;
+        if (isMainCCD == false) {
+            retval = this->cameraParameters.chipHeight;
+        } else {
+            retval = this->mainCCDParamsPS.chipHeight;
+        }
         break;
     default:
         retval=-1;
@@ -1245,7 +1388,7 @@ bool TSC_GlobalData::incrementActualScopePosition(double deltaRA, double deltaDe
         decRes=actDec+90;
         actDec = -90;
         this->meridianFlipState.declSign *= -1;
-        actDec += decRes;
+        actDec -= decRes;
         actRA += 180;
         if (actRA > 360) {
             actRA -=360.0;

@@ -32,8 +32,8 @@ ocv_guiding::ocv_guiding(void) {
         this->myVec->insert(i, cval);
     }
     // setting colortable for grayscale QImages
-    this->maxX = g_AllData->getCameraChipPixels(0);
-    this->maxY = g_AllData->getCameraChipPixels(1); // get the chip size
+    this->maxX = g_AllData->getCameraChipPixels(0,false);
+    this->maxY = g_AllData->getCameraChipPixels(1,false); // get the chip size
     this->gScopeFL = 1000;
     this->arcsecPerPixX=1.07276;
     this->arcsecPerPixY=1.07276;
@@ -51,6 +51,7 @@ ocv_guiding::~ocv_guiding() {
 
 //---------------------------------------------------
 void ocv_guiding::convertQImgToMat(void) {
+
     this->currentImageOCVMat=Mat(this->currentImageQImg->height(),
     this->currentImageQImg->width(), CV_8UC1,
     const_cast<uchar*>(this->currentImageQImg->bits()),
@@ -81,8 +82,8 @@ QPixmap* ocv_guiding::getGuideStarPreview(void) {
 //---------------------------------------------------
 void ocv_guiding::setFocalLengthOfGuidescope(int fl) {
     this->gScopeFL=(double)fl;
-    this->arcsecPerPixX=206.3*g_AllData->getCameraPixelSize(0)/(this->gScopeFL);
-    this->arcsecPerPixY=206.3*g_AllData->getCameraPixelSize(1)/(this->gScopeFL);
+    this->arcsecPerPixX=206.3*g_AllData->getCameraPixelSize(0,false)/(this->gScopeFL);
+    this->arcsecPerPixY=206.3*g_AllData->getCameraPixelSize(1,false)/(this->gScopeFL);
 }
 //---------------------------------------------------
 double ocv_guiding::getArcSecsPerPix(short what) {
@@ -160,7 +161,7 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool l
         if (cvmoms.m00 > 0.01) {
             centroidX=(cvmoms.m10/(float)cvmoms.m00);
             centroidY=(cvmoms.m01/(float)cvmoms.m00);
-            scaleFact=g_AllData->getCameraImageScalingFactor();
+            scaleFact=g_AllData->getCameraImageScalingFactor(false);
             if (updateCentroid == true) {
                 g_AllData->setInitialStarPosition(((tLeft.x+centroidX)*scaleFact),((tLeft.y+centroidY)*scaleFact));
                 // this is tricky - correct the position of the manually selected guide star,

@@ -23,6 +23,11 @@
 #include <QVector>
 #include <QObject>
 #include <QCoreApplication>
+#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+using namespace cv;
 
 class ccd_client:public QObject, public INDI::BaseClient {
     Q_OBJECT
@@ -34,11 +39,12 @@ class ccd_client:public QObject, public INDI::BaseClient {
     bool setINDIServer(QString, int);
     QString* getINDIServerMessage(void);
     void sayGoodbyeToINDIServer(void);
-    bool getCCDParameters(void);
+    bool getCCDParameters(bool);
     void setStoreImageFlag(bool);
     void setCameraName(QString);
     void disconnectFromServer(void);
     bool probeForCCD(void);
+    bool cameraGainAvailable(void);
 
 protected:
     virtual void newDevice(INDI::BaseDevice *dp);
@@ -62,7 +68,9 @@ private:
    double frameSizeX; // number of pixels in x-direction
    double frameSizeY; // number of pixles in y-direction
    double bitsPerPixel; // depth of the camera
+   bool cameraHasGain; // some cameras can set gain, some cannot ...
    QImage* fitsqimage; // a qimage, generated form raw FITS data
+   char *scaledfitsdata; // in case of 16 bit data, this one holds the scaled 8 bit image
    QPixmap* displayPMap; // a qpixmap, generated for GUI display form the qimage
    bool newCameraImageAvailable; // name says it all
    QVector<QRgb> *myVec; // a vector for grayscale conversion
@@ -72,6 +80,8 @@ private:
    long expcounter; // a counter for exposures
    bool storeCamImages; // a boolean for handling storage of images to the SD card
    short simulatorCounter; // a helper for debugging
+   bool isAProbeImage; // a flag that causes storage rather than further processing of image data
+   void saveBLOB(IBLOB*); // saves a BLOB to a FITS image
 
 signals:
    void imageAvailable(QPixmap*); // emitted when an image is available

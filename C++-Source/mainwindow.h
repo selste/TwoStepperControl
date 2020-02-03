@@ -23,6 +23,7 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 #include <QTimeZone>
+#include <QProcess>
 #include <stdlib.h>
 #include "QtContinuousStepper.h"
 #include "QtKineticStepper.h"
@@ -56,14 +57,16 @@ private slots: // callbacks for (mainly) GUI widgets
     void setMaxStepperCurrentRA(void);
     void setMaxStepperCurrentDecl(void);
     void setINDISAddrAndPort(void);
-    void disconnectFromINDIServer(void);
+    void setINDISAddrAndPortForMainCCD(void);
+    void disconnectGuiderFromINDIServer(void);
+    void disconnectMainCCDFromINDIServer(void);
     void clearINDILog(void);
     void findOutAboutINDIServerPID(void);
     void killRunningINDIServer(void);
     void startCCDAcquisition(void);
     void stopCCDAcquisition(void);
     void changeCCDGain(void);
-    void storeCCDData(void);
+    void storeCCDData(bool);
     void syncMount(void);
     void syncMount(float, float, bool);
     void syncMountFromGoTo(void);
@@ -188,6 +191,16 @@ private slots: // callbacks for (mainly) GUI widgets
     void presetParkingPositionPolaris(void);
     void presetParkingPositionSouthH(void);
     void getDriveError(void);
+    void storeSettingsForPlateSolving(void);
+    void psTakeImage(void);
+    void psChooseFITSDirectory(void);
+    void psStartSolving(void);
+    void psSetSearchRadiusForPS(void);
+    void psHandleEndOfAstronomyNetProcess(int, QProcess::ExitStatus);
+    void psKillAstrometryNet(void);
+    void psDisplayAstrometryNetOutput(void);
+    void psReadWCSInfoOutput(void);
+    void syncPSCoordinates(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
@@ -293,6 +306,7 @@ private:
     QElapsedTimer *elapsedGoToTime;
     ocv_guiding *guiding; // the class that does image processing for guiding
     ccd_client *camera_client;
+    ccd_client *psMaincamera_client;
     QTcpServer *LXServer;
     QTcpServer *HBServer;
     QTcpSocket *LXSocket;
@@ -310,7 +324,8 @@ private:
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
-    bool ccdCameraIsAcquiring;
+    bool ccdCameraIsAcquiring = false;
+    bool mainCCDCameraIsAcquiring = false;
     bool auxBoardIsAvailable = 0;
     bool tcpHandboxIsConnected = 0;
     bool trackingBeforeHandboxMotionStarted = false; // a flag that indicates what was the RA motion before a handbox motion started
@@ -323,6 +338,8 @@ private:
     double gotoETA; // estimated time of arrival for goto
     float targetRA;
     float targetDecl;  // coordinates for GoTo
+    float psRA = 0;
+    float psDecl = 0; // coordinates from platesolving
     short RAdriveDirectionForNorthernHemisphere;
     double approximateGOTOSpeedDecl;  // for display of travel, store an average travel speed here,
     double approximateGOTOSpeedRA;    // taking into account the acceleration ramps...
@@ -336,7 +353,10 @@ private:
     QString *currentDeclString;
     QString *currentHAString;
     QString *coordString;
+    QString *wcsInfoOutput;
     QFile *guidingLog;
+    QProcess *astroMetryProcess;
+    qint64 *ametryPID;
     bool isDriveActive(bool);
     void connectLX200Events(bool);
     void updateTimeAndDate(void);
@@ -365,7 +385,7 @@ private:
     void compensateDeclBacklashPG(short);
     void handleST4State(void);
     void doDeclinationMoveForST4(short);
-    bool getCCDParameters(void);
+    bool getCCDParameters(bool);
     void setINDIrbuttons(bool);
     void shutDownPort(void);
     void openPort(void);
@@ -401,6 +421,8 @@ private:
     void sendDataToTCPHandbox(QString);
     QString* generateCoordinateString(float, bool);
     short checkForFlip(bool, float, float, float, float);
+    double psComputeFOVForMainCCD(void);
+    void psreadCoordinatesFromFITS(void);
 
 signals:
     void dslrExposureDone(void);

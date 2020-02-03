@@ -28,12 +28,15 @@
 #include <QTime>
 #include <QTimeZone>
 #include <QDate>
+#include <QFileDialog>
+#include <QCursor>
 #include <math.h>
 #include <unistd.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <QMessageBox>
+#include <fitsio.h>
 #include "QDisplay2D.h"
 #include "tsc_globaldata.h"
 #include "usb_communications.h"
@@ -97,6 +100,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     currentYear = new QString(this->UTDate->currentDate().toString("yyyy"));
     ui->sbEpoch->setValue(currentYear->toInt());
     delete currentYear;
+    this->wcsInfoOutput = new QString();
 
     this->initiateStepperDrivers(); // initialise the driver boards
     qDebug() << "Steppers initialized";
@@ -189,15 +193,29 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     textEntry->clear();
     ui->leDeclStepSize->setText(textEntry->number(g_AllData->getGearData(7 )));
     textEntry->clear();
+    qDebug() << "Drive params set ...";
+
         // now setting all the parameters in the "Cam"-tab
-    ui->lePixelSizeX->setText(textEntry->number(g_AllData->getCameraPixelSize(0)));
+    ui->lePixelSizeX->setText(textEntry->number(g_AllData->getCameraPixelSize(0,false)));
     textEntry->clear();
-    ui->lePixelSizeY->setText(textEntry->number(g_AllData->getCameraPixelSize(1)));
+    ui->lePixelSizeY->setText(textEntry->number(g_AllData->getCameraPixelSize(1,false)));
     textEntry->clear();
-    ui->leFrameSizeX->setText(textEntry->number(g_AllData->getCameraChipPixels(0)));
+    ui->leFrameSizeX->setText(textEntry->number(g_AllData->getCameraChipPixels(0,false)));
     textEntry->clear();
-    ui->leFrameSizeY->setText(textEntry->number(g_AllData->getCameraChipPixels(1)));
+    ui->leFrameSizeY->setText(textEntry->number(g_AllData->getCameraChipPixels(1,false)));
     textEntry->clear();
+    ui->lcdBitDepth->display(g_AllData->getCameraBitDepth(false));
+
+    ui->lePixelSizeXMainCCD->setText(textEntry->number(g_AllData->getCameraPixelSize(0, true)));
+    textEntry->clear();
+    ui->lePixelSizeYMainCCD->setText(textEntry->number(g_AllData->getCameraPixelSize(1, true)));
+    textEntry->clear();
+    ui->leFrameSizeXMainCCD->setText(textEntry->number(g_AllData->getCameraChipPixels(0,true)));
+    textEntry->clear();
+    ui->leFrameSizeYMainCCD->setText(textEntry->number(g_AllData->getCameraChipPixels(1, true)));
+    textEntry->clear();
+    ui->lcdBitDepthMainCCD->display(g_AllData->getCameraBitDepth(true));
+
         // now setting parameters in the "Settings"-tab
     ui->leControllerName->setText(g_AllData->getSiteName());
     ui->leLat->setText(textEntry->number(g_AllData->getSiteCoords(0)));
@@ -207,6 +225,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbUTCOffs->setValue(g_AllData->getSiteCoords(2));
     ui->lcdHAPark->display(g_AllData->getParkingPosition(0));
     ui->lcdDecPark->display(g_AllData->getParkingPosition(1));
+    const QFileInfo outputDir((g_AllData->getPathToImages()).toLatin1()) ;
+    if (outputDir.exists() && outputDir.isDir() && outputDir.isReadable() && outputDir.isWritable()) {
+        ui->lePathToFitsFile->setText(g_AllData->getPathToImages());
+    }
+    ui->sbPSSearchRad->setValue(g_AllData->getPSSearchRad());
+    this->astroMetryProcess = new QProcess();
+    this->astroMetryProcess->setEnvironment( QProcess::systemEnvironment() );
+    this->astroMetryProcess->setProcessChannelMode( QProcess::MergedChannels );
     ui->sbNoFlip->setValue(g_AllData->getMaxDeclForNoFlip());
     ui->cbIsGEM->setChecked(g_AllData->getMFlipParams(0));
     ui->cbMountIsEast->setChecked(g_AllData->getMFlipParams(1));
@@ -246,6 +272,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     } // setting up the buttons for the stored microstep ratios
         // camera and guiding class are instantiated
     camera_client = new ccd_client(); // install a camera client for guiding via INDI
+    psMaincamera_client = new ccd_client(); // same for a second camera for platesolving
     guiding = new ocv_guiding();
     guideStarPrev = new QPixmap(); // a pixmap for showing the preview window
     guideStarPosition.centrX =0.0;
@@ -270,8 +297,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->objCatalog=NULL; // the topical catalogue
     this->ra = 0.0;
     this->decl = 0.0; // the sync position - no sync for the mount was carried out - these are displayed in the GOTO textentry
-    this->camView = new QDisplay2D(ui->camTab,550,400); // make the clickable scene view of 425 x 340 pixels
-    this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0),g_AllData->getCameraDisplaySize(1)); // store the size of the scene view in the global parameter class
+    this->camView = new QDisplay2D(ui->guidingTab,550,400); // make the clickable scene view of 425 x 340 pixels
+    this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0,false),g_AllData->getCameraDisplaySize(1,false)); // store the size of the scene view in the global parameter class
     this->camImageWasReceived=false; // no camera image came in yet ...
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -413,6 +440,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
         // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
     ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
+    ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
     ui->sbDitherMax->setValue(g_AllData->getDitherRange(false));
     ui->sbDitherMin->setValue(g_AllData->getDitherRange(true));
 
@@ -461,6 +489,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbAMaxDecl_AMIS, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccDecl())); // process input on stepper parameters in gear-tab
     connect(ui->sbCurrMaxDecl_AMIS, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
     connect(ui->sbNoFlip, SIGNAL(valueChanged(int)), this, SLOT(setDecForNoFlip())); // store the maximum declination for not doing a meridian flip
+    connect(ui->sbPSSearchRad, SIGNAL(valueChanged(double)), this, SLOT(psSetSearchRadiusForPS())); // store the search radius for plate solving
     connect(ui->rbCorrSpeed,SIGNAL(released()), this, SLOT(setCorrectionSpeed())); // set speed for slow manual motion
     connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed())); // set speed for faster manual motion
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
@@ -469,8 +498,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbSiderealSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set sidereal tracking rate
     connect(ui->rbLunarSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set lunar tracking rate
     connect(ui->rbSolarSpeed, SIGNAL(released()),this, SLOT(setTrackingRate())); // set solar tracking rate
-    connect(ui->pbParkToSouthHorizon, SIGNAL(clicked()), this, SLOT(presetParkingPositionPolaris())); // set a parking position
-    connect(ui->pbParkPolaris, SIGNAL(clicked()), this, SLOT(presetParkingPositionSouthH())); // set a parking position
+    connect(ui->pbParkToSouthHorizon, SIGNAL(clicked()), this, SLOT(presetParkingPositionSouthH())); // set a parking position
+    connect(ui->pbParkPolaris, SIGNAL(clicked()), this, SLOT(presetParkingPositionPolaris())); // set a parking position
+    connect(ui->pbChoosePathToFITS, SIGNAL(clicked()), this, SLOT(psChooseFITSDirectory())); // choose a directory for storing FITS images for plate solving
     connect(ui->rbNoFinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo1FinderFocuser , SIGNAL(released()),this, SLOT(storeAuxBoardParams()));
     connect(ui->rbNo2FinderFocuser, SIGNAL(released()),this, SLOT(storeAuxBoardParams())); // store the auxiliary drive which is used for the guider when the drive no. is changed
@@ -480,7 +510,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills the program, including killing the drives
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
     connect(ui->pbKillINDIServer, SIGNAL(clicked()),this, SLOT(killRunningINDIServer())); // a button that kill running INDI servers ...
-    connect(ui->pbDisconnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectFromINDIServer())); // disconnects from INDI server
+    connect(ui->pbDisconnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectGuiderFromINDIServer())); // disconnects from INDI server
+    connect(ui->pbDisconnectFromServerMainCCD, SIGNAL(clicked()), this, SLOT(disconnectMainCCDFromINDIServer())); // same as above for main ccd in platesolving
     connect(ui->pbStoreCCDParameters, SIGNAL(clicked()), this, SLOT(storeCCDData())); // store ccd parameters to preferences file manually
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition())); // start acquiring images from the guidecam. a signal is emitted if an image arrived.
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
@@ -543,10 +574,15 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbGdFocSmallFwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxFwdTiny())); // move guide focuser drive 1 forward
     connect(ui->pbGdFocSmallBwd, SIGNAL(clicked()), this, SLOT(mvGuideAuxBwdTiny())); // move guide focuser drive 1 bward
     connect(ui->pbStoreDSLRSettings, SIGNAL(clicked()), this, SLOT(storeDSLRSettingsForDithering())); // store DSLR pixel size and main scope focal length for dithering
+    connect(ui->pbStoreSettingsPS, SIGNAL(clicked()), this, SLOT(storeSettingsForPlateSolving())); // slot for stroing the settings in platesolving
     connect(ui->pbStoreSpeeds, SIGNAL(clicked()), this, SLOT(storeHandBoxSpeeds())); // store the goto and motion speeds for the handbox
     connect(ui->pbStorePark, SIGNAL(clicked()), this, SLOT(determineParkingPosition())); // store the actual position as parking position
     connect(ui->pbGoToPark, SIGNAL(clicked()), this, SLOT(gotoParkPosition())); // move the telescope to the parking position and stop motion
     connect(ui->pbSyncToPark, SIGNAL(clicked()), this, SLOT(syncParkPosition())); // if the scope is parked, sync it to the known parking position
+    connect(ui->pbTakeImagePS, SIGNAL(clicked()), this, SLOT(psTakeImage())); // take an image for platesolving
+    connect(ui->pbSolveFieldPS, SIGNAL(clicked()), this, SLOT(psStartSolving())); // issue a command to astrometry.net
+    connect(ui->pbKillAMetry, SIGNAL(clicked()), this, SLOT(psKillAstrometryNet())); // stop astrometry.net
+    connect(ui->pbSyncPS, SIGNAL(clicked()), this, SLOT(syncPSCoordinates())); // sync to coordinates from platesolving
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries()),Qt::QueuedConnection); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
@@ -556,6 +592,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this, SIGNAL(tcpHandboxDataReceived()), this, SLOT(handleHandbox()),Qt::QueuedConnection); // handle data comming from the TCP/IP handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
+    connect(this->astroMetryProcess, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(psHandleEndOfAstronomyNetProcess(int, QProcess::ExitStatus))); // handle the end of platesolving
     connectLX200Events(true); // call all connects for LX200 functions
     ui->rbZWOINDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
@@ -820,7 +857,9 @@ void MainWindow::updateReadings() {
     this->currentDeclString->clear();
     this->currentDeclString->append(this->generateCoordinateString(g_AllData->getActualScopePosition(1), false));
     ui->leRightAscension->setText(*currentRAString);
+    ui->lePSRA->setText(*currentRAString);
     ui->leDecl->setText(*currentDeclString);
+    ui->lePSDecl->setText(*currentDeclString);
     hourAngleForDisplay=(g_AllData->getLocalSTime()*15 - g_AllData->getActualScopePosition(2));
     while (hourAngleForDisplay < 0) {
         hourAngleForDisplay += 360;
@@ -1470,6 +1509,8 @@ void MainWindow::shutDownProgram() {
     this->waitForNMSecs((ui->sbExposureTime->value())*1000);
     camera_client->sayGoodbyeToINDIServer();
     delete camera_client;
+    psMaincamera_client->sayGoodbyeToINDIServer();
+    delete psMaincamera_client;
     qDebug() << "Shutting down drives...";
     this->StepperDriveRA->shutDownDrive();
     this->StepperDriveDecl->shutDownDrive();
@@ -1482,6 +1523,7 @@ void MainWindow::shutDownProgram() {
     delete currentHAString;
     delete coordString;
     delete textEntry;
+    delete wcsInfoOutput;
     delete camImg;
     delete guideStarPrev;
     qDebug() << "Freeing SPI ...";
@@ -1509,6 +1551,7 @@ void MainWindow::shutDownProgram() {
     delete g_AllData;
     qDebug() << "Closing USB bus ...";
     delete amisInterface;
+    delete astroMetryProcess;
     exit(0);
 }
 
@@ -1660,7 +1703,7 @@ void MainWindow::setMaxStepperCurrentDecl(void) {
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
-// read the address and port from the GUI and start connect the camera to the INDI server
+// read the address and port from the GUI and start connect the guide camera to the INDI server
 void MainWindow::setINDISAddrAndPort(void) {
     QString saddr;
     int sport, gainVal;
@@ -1671,7 +1714,7 @@ void MainWindow::setINDISAddrAndPort(void) {
     saddr=ui->leINDIServer->text();
     sport=ui->sbINDIPort->value();
     isServerUp = camera_client->setINDIServer(saddr,sport);
-    g_AllData->setINDIState(isServerUp);
+    g_AllData->setINDIState(isServerUp,false);
     // set a global flag on the server state
     if (isServerUp==true) {
         this->waitForNMSecs(500);
@@ -1683,9 +1726,16 @@ void MainWindow::setINDISAddrAndPort(void) {
             ui->pbExpose->setEnabled(true);
             ui->cbIndiIsUp->setChecked(true);
             ui->cbStoreGuideCamImgs->setEnabled(true);
-            storeCCDData();
-            gainVal=ui->sbCCDGain->value();
-            camera_client->sendGain(gainVal);
+            this->getCCDParameters(false);
+            this->storeCCDData(false);
+            if (camera_client->cameraGainAvailable() == true) {
+                ui->sbCCDGain->setEnabled(true);
+                gainVal=ui->sbCCDGain->value();
+                camera_client->sendGain(gainVal);
+            } else {
+                ui->sbCCDGain->setValue(0);
+                ui->sbCCDGain->setEnabled(false);
+            }
             ui->pbDisconnectFromServer->setEnabled(true);
         } else {
             ui->pbConnectToServer->setEnabled(true);
@@ -1696,18 +1746,64 @@ void MainWindow::setINDISAddrAndPort(void) {
             noCamBoxMsg.setText("Camera not available - is it connected?");
             noCamBoxMsg.exec();
             camera_client->sayGoodbyeToINDIServer();
-            this->disconnectFromINDIServer();
+            this->disconnectGuiderFromINDIServer();
             this->waitForNMSecs(1000);
         }
     } else {
           ui->pbConnectToServer->setEnabled(true);
     }
-
 }
 
 //------------------------------------------------------------------
-// disconnect from INDI server
-void MainWindow::disconnectFromINDIServer(void) {
+// read the address and port from the GUI and start connect the Main camera to the INDI server
+void MainWindow::setINDISAddrAndPortForMainCCD(void) {
+    QString saddr;
+    int sport;
+    bool isServerUp = 0;
+    QMessageBox noCamBoxMsg;
+
+    ui->pbConnectToServerMainCCD->setEnabled(false);
+    saddr=ui->leINDIServerMainCCD->text();
+    sport=ui->sbINDIPortMainCCD->value();
+    isServerUp = psMaincamera_client->setINDIServer(saddr,sport);
+    g_AllData->setINDIState(isServerUp, true);
+    // set a global flag on the server state
+    if (isServerUp==true) {
+        this->waitForNMSecs(500);
+        QCoreApplication::processEvents(QEventLoop::AllEvents,2000);   // process events before sleeping for a second
+        this->waitForNMSecs(1000);
+        isServerUp = psMaincamera_client->probeForCCD();
+        if (isServerUp == true) {
+            ui->pbTakeImagePS->setEnabled(true);
+            ui->cbIndiIsUpMainCCD->setChecked(true);
+            this->getCCDParameters(true);
+            this->storeCCDData(true);
+
+            //------------------ mods till here
+
+
+            ui->pbDisconnectFromServerMainCCD->setEnabled(true);
+        } else {
+            ui->pbConnectToServerMainCCD->setEnabled(true);
+            ui->pbTakeImagePS->setEnabled(false);
+            ui->cbIndiIsUpMainCCD->setChecked(false);
+            noCamBoxMsg.setWindowTitle("Critical INDI error");
+            noCamBoxMsg.setText("Camera not available - is it connected?");
+            noCamBoxMsg.exec();
+            psMaincamera_client->sayGoodbyeToINDIServer();
+            this->disconnectMainCCDFromINDIServer();
+            this->waitForNMSecs(1000);
+        }
+    } else {
+          ui->pbConnectToServerMainCCD->setEnabled(true);
+    }
+}
+
+
+//------------------------------------------------------------------
+// disconnect guidecam from INDI server
+void MainWindow::disconnectGuiderFromINDIServer(void) {
+
     if (this->ccdCameraIsAcquiring==false) {
         this->camera_client->disconnectFromServer();
         ui->pbConnectToServer->setEnabled(true);
@@ -1716,6 +1812,19 @@ void MainWindow::disconnectFromINDIServer(void) {
         ui->pbExpose->setEnabled(false);
         ui->pbStopExposure->setEnabled(false);
         ui->gbStartINDI->setEnabled(true);
+    }
+}
+
+//------------------------------------------------------------------
+// disconnect main ccd for platesolving from INDI server
+void MainWindow::disconnectMainCCDFromINDIServer(void) {
+
+    if (this->mainCCDCameraIsAcquiring==false) {
+        this->psMaincamera_client->disconnectFromServer();
+        ui->pbConnectToServerMainCCD->setEnabled(true);
+        ui->pbDisconnectFromServerMainCCD->setEnabled(false);
+        ui->cbIndiIsUpMainCCD->setChecked(false);
+        ui->pbTakeImagePS->setEnabled(false);
     }
 }
 
@@ -1946,7 +2055,7 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
     medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
        // now cope with different states and images needed ...
 
-    if (g_AllData->getINDIState() == true) { // ... if the camera class is connected to the INDI server ...
+    if (g_AllData->getINDIState(false) == true) { // ... if the camera class is connected to the INDI server ...
         delete camImg;
         this->camImg = new QPixmap(*camPixmap);
         this->camView->addBgImage(*camImg); // receive the pixmap from the camera ...
@@ -1973,55 +2082,96 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
 }
 
 //------------------------------------------------------------------
-// retrieve parameters for the CCD from the camera class
- bool MainWindow::getCCDParameters(void) {
+// retrieve parameters for the guide CCD from the camera class
+ bool MainWindow::getCCDParameters(bool isMainCCD) {
     bool retrievalSuccess;
     QString letxt;
     float psx,psy;
-    int fsx,fsy;
+    int fsx,fsy, bd;
 
-    retrievalSuccess = camera_client->getCCDParameters();
-    if (retrievalSuccess==1) {
-        psx=g_AllData->getCameraPixelSize(0);
-        psy=g_AllData->getCameraPixelSize(1);
-        fsx=(int)g_AllData->getCameraChipPixels(0);
-        fsy=(int)g_AllData->getCameraChipPixels(1);
-        letxt=QString::number((double)psx,'g',2);
-        ui->lePixelSizeX->setText(letxt);
-        letxt=QString::number((double)psy,'g',2);
-        ui->lePixelSizeY->setText(letxt);
-        letxt=QString::number(fsx);
-        ui->leFrameSizeX->setText(letxt);
-        letxt=QString::number(fsy);
-        ui->leFrameSizeY->setText(letxt);
+    if (isMainCCD == false) {
+        retrievalSuccess = camera_client->getCCDParameters(isMainCCD);
+        if (retrievalSuccess==1) {
+            psx=g_AllData->getCameraPixelSize(0,false);
+            psy=g_AllData->getCameraPixelSize(1,false);
+            fsx=(int)g_AllData->getCameraChipPixels(0,false);
+            fsy=(int)g_AllData->getCameraChipPixels(1,false);
+            bd = g_AllData->getCameraBitDepth(false);
+            letxt=QString::number((double)psx,'g',2);
+            ui->lePixelSizeX->setText(letxt);
+            letxt=QString::number((double)psy,'g',2);
+            ui->lePixelSizeY->setText(letxt);
+            letxt=QString::number(fsx);
+            ui->leFrameSizeX->setText(letxt);
+            letxt=QString::number(fsy);
+            ui->leFrameSizeY->setText(letxt);
+            ui->lcdBitDepth->display(bd);
+        }
+    } else {
+        retrievalSuccess = psMaincamera_client->getCCDParameters(isMainCCD);
+        if (retrievalSuccess==1) {
+            psx=g_AllData->getCameraPixelSize(0,true);
+            psy=g_AllData->getCameraPixelSize(1,true);
+            fsx=(int)g_AllData->getCameraChipPixels(0,true);
+            fsy=(int)g_AllData->getCameraChipPixels(1,true);
+            bd = g_AllData->getCameraBitDepth(true);
+            letxt=QString::number((double)psx,'g',2);
+            ui->lePixelSizeXMainCCD->setText(letxt);
+            letxt=QString::number((double)psy,'g',2);
+            ui->lePixelSizeYMainCCD->setText(letxt);
+            letxt=QString::number(fsx);
+            ui->leFrameSizeXMainCCD->setText(letxt);
+            letxt=QString::number(fsy);
+            ui->leFrameSizeYMainCCD->setText(letxt);
+            ui->lcdBitDepthMainCCD->display(bd);
+        }
     }
     return retrievalSuccess;
 }
 
  //------------------------------------------------------------------
  // store data on the ccd from the GUI to the global data and to the .tsp file ...
- void MainWindow::storeCCDData(void)  {
+ void MainWindow::storeCCDData(bool isMainCCD)  {
      float psx,psy;
      int ccdw, ccdh;
      QString *leEntry;
 
-     leEntry = new QString(ui->lePixelSizeX->text());
-     leEntry->replace(",",".");
-     psx=leEntry->toFloat();
-     leEntry->clear();
-     leEntry->append(ui->lePixelSizeY->text());
-     leEntry->replace(",",".");
-     psy=leEntry->toFloat();
-     leEntry->clear();
-     leEntry->append(ui->leFrameSizeX->text());
-     leEntry->replace(",",".");
-     ccdw=leEntry->toInt();
-     leEntry->clear();
-     leEntry->append(ui->leFrameSizeY->text());
-     leEntry->replace(",",".");
-     ccdh=leEntry->toInt();
-     delete leEntry;
-     g_AllData->setCameraParameters(psx,psy,ccdw,ccdh);
+     if (isMainCCD == false) {
+         leEntry = new QString(ui->lePixelSizeX->text());
+         leEntry->replace(",",".");
+         psx=leEntry->toFloat();
+         leEntry->clear();
+         leEntry->append(ui->lePixelSizeY->text());
+         leEntry->replace(",",".");
+         psy=leEntry->toFloat();
+         leEntry->clear();
+         leEntry->append(ui->leFrameSizeX->text());
+         leEntry->replace(",",".");
+         ccdw=leEntry->toInt();
+         leEntry->clear();
+         leEntry->append(ui->leFrameSizeY->text());
+         leEntry->replace(",",".");
+         ccdh=leEntry->toInt();
+         delete leEntry;
+     } else {
+         leEntry = new QString(ui->lePixelSizeXMainCCD->text());
+         leEntry->replace(",",".");
+         psx=leEntry->toFloat();
+         leEntry->clear();
+         leEntry->append(ui->lePixelSizeYMainCCD->text());
+         leEntry->replace(",",".");
+         psy=leEntry->toFloat();
+         leEntry->clear();
+         leEntry->append(ui->leFrameSizeXMainCCD->text());
+         leEntry->replace(",",".");
+         ccdw=leEntry->toInt();
+         leEntry->clear();
+         leEntry->append(ui->leFrameSizeYMainCCD->text());
+         leEntry->replace(",",".");
+         ccdh=leEntry->toInt();
+         delete leEntry;
+     }
+     g_AllData->setCameraParameters(psx,psy,ccdw,ccdh,isMainCCD);
      g_AllData->storeGlobalData();
  }
 
@@ -2717,8 +2867,6 @@ void MainWindow::waitForCalibrationImage(void) {
     this->displayCalibrationStatus("Waiting for image...");
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.calibrationImageReceived=false;
-    this->waitForNMSecs(500);
-    this->takeSingleCamShot();
     this->waitForNMSecs(500);
     this->takeSingleCamShot();
     while (this->guidingState.calibrationImageReceived == false) {
@@ -3902,7 +4050,7 @@ void MainWindow::startST4Guiding(void) {
     this->st4State.wActive = false;
     ui->ctrlTab->setEnabled(false);
     ui->catTab->setEnabled(false);
-    ui->camTab->setEnabled(false);
+    ui->guidingTab->setEnabled(false);
     ui->gearTab->setEnabled(false);
     ui->tabLX200->setEnabled(false);
     ui->gbHandbox ->setEnabled(false);
@@ -3914,7 +4062,7 @@ void MainWindow::startST4Guiding(void) {
     ui->cbLX200Logs->setEnabled(false);
     ui->pbClearLXLog->setEnabled(false);
     ui->photoTab->setEnabled(false);
-    ui->settingsTab->setEnabled(false);
+    ui->locationTab->setEnabled(false);
     this->commSPIParams.guiData->clear(); // now fill the SPI queue with ST4 state requests
     this->commSPIParams.guiData->append("g");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
@@ -3940,7 +4088,7 @@ void MainWindow::stopST4Guiding(void) {
     this->st4State.wActive = false;
     ui->ctrlTab->setEnabled(true);
     ui->catTab->setEnabled(true);
-    ui->camTab->setEnabled(true);
+    ui->guidingTab->setEnabled(true);
     ui->INDITab->setEnabled(true);
     ui->gearTab->setEnabled(true);
     ui->tabLX200->setEnabled(true);
@@ -3948,7 +4096,7 @@ void MainWindow::stopST4Guiding(void) {
     ui->gbINDI->setEnabled(true);
     ui->cbLXSimpleNumbers->setEnabled(true);
     ui->photoTab->setEnabled(true);
-    ui->settingsTab->setEnabled(true);
+    ui->locationTab->setEnabled(true);
     ui->cbLX200Logs->setEnabled(true);
     ui->pbClearLXLog->setEnabled(true);
     ui->pbStartST4->setEnabled(true);
@@ -4280,7 +4428,7 @@ void MainWindow::setControlsForGoto(bool isEnabled) {
     ui->LX200Tab->setEnabled(isEnabled);
     ui->INDITab->setEnabled(isEnabled);
     ui->gearTab->setEnabled(isEnabled);
-    ui->camTab->setEnabled(isEnabled);
+    ui->guidingTab->setEnabled(isEnabled);
     ui->gbCoordinates->setEnabled(isEnabled);
     ui->gbGeneralSettings->setEnabled(true);
     ui->rbSiderealSpeed->setEnabled(isEnabled);
@@ -4668,6 +4816,14 @@ void MainWindow::storeDSLRSettingsForDithering(void) {
 }
 
 //------------------------------------------------------------------
+// store parameters for plate solving
+void MainWindow::storeSettingsForPlateSolving(void) {
+    g_AllData->setMainScopeFocalLength(ui->sbScopeFLPS->value());
+    g_AllData->storeGlobalData();
+    ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
+}
+
+//------------------------------------------------------------------
 // store data for handbox motion
 void MainWindow::storeHandBoxSpeeds(void) {
     g_AllData->setHandBoxSpeeds(ui->sbGoToSpeed->value(),ui->sbMoveSpeed->value());
@@ -5034,8 +5190,8 @@ void MainWindow::carryOutDitheringStep(void) {
             this->declPGPlusGd(abs(declTimeMS));
         } // went back to old position before last dither step ...
         this->waitForNMSecs(250);
-        avrgGuiderPixSize=sqrt((g_AllData->getCameraPixelSize(0))*(g_AllData->getCameraPixelSize(0)) +
-                            (g_AllData->getCameraPixelSize(1)*(g_AllData->getCameraPixelSize(1))));
+        avrgGuiderPixSize=sqrt((g_AllData->getCameraPixelSize(0,false))*(g_AllData->getCameraPixelSize(0,false)) +
+                            (g_AllData->getCameraPixelSize(1,false)*(g_AllData->getCameraPixelSize(1,false))));
         guideCamVsDSLRRatio=(avrgGuiderPixSize*g_AllData->getMainScopeFocalLength())/
                 (g_AllData->getDSLRDiagPixSize()*g_AllData->getGuideScopeFocalLength());
         // correction times for guiding are scaled for the guiding scope, but here they are used
@@ -5756,4 +5912,283 @@ void MainWindow::setTimeFromLX200Flag(void) {
         g_AllData->setTimeFromLX200Flag(false);
     }
     g_AllData->storeGlobalData(); // save the value to the preferences
+}
+
+//-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+// plate solving routines -------------------------------------------------
+// this is a dummy by now ...
+void MainWindow::psTakeImage(void) {
+   // QImage *solveImage;
+    QString *pth;
+
+    ui->pbSolveFieldPS->setEnabled(false);
+    ui->pbSyncPS->setEnabled(false);
+    if (g_AllData->getPathToImages().length() != 0) {
+        pth = new QString(g_AllData->getPathToImages().toLatin1());
+        pth->append("bubble.fits");
+        g_AllData->setPathToImageToBeSolved(pth->toLatin1());
+        delete pth;
+        ui->pbSolveFieldPS->setEnabled(true);
+
+    } else {
+        qDebug() << "no path to images available";
+    }
+}
+
+//--------------------------------------------------------------------------
+// slot for choosing a directory
+void MainWindow::psChooseFITSDirectory(void) {
+    QFileDialog dialog;
+    QString theChosenPath;
+
+    dialog.setFileMode(QFileDialog::DirectoryOnly);
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+    dialog.exec();
+    if (dialog.selectedFiles().empty() == false) {
+        theChosenPath = (dialog.selectedFiles().at(0));
+        const QFileInfo newDir(theChosenPath.toLatin1()) ;
+        if (newDir.exists() && newDir.isDir() && newDir.isReadable() && newDir.isWritable()) {
+            theChosenPath.append("/");
+            g_AllData->setPathToImages(theChosenPath);
+            ui->lePathToFitsFile->setText(g_AllData->getPathToImages());
+        }
+    }
+}
+
+//---------------------------------------------------------------------------
+// slot that triggers astrometry.net
+void MainWindow::psStartSolving(void) {
+    QString* solveCommand;
+
+    double fieldSize, slow, maxSize;
+    short dsFact = 1;
+
+    ui->cbFieldSolved->setChecked(false);
+    ui->pbKillAMetry->setEnabled(true);
+    ui->cbPSInProgress->setChecked(true);
+    g_AllData->setBooleanPSParams(0,true); // platesolving in progress
+    g_AllData->setBooleanPSParams(1,false); // no success so far
+    g_AllData->setBooleanPSParams(2, false); // no error so far
+    if (g_AllData->getCameraPixelSize(0,true) >= g_AllData->getCameraPixelSize(1,true)) {
+        maxSize = (g_AllData->getCameraChipPixels(0,true));
+    } else {
+        maxSize = (g_AllData->getCameraChipPixels(1,true));
+    }
+    if (maxSize > 2000) {
+        dsFact = 2;
+    }
+    if (maxSize > 4000) {
+        dsFact = 4;
+    }
+    this->waitForNMSecs(250);
+    fieldSize = 2*this->psComputeFOVForMainCCD();
+    slow = fieldSize/3.0;
+    solveCommand = new QString("solve-field --ra ");
+    solveCommand->append(QString::number((double)g_AllData->getActualScopePosition(2),'g',6));
+    solveCommand->append(" --dec ");
+    solveCommand->append(QString::number((double)g_AllData->getActualScopePosition(1),'g',6));
+    solveCommand->append(" --radius ");
+    solveCommand->append(QString::number((double)(ui->sbPSSearchRad->value())));
+    solveCommand->append(" --scale-units degwidth --overwrite --match none --rdls none --wcs none --no-plots ");
+    solveCommand->append(" --scale-low ");
+    solveCommand->append(QString::number(slow));
+    solveCommand->append(" --scale-high ");
+    solveCommand->append(QString::number(fieldSize));
+    solveCommand->append(" --downsample ");
+    solveCommand->append(QString::number(dsFact));
+    solveCommand->append(" ");
+    solveCommand->append(g_AllData->getPathToImageToBeSolved().toLatin1());
+    qDebug() << "Process command: " << solveCommand->toLatin1();
+    this->astroMetryProcess->start(solveCommand->toLatin1());
+    if (!this->astroMetryProcess->waitForStarted()) {
+        g_AllData->setBooleanPSParams(0,false);
+        g_AllData->setBooleanPSParams(2, true);
+        qDebug() << "Process did not start ...";
+    }
+    delete solveCommand;
+    ui->Control->setCursor(Qt::BusyCursor);
+    connect(this->astroMetryProcess, SIGNAL(readyReadStandardOutput()), this, SLOT(psDisplayAstrometryNetOutput()));
+}
+
+//-----------------------------------------------------------------------------
+// a slot for setting the search radius
+void MainWindow::psSetSearchRadiusForPS(void) {
+    double val;
+
+    val = ui->sbPSSearchRad->value();
+    g_AllData->setPSSearchRad(val);
+}
+
+//-----------------------------------------------------------------------------
+// a slot that handles the end of the astrometry.net process
+void MainWindow::psHandleEndOfAstronomyNetProcess(int code , QProcess::ExitStatus status) {
+    QMessageBox amnetCrashMsg;
+    QStringList nameFilter("*.solved");
+    QDir *psDirectory;
+    QStringList solvedFiles;
+
+    this->waitForNMSecs(1000); // just take a little breath
+    psDirectory = new QDir(g_AllData->getPathToImages().toLatin1());
+    solvedFiles = psDirectory->entryList(nameFilter);
+    delete psDirectory; // searching for a .solved file in the directory where astrometry.net operates
+
+    if (status == QProcess::NormalExit) {
+        if (solvedFiles.isEmpty() == false) {
+            qDebug() << ".solved file found";
+            ui->cbFieldSolved->setChecked(true);
+            this->psreadCoordinatesFromFITS();
+        }
+    } else {
+        amnetCrashMsg.setWindowTitle("Astrometry net error");
+        amnetCrashMsg.setText("Astrometry.net engine crashed or terminated...");
+        amnetCrashMsg.exec();
+    }
+    ui->cbPSInProgress->setChecked(false);
+    ui->pbKillAMetry->setEnabled(false);
+    ui->Control->setCursor(Qt::ArrowCursor);
+}
+
+//--------------------------------------------------------------------------------
+// compute the field of view and derive the oversampling factor and the index range from this
+double MainWindow::psComputeFOVForMainCCD(void) {
+    double maxSize, fov;
+
+    if (g_AllData->getCameraPixelSize(0,true) >= g_AllData->getCameraPixelSize(1,true)) {
+        maxSize = (g_AllData->getCameraChipPixels(0,true) * g_AllData->getCameraPixelSize(0,true))/1000.0;
+    } else {
+        maxSize = (g_AllData->getCameraChipPixels(1,true) * g_AllData->getCameraPixelSize(1,true))/1000.0; // find the maximum chip dimension in mm
+    }
+    fov = 53.26*maxSize/(g_AllData->getMainScopeFocalLength());
+    qDebug() << "Field of View is: " << fov;
+    qDebug() << "Max. Chip Size: " << maxSize;
+    return fov;
+}
+
+//--------------------------------------------------------------------------------------
+// a slot that kills astrometry.net
+void MainWindow::psKillAstrometryNet(void) {
+    this->astroMetryProcess->terminate();
+    ui->cbPSInProgress->setEnabled(false);
+    ui->pbKillAMetry->setEnabled(false);
+}
+
+//--------------------------------------------------------------------------------------
+// a slot that handles astrometry.net output
+void MainWindow::psDisplayAstrometryNetOutput(void) {
+    QProcess *p = dynamic_cast<QProcess *>( sender() );
+    QString *line;
+
+    if (p) {
+      line = new QString(p->readAllStandardOutput());
+      ui->tbAstroMetry->append(line->toLatin1());
+      delete line;
+    }
+}
+
+//--------------------------------------------------------------------------------------
+// a slot that handles wcsinfo output
+void MainWindow::psReadWCSInfoOutput(void) {
+    QProcess *p = dynamic_cast<QProcess *>( sender() );
+    QString *line;
+
+    if (p) {
+      line = new QString(p->readAllStandardOutput());
+      this->wcsInfoOutput->append(line);
+      delete line;
+    }
+}
+
+//---------------------------------------------------------------------------------------
+// read the coordinates from the FITS file after solving; read EQUINOX, CRVAL1 and CRVAL2 from header
+void MainWindow::psreadCoordinatesFromFITS(void) {
+    QString *newFileName, *datastring, *wcsProcess, *raString, *deString;
+    float equinox, solvedRA = 0, solvedDec = 0;
+    bool solvedCenterCoordsFound = false;
+    double meeusM, meeusN, deltaRA, deltaDecl,raRadians, declRadians,corrRA, corrDecl;
+    QProcess *readWCSInfo;
+    QStringList wcsResults;
+    int idx;
+
+    newFileName = new QString(g_AllData->getPathToImageToBeSolved().toLatin1());
+    wcsProcess = new QString("wcsinfo ");
+    datastring = new QString();
+    if (newFileName->isEmpty() == false) {
+        newFileName->chop(4);
+        newFileName->append("new");
+
+        wcsProcess->append(newFileName);
+        readWCSInfo = new QProcess();
+        readWCSInfo->start(wcsProcess->toLatin1());
+        if (!readWCSInfo->waitForStarted()) {
+            qDebug() << "Cannot read wcs data...";
+        } else {
+            connect(readWCSInfo, SIGNAL(readyReadStandardOutput()), this, SLOT(psReadWCSInfoOutput()));
+            do {
+                QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+            } while (!readWCSInfo->waitForFinished() );
+            delete readWCSInfo;
+            wcsResults = this->wcsInfoOutput->split('\n');
+            for (idx = 0; idx < wcsResults.size(); idx++) {
+                datastring->append(wcsResults.at(idx));
+                if (datastring->startsWith("ra_center ") == true) {
+                    datastring->remove("ra_center ");
+                    solvedRA = datastring->toFloat();
+                }
+                if (datastring->startsWith("dec_center ") == true) {
+                    datastring->remove("dec_center ");
+                    solvedDec = datastring->toFloat();
+                    solvedCenterCoordsFound = true;
+                }
+                datastring->clear();
+            }
+            if (solvedCenterCoordsFound) {
+                equinox = this->UTDate->year();
+                meeusM=(3.07234+0.00186*((equinox-1900)/100.0))*0.00416667; // factor m, J. Meeus, 3. ed, p.63, given in degrees
+                meeusN=(20.0468-0.0085*((equinox-1900)/100.0))/(3600.0);  // factor n, in degrees
+                raRadians=solvedRA/180.0*3.141592653589793;
+                declRadians=solvedDec/180.0*3.141592653589793;
+                deltaRA = meeusM+meeusN*sin(raRadians)*tan(declRadians);
+                deltaDecl = meeusN*cos(raRadians);
+                corrRA= solvedRA+deltaRA*((double)(this->UTDate->year()-equinox));
+                if (corrRA > 360) {
+                    corrRA-=360;
+                } // that one is clear,right - avoid more than 24h RA ...
+                corrDecl=solvedDec+deltaDecl*((double)(this->UTDate->year()-equinox));
+                if (corrDecl > 90) {
+                    corrDecl = 90; // don't know what else to do here
+                }
+                if (corrDecl <-90) {
+                    corrDecl = -90;
+                }
+                raString = new QString(*this->generateCoordinateString(corrRA, true));
+                deString=new QString(*this->generateCoordinateString(corrDecl, false));
+                ui->lePSRASolved->setText(*raString);
+                ui->lePSDeclSolved->setText(*deString);
+                delete raString;
+                delete deString;
+                this->psRA = corrRA;
+                this->psDecl = corrDecl;
+            }
+        }
+    }
+    delete wcsProcess;
+    delete datastring;
+    delete newFileName;
+    ui->pbSyncPS->setEnabled(true);
+    g_AllData->setBooleanPSParams(false, 0);
+    g_AllData->setBooleanPSParams(true, 1);
+    g_AllData->setBooleanPSParams(false, 2);
+}
+
+//-----------------------------------------------------------------------------------------------
+// a slot that syncs to the found coordinates
+void MainWindow::syncPSCoordinates(void) {
+    if (g_AllData->getBooleanPSParams(1) == true) {
+        this->ra = this->psRA;
+        this->decl = this->psDecl;
+        this->syncMount();
+        ui->pbSyncPS->setEnabled(false);
+    }
 }

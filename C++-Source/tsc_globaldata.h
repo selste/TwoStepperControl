@@ -34,17 +34,17 @@ public:
     bool loadGlobalData(void); // trying to load a "TSC_Preferences.tsc" datafile in the home directory
     void setHandBoxSpeeds(int, int); // store Goto and Motion speed for handbox
     int getHandBoxSpeeds(short); // 0 for GoToSpeed, 1 for MotionSpeed
-    void setINDIState(bool); // true if INDI-Server is connected
-    bool getINDIState(void);
+    void setINDIState(bool,bool); // true if INDI-Server is connected, second "true" indicates main ccd for platesolving
+    bool getINDIState(bool); // true for platesolving camera
     void setInitialStarPosition(float, float); // store the coordinates of the last click - the routine converts it also to ccd-coordinates
     float getInitialStarPosition(short); // 0 is screen x, 1 is screen y, 2 is ccd x and 3 is ccd y
-    void setCameraDisplaySize(int, int); // set the size of the widget that displays the camera image
-    int getCameraDisplaySize(short);
-    float getCameraImageScalingFactor(void); // get the factor that is used to scale the CCD image to the widget size
-    void setCameraImageScalingFactor(float);
-    void setCameraParameters(float, float, int, int); // set ccd pixelsize x, y and ccd chip width and height in pixels
-    float getCameraPixelSize(short); // 0 for width in microns in x, 1 for y
-    int getCameraChipPixels(short); // get ccd width and height, 0 for x and 1 for y
+    void setCameraDisplaySize(int, int, bool); // set the size of the widget that displays the camera image
+    int getCameraDisplaySize(short,bool);
+    float getCameraImageScalingFactor(bool); // get the factor that is used to scale the CCD image to the widget size
+    void setCameraImageScalingFactor(float,bool);
+    void setCameraParameters(float, float, int, int, bool); // set ccd pixelsize x, y and ccd chip width and height in pixels
+    float getCameraPixelSize(short, bool); // 0 for width in microns in x, 1 for y
+    int getCameraChipPixels(short, bool); // get ccd width and height, 0 for x and 1 for y
     void setSyncPosition(float, float); // when syncing, set RA and decl in decimal format (degrees)
     float getSyncPositionCoords(short); // 0 for decimal RA, 1 for declination- the monotonic timer "monotonicGlobalTimer" starts
     bool wasMountSynced(void); // get the sync-state ...
@@ -112,11 +112,22 @@ public:
     bool getTimeFromLX200Flag(void);
     bool getDriverAvailability(void);
     void setDriverAvailability(bool);
+    int getCameraBitDepth(bool);
+    void setCameraBitDepth(int, bool);
+    QString getPathToImages(void);
+    void setPathToImages(QString);
+    QString getPathToImageToBeSolved(void);
+    void setPathToImageToBeSolved(QString);
+    void setBooleanPSParams(short, bool); // 0 is "inProgress", 1 is "Success", 2 is "AstrometryError"
+    bool getBooleanPSParams(short); // see above
+    void setPSSearchRad(double);
+    double getPSSearchRad(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
     double localSiderealTime;
     bool INDIServerIsConnected;
+    bool INDIServerForMainCCDIsConnected;
     bool guidingState;
     bool isInTrackingMode;
     QImage *currentCameraImage;
@@ -153,6 +164,7 @@ private:
         float pixelSizeMicronsY;
         int chipWidth;
         int chipHeight;
+        int bitDepth;
     };
     struct syncPositionStruct {
         float rightAscension;
@@ -217,9 +229,20 @@ private:
         short maxDeclForNoFlip;
     };
 
+    struct plateSolvingParams {
+        bool psInProgress = false;
+        bool psSuccess = false;
+        bool astrometryError = false;
+        double searchRadiusInDeg = 2.0;
+        QString *pathToImages = nullptr;
+        QString *pathToFITSToBeSolved = nullptr;
+    };
+
     struct initialStarPosStruct initialStarPos;
     struct cameraDisplaySizeStruct cameraDisplaySize;
+    struct cameraDisplaySizeStruct mainCameraDisplaySize;
     struct cameraParametersStruct cameraParameters;
+    struct cameraParametersStruct mainCCDParamsPS;
     struct syncPositionStruct syncPosition;
     struct gearDataStruct gearData;
     struct driveDataStruct driveData;
@@ -227,6 +250,7 @@ private:
     struct siteParamsStruct siteParams;
     struct auxDriveStruct auxDriveParams;
     struct mflipParams meridianFlipState;
+    struct plateSolvingParams psParams;
 };
 
 #endif // TSC_GLOBALDATA_H

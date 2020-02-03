@@ -33,7 +33,7 @@ QDisplay2D::QDisplay2D(QWidget *parent, int width, int height): QGraphicsView(pa
     this->backGrndImg = new QPixmap("background.jpg");
     this->addBgImage(*backGrndImg);
     this->imageLoaded = true;
-    g_AllData->setCameraDisplaySize(width,height);
+    g_AllData->setCameraDisplaySize(width,height,false);
     // set the size of the widget to display the camera data in a global class
 }
 
