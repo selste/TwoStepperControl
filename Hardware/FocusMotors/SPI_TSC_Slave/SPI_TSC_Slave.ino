@@ -1,4 +1,4 @@
-                     // arduino sketch for driving the auxiliary focuser drives of TSC - runs with the hardware from Motorboard.fzz. W. Birkfellner 2017
+// arduino sketch for driving the auxiliary focuser drives of TSC - runs with the hardware from Motorboard.fzz. W. Birkfellner 2017
 #include <SPI.h>
 #include <AccelStepper.h>
 #include <stdlib.h>
