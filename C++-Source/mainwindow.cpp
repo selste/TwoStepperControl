@@ -81,6 +81,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->timer = new QTimer(); // start the event timer ... this is NOT the microtimer for the mount
     this->timer->start(100); // check all 100 ms for events
     elapsedGoToTime = new QElapsedTimer(); // timer for roughly measuring time taked during GoTo
+    elapsedPS = new QElapsedTimer(); // timer for measuring time during image acquisition for platesolving
     this->st4Timer = new QTimer();
     this->LX200Timer = new QTimer();
     this->LX200Timer->start(150);
@@ -96,6 +97,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->julianDay = this->UTDate->toJulianDay();
     this->UTTime = new QTime(QTime::currentTime());
     this->UTTime->start();
+    //long psImageAcquisionTimeRemaining = 0;
     this->findOutAboutINDIServerPID(); // check running processes and store the ID of an INDIserver in a hidden file
     currentYear = new QString(this->UTDate->currentDate().toString("yyyy"));
     ui->sbEpoch->setValue(currentYear->toInt());
@@ -113,7 +115,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->mountMotion.GoToIsActiveInDecl = false; // system is in a slew state, Decl is moving. most system functionality is disabled
     this->mountMotion.emergencyStopTriggered = false; // system can be halted by brute force. true if this was triggered
     this->lx200IsOn = false; // true if a serial connection was opened vai RS232
-    this->ccdCameraIsAcquiring=false; // true if images are coming in from INDI-server
+    this->ccdGuiderCameraIsAcquiring=false; // true if images are coming in from INDI-server
+    this->ccdMainCameraIsAcquiring=false;
     if (ui->cbIsGEM->isChecked() == true) {
         ui->cbMountIsEast->setEnabled(true);
         g_AllData->switchDeclinationSign();
@@ -152,6 +155,9 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->sbGoToSpeed->setValue(g_AllData->getHandBoxSpeeds(0));
     ui->sbMoveSpeed->setValue(g_AllData->getHandBoxSpeeds(1));
     ui->rbCorrSpeed->setChecked(true); // make sure that the loaded motion speed from prefs is set, but set the system to move speed ...
+
+    this->guideCamDriverName = new QString();
+    this->mainCamDriverName = new QString();
         // GPIO pins for DSLR control
     qDebug() << "Opening GPIO pins";
     setenv("WIRINGPI_GPIOMEM", "1", 1); // otherwise, the program needs sudo - privileges
@@ -194,27 +200,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     ui->leDeclStepSize->setText(textEntry->number(g_AllData->getGearData(7 )));
     textEntry->clear();
     qDebug() << "Drive params set ...";
-
-        // now setting all the parameters in the "Cam"-tab
-    ui->lePixelSizeX->setText(textEntry->number(g_AllData->getCameraPixelSize(0,false)));
-    textEntry->clear();
-    ui->lePixelSizeY->setText(textEntry->number(g_AllData->getCameraPixelSize(1,false)));
-    textEntry->clear();
-    ui->leFrameSizeX->setText(textEntry->number(g_AllData->getCameraChipPixels(0,false)));
-    textEntry->clear();
-    ui->leFrameSizeY->setText(textEntry->number(g_AllData->getCameraChipPixels(1,false)));
-    textEntry->clear();
-    ui->lcdBitDepth->display(g_AllData->getCameraBitDepth(false));
-
-    ui->lePixelSizeXMainCCD->setText(textEntry->number(g_AllData->getCameraPixelSize(0, true)));
-    textEntry->clear();
-    ui->lePixelSizeYMainCCD->setText(textEntry->number(g_AllData->getCameraPixelSize(1, true)));
-    textEntry->clear();
-    ui->leFrameSizeXMainCCD->setText(textEntry->number(g_AllData->getCameraChipPixels(0,true)));
-    textEntry->clear();
-    ui->leFrameSizeYMainCCD->setText(textEntry->number(g_AllData->getCameraChipPixels(1, true)));
-    textEntry->clear();
-    ui->lcdBitDepthMainCCD->display(g_AllData->getCameraBitDepth(true));
 
         // now setting parameters in the "Settings"-tab
     ui->leControllerName->setText(g_AllData->getSiteName());
@@ -272,7 +257,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     } // setting up the buttons for the stored microstep ratios
         // camera and guiding class are instantiated
     camera_client = new ccd_client(); // install a camera client for guiding via INDI
-    psMaincamera_client = new ccd_client(); // same for a second camera for platesolving
     guiding = new ocv_guiding();
     guideStarPrev = new QPixmap(); // a pixmap for showing the preview window
     guideStarPosition.centrX =0.0;
@@ -298,7 +282,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->ra = 0.0;
     this->decl = 0.0; // the sync position - no sync for the mount was carried out - these are displayed in the GOTO textentry
     this->camView = new QDisplay2D(ui->guidingTab,550,400); // make the clickable scene view of 425 x 340 pixels
-    this->camImg= new QPixmap(g_AllData->getCameraDisplaySize(0,false),g_AllData->getCameraDisplaySize(1,false)); // store the size of the scene view in the global parameter class
+    this->camImg = new QPixmap(g_AllData->getCameraDisplaySize(0,false),g_AllData->getCameraDisplaySize(1,false)); // store the size of the scene view in the global parameter class
+    this->mainCamImg = new QPixmap(g_AllData->getCameraDisplaySize(0,true),g_AllData->getCameraDisplaySize(1,true));
     this->camImageWasReceived=false; // no camera image came in yet ...
     RAdriveDirectionForNorthernHemisphere = 1; //switch this for the southern hemisphere to -1 ... RA is inverted
     g_AllData->storeGlobalData();
@@ -472,6 +457,14 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
     connect(ui->listWidgetIPAddresses,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressChosen())); // selection of IP address for LX 200
     connect(ui->listWidgetIPAddresses_2,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressForHandboxChosen())); // selection of IP address for the handbox
+    connect(ui->listMainCamProperties, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(mainCamPropertySelected()));
+    connect(ui->listGuideCamProperties, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(guideCamPropertySelected())); // selection of INDI-Camera properties
+    connect(ui->lwMainCCDTextNames, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(mainCamSetINDITextProperties())); // select a text value for display and change in INDI parameters
+    connect(ui->lwGuideCCDTextNames, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(guideCamSetINDITextProperties()));
+    connect(ui->lwMainCCDNumberNames, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(mainCamSetINDINumberProperties())); // select a number value for display and change in INDI parameters
+    connect(ui->lwGuideCCDNumberNames, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(guideCamSetINDINumberProperties()));
+    connect(ui->lwMainCCDSwitchNames, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(mainCamSetINDISwitchProperties())); // select a switch for display an change in INDI parameters
+    connect(ui->lwGuideCCDSwitchNames, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(guideCamSetINDISwitchProperties()));
     connect(ui->cbLXSimpleNumbers, SIGNAL(released()),this, SLOT(LXSetNumberFormatToSimple())); // switch between simple and complex LX 200 format
     connect(ui->cbIsOnNorthernHemisphere, SIGNAL(stateChanged(int)), this, SLOT(invertRADirection())); // switch direction of RA motion for the southern hemisphere
     connect(ui->cbStoreGuideCamImgs, SIGNAL(stateChanged(int)), this, SLOT(enableCamImageStorage())); // a checkbox that starts saving all camera images in the camera-class
@@ -481,7 +474,6 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->cbIsGEM, SIGNAL(stateChanged(int)), this, SLOT(mountIsGerman())); // toggle whether mount is a GEM or not
     connect(ui->cbMountIsEast, SIGNAL(stateChanged(int)), this, SLOT(mountIsEast())); // act whether the mount is set to east-west
     connect(ui->cbTimeFromLX200, SIGNAL(stateChanged(int)), this, SLOT(setTimeFromLX200Flag())); // check whether time from LX200 is accepted or not
-    connect(ui->sbCCDGain, SIGNAL(valueChanged(int)), this, SLOT(changeCCDGain())); // change the gain of the guiding camera via INDI
     connect(ui->sbMoveSpeed, SIGNAL(valueChanged(int)),this,SLOT(changeMoveSpeed())); // set factor for faster manual motion
     connect(ui->sbFLGuideScope, SIGNAL(valueChanged(int)), this, SLOT(changeGuideScopeFL())); // spinbox for guidescope - focal length
     connect(ui->sbAMaxRA_AMIS, SIGNAL(valueChanged(int)), this, SLOT(setMaxStepperAccRA())); // process input on stepper parameters in gear-tab
@@ -498,6 +490,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->rbSiderealSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set sidereal tracking rate
     connect(ui->rbLunarSpeed, SIGNAL(released()), this, SLOT(setTrackingRate())); // set lunar tracking rate
     connect(ui->rbSolarSpeed, SIGNAL(released()),this, SLOT(setTrackingRate())); // set solar tracking rate
+    connect(ui->rbMainCCD, SIGNAL(released()),this, SLOT(selectCameraTypes()));
+    connect(ui->rbGuiderCCD, SIGNAL(released()), this, SLOT(selectCameraTypes())); // select if the first camera connected is guiderr or main ccd
     connect(ui->pbParkToSouthHorizon, SIGNAL(clicked()), this, SLOT(presetParkingPositionSouthH())); // set a parking position
     connect(ui->pbParkPolaris, SIGNAL(clicked()), this, SLOT(presetParkingPositionPolaris())); // set a parking position
     connect(ui->pbChoosePathToFITS, SIGNAL(clicked()), this, SLOT(psChooseFITSDirectory())); // choose a directory for storing FITS images for plate solving
@@ -509,10 +503,12 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->hsIBrightness ,SIGNAL(valueChanged(int)), this, SLOT(changePrevImgProc())); // change brightness for selecting a guidestar
     connect(ui->pbExit,SIGNAL(clicked()), this, SLOT(shutDownProgram())); // this kills the program, including killing the drives
     connect(ui->pbConnectToServer,SIGNAL(clicked()),this, SLOT(setINDISAddrAndPort())); // connects to the INDI server at the given address ...
+    connect(ui->pbSelectGuiderCCD, SIGNAL(clicked()), this, SLOT(selectGuiderCamDriverName()));
+    connect(ui->pbMainCCDSetINDISwitch , SIGNAL(clicked()), this, SLOT(mainCamSendINDISwitch())); // send a value to INDI server
+    connect(ui->pbGuideCCDSetINDISwitch , SIGNAL(clicked()), this, SLOT(guideCamSendINDISwitch())); // send a value to INDI server
+    connect(ui->pbSelectMainCCD, SIGNAL(clicked()), this, SLOT(selectMainCamDriverName()));
     connect(ui->pbKillINDIServer, SIGNAL(clicked()),this, SLOT(killRunningINDIServer())); // a button that kill running INDI servers ...
-    connect(ui->pbDisconnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectGuiderFromINDIServer())); // disconnects from INDI server
-    connect(ui->pbDisconnectFromServerMainCCD, SIGNAL(clicked()), this, SLOT(disconnectMainCCDFromINDIServer())); // same as above for main ccd in platesolving
-    connect(ui->pbStoreCCDParameters, SIGNAL(clicked()), this, SLOT(storeCCDData())); // store ccd parameters to preferences file manually
+    connect(ui->pbDisconnectFromServer, SIGNAL(clicked()), this, SLOT(disconnectFromINDIServer())); // disconnects from INDI server
     connect(ui->pbExpose, SIGNAL(clicked()), this, SLOT(startCCDAcquisition())); // start acquiring images from the guidecam. a signal is emitted if an image arrived.
     connect(ui->pbStopExposure, SIGNAL(clicked()), this, SLOT(stopCCDAcquisition())); // just set the local flag on ccd-acquisition so that no new image is polled in "displayGuideCamImage".
     connect(ui->pbClearINDILog,SIGNAL(clicked()), this, SLOT(clearINDILog())); // clear the textbox for INDI server messages
@@ -583,21 +579,41 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->pbSolveFieldPS, SIGNAL(clicked()), this, SLOT(psStartSolving())); // issue a command to astrometry.net
     connect(ui->pbKillAMetry, SIGNAL(clicked()), this, SLOT(psKillAstrometryNet())); // stop astrometry.net
     connect(ui->pbSyncPS, SIGNAL(clicked()), this, SLOT(syncPSCoordinates())); // sync to coordinates from platesolving
+    connect(ui->pbMainCCDNumberValueSet, SIGNAL(clicked()), this, SLOT(mainCamSendINDINumber())); // sends a new number value to INDI server
+    connect(ui->pbMainCCDNumberValueSend, SIGNAL(clicked()), this, SLOT(mainCamSetINDINumberOnServer())); // sets the number value on the INDI server
+    connect(ui->pbMainCCDTextValueSet, SIGNAL(clicked()), this, SLOT(mainCamSendINDIText())); // sends text to INDI
+    connect(ui->pbGuideCCDNumberValueSet, SIGNAL(clicked()), this, SLOT(guideCamSendINDINumber())); // sends a new number value to INDI server
+    connect(ui->pbGuideCCDNumberValueSend, SIGNAL(clicked()), this, SLOT(guideCamSetINDINumberOnServer()));
+    connect(ui->pbGuideCCDTextValueSet, SIGNAL(clicked()), this, SLOT(guideCamSendINDIText())); // sends text to INDI
+    connect(ui->pbStoreMainCCDProps, SIGNAL(clicked()), this, SLOT(saveMainCCDConfig())); // issues a CONFIG_SAVE switch to INDIserver
+    connect(ui->pbStoreGuiderCCDProps,SIGNAL(clicked()), this, SLOT(saveGuideCCDConfig())); // issues a CONFIG_SAVE switch to INDIserver
     connect(this, SIGNAL(dslrExposureDone()), this, SLOT(takeNextExposureInSeries()),Qt::QueuedConnection); // this is called when an exposure is done; if a series is taken, the next exposure is triggered ...
     connect(this->camView,SIGNAL(currentViewStatusSignal(QPointF)),this->camView,SLOT(currentViewStatusSlot(QPointF)),Qt::QueuedConnection); // position the crosshair in the camera view by mouse...
     connect(this->guiding,SIGNAL(determinedGuideStarCentroid()), this->camView,SLOT(currentViewStatusSlot()),Qt::QueuedConnection); // an overload of the precious slot that allows for positioning the crosshair after a centroid was computed during guiding...
     connect(this->camera_client,SIGNAL(imageAvailable(QPixmap*)),this,SLOT(displayGuideCamImage(QPixmap*)),Qt::QueuedConnection); // display image from ccd if one was received from INDI; also takes care of autoguiding. triggered by signal
+    connect(this->camera_client, SIGNAL(mainCCDImageAvailable(QPixmap*)), this, SLOT(displayMainCamImage(QPixmap*)), Qt::QueuedConnection); // display an image of the main camera for platesolving
     connect(this->camera_client,SIGNAL(messageFromINDIAvailable()),this,SLOT(handleServerMessage()),Qt::QueuedConnection); // display messages from INDI if signal was received
+    connect(this->camera_client,SIGNAL(newPropertyListArrived()), this, SLOT(loadPropertyList()),Qt::QueuedConnection); // called when a new property comes in
+    connect(this->camera_client,SIGNAL(numberSetOnServerMainCCD()), this, SLOT(indicateNumberOnINDIServerMainCCD()),Qt::QueuedConnection);
+    connect(this->camera_client,SIGNAL(textSetOnServerMainCCD()), this, SLOT(indicateTextOnINDIServerMainCCD()),Qt::QueuedConnection);
+    connect(this->camera_client,SIGNAL(switchSetOnServerMainCCD()), this, SLOT(indicateSwitchOnINDIServerMainCCD()),Qt::QueuedConnection); // setting checkboxes when new values are stored in the INDI server
+    connect(this->camera_client,SIGNAL(numberSetOnServerGuiderCCD()), this, SLOT(indicateNumberOnINDIServerGuiderCCD()),Qt::QueuedConnection);
+    connect(this->camera_client,SIGNAL(textSetOnServerGuiderCCD()), this, SLOT(indicateTextOnINDIServerGuiderCCD()),Qt::QueuedConnection);
+    connect(this->camera_client,SIGNAL(switchSetOnServerGuiderCCD()), this, SLOT(indicateSwitchOnINDIServerGuiderCCD()),Qt::QueuedConnection); // setting checkboxes when new values are stored in the INDI server
+    connect(this->camera_client,SIGNAL(saveFunctionNotAvailable()), this, SLOT(deployINDIMsgDlg()),Qt::QueuedConnection); // open a dialog box if INDI server cannot save configurations
     connect(this->guiding,SIGNAL(guideImagePreviewAvailable()),this,SLOT(displayGuideStarPreview()),Qt::QueuedConnection); // handle preview of the processed guidestar image
     connect(this, SIGNAL(tcpHandboxDataReceived()), this, SLOT(handleHandbox()),Qt::QueuedConnection); // handle data comming from the TCP/IP handbox
     connect(this->LXServer,SIGNAL(newConnection()),this,SLOT(establishLX200IPLink()),Qt::QueuedConnection); // establish a link vian LAN/WLAN to a planetarium program via TCP/IP
     connect(this->HBServer, SIGNAL(newConnection()), this, SLOT(establishHBIPLink()),Qt::QueuedConnection); // same as abov for the TCP handbox
     connect(this->astroMetryProcess, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(psHandleEndOfAstronomyNetProcess(int, QProcess::ExitStatus))); // handle the end of platesolving
     connectLX200Events(true); // call all connects for LX200 functions
-    ui->rbZWOINDI->setChecked(true); // set a default type of INDI server
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
     ui->lcdPulseGuideDuration->display(pulseGuideDuration);
     ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
+    ui->fSwitchMainCCD->setEnabled(true);
+    ui->fNumberMainCCD->setEnabled(true);
+    ui->fTextMainCCD->setEnabled(true);
+    ui->fLightMainCCD->setEnabled(false);  // same as above
     ui->pbSyncToPark->setEnabled(true); // same as above
     this->StepperDriveRA->stopDrive();
     this->StepperDriveDecl->stopDrive(); // just to kill all jobs that may lurk in the muproc ...
@@ -732,7 +748,7 @@ void MainWindow::updateReadings() {
         }
     }
 
-    if (this->ccdCameraIsAcquiring == true) { // the to be analysed by the opencv in guiding is checked for saturated pixels
+    if (this->ccdGuiderCameraIsAcquiring == true) { // the to be analysed by the opencv in guiding is checked for saturated pixels
         ui->cbSaturation->setChecked(this->guiding->isPixelAtSaturation());
     }
 
@@ -890,6 +906,15 @@ void MainWindow::updateReadings() {
 
     if ((wasInGoTo == true) && (isInGoTo == false)) { // slew has stopped
         this->terminateGoTo(false);
+    }
+
+    if (this->ccdMainCameraIsAcquiring == true) {
+        this->psImageAcquisionTimeRemaining = round(ui->sbPSExposureTime->value() - this->elapsedPS->elapsed()*0.001);
+        if (this->psImageAcquisionTimeRemaining < 0) {
+            this->psImageAcquisionTimeRemaining = 0;
+            ui->cbPSImageInTransfer->setChecked(true);
+        }
+        ui->lcdETAOfPSImage->display((int)(this->psImageAcquisionTimeRemaining));
     }
 }
 //------------------------------------------------------------------------
@@ -1130,7 +1155,7 @@ void MainWindow::startGoToObject(void) {
     ui->pbGoTo->setEnabled(false); // disable pushbutton for GOTO
     this->setControlsForGoto(false); // set some controls on disabled
     ui->pbStartTracking->setEnabled(false); // tracking button is disabled
-    if (this->ccdCameraIsAcquiring == true) { // slewing and transfer of FITS images at the same time cause erratic behaviour,
+    if (this->ccdGuiderCameraIsAcquiring == true) { // slewing and transfer of FITS images at the same time cause erratic behaviour,
         this->stopCCDAcquisition();           // the guiding camera acquisition is terminated if active
     }
     this->syncMount(g_AllData->getActualScopePosition(2), g_AllData->getActualScopePosition(1),false);
@@ -1474,7 +1499,6 @@ void MainWindow::gotoParkPosition(void) {
     }
     this->startGoToObject();
     this->isInParking = true;
-
 }
 
 //------------------------------------------------------------------
@@ -1491,6 +1515,12 @@ void MainWindow::shutDownProgram() {
     bool isEast;
 
     qDebug() << "Shutting down TSC...";
+    qDebug() << "Shutting down drives...";
+    this->StepperDriveRA->shutDownDrive();
+    this->StepperDriveDecl->shutDownDrive();
+    if (this->auxBoardIsAvailable == true) {
+        emergencyStopAuxDrives();
+    }
     system("sudo timedatectl set-ntp 1");
     qDebug() << "Storing position...";
     isEast = ui->cbMountIsEast->isChecked();
@@ -1505,18 +1535,10 @@ void MainWindow::shutDownProgram() {
     outfile.close(); // close the file
     ostr.clear();  // save the state of the GEM in a separate file at shutdown
     qDebug() << "Shutting down camera...";
-    this->ccdCameraIsAcquiring=false;
+    this->ccdGuiderCameraIsAcquiring=false;
     this->waitForNMSecs((ui->sbExposureTime->value())*1000);
     camera_client->sayGoodbyeToINDIServer();
-    delete camera_client;
-    psMaincamera_client->sayGoodbyeToINDIServer();
-    delete psMaincamera_client;
-    qDebug() << "Shutting down drives...";
-    this->StepperDriveRA->shutDownDrive();
-    this->StepperDriveDecl->shutDownDrive();
-    if (this->auxBoardIsAvailable == true) {
-        emergencyStopAuxDrives();
-    }
+    this->waitForNMSecs(500);
     qDebug() << "Freeing memory ...";
     delete currentRAString;
     delete currentDeclString;
@@ -1525,7 +1547,10 @@ void MainWindow::shutDownProgram() {
     delete textEntry;
     delete wcsInfoOutput;
     delete camImg;
+    delete mainCamImg;
     delete guideStarPrev;
+    delete guideCamDriverName;
+    delete mainCamDriverName;
     qDebug() << "Freeing SPI ...";
     delete spiDrOnChan0;
     delete spiDrOnChan1;
@@ -1548,25 +1573,36 @@ void MainWindow::shutDownProgram() {
     delete checkDriveTimer;
     delete st4State.raCorrTime;
     delete st4State.deCorrTime;
+    delete elapsedGoToTime;
+    delete elapsedPS;
     delete g_AllData;
     qDebug() << "Closing USB bus ...";
     delete amisInterface;
+    qDebug() << "Killing AMetry Process...";
     delete astroMetryProcess;
+    qDebug() << "Freeing camera client ...";
+    delete camera_client;
+    qDebug() << "Goodbye!";
     exit(0);
 }
 
 //---------------------------------------------------------------------
-// calle to check whether the error flag on the AMIS drivers is up ...
+// called to check whether the error flag on the AMIS drivers is up ...
 void MainWindow::getDriveError(void) {
     bool isError;
 
     isError = this->StepperDriveRA->getErrorFromDriver();
     if (isError == true) {
         ui->cbErrRA->setChecked(true);
+        this->StepperDriveRA->hwResetDriver();
+        this->waitForNMSecs(500);
     }
     isError = this->StepperDriveDecl->getErrorFromDriver();
     if (isError == true) {
         ui->cbErrDecl->setChecked(true);
+        this->StepperDriveDecl->hwResetDriver();
+        this->waitForNMSecs(500);
+
     }
 }
 
@@ -1706,47 +1742,46 @@ void MainWindow::setMaxStepperCurrentDecl(void) {
 // read the address and port from the GUI and start connect the guide camera to the INDI server
 void MainWindow::setINDISAddrAndPort(void) {
     QString saddr;
-    int sport, gainVal;
+    int sport;
     bool isServerUp = 0;
     QMessageBox noCamBoxMsg;
 
+    if ((this->cam1Selected == false) && (this->cam2Selected == false)) {
+            return;
+    }
     ui->pbConnectToServer->setEnabled(false);
     saddr=ui->leINDIServer->text();
     sport=ui->sbINDIPort->value();
     isServerUp = camera_client->setINDIServer(saddr,sport);
+    qDebug() << "INDI Server is set...";
     g_AllData->setINDIState(isServerUp,false);
     // set a global flag on the server state
     if (isServerUp==true) {
         this->waitForNMSecs(500);
         QCoreApplication::processEvents(QEventLoop::AllEvents,2000);   // process events before sleeping for a second
         this->waitForNMSecs(1000);
-        isServerUp = camera_client->probeForCCD();
+        isServerUp = camera_client->probeForCCD(0); // at least one camera should be connected
         if (isServerUp == true) {
-            ui->gbStartINDI->setEnabled(false);
-            ui->pbExpose->setEnabled(true);
             ui->cbIndiIsUp->setChecked(true);
+            ui->pbKillINDIServer->setEnabled(false);
             ui->cbStoreGuideCamImgs->setEnabled(true);
-            this->getCCDParameters(false);
-            this->storeCCDData(false);
-            if (camera_client->cameraGainAvailable() == true) {
-                ui->sbCCDGain->setEnabled(true);
-                gainVal=ui->sbCCDGain->value();
-                camera_client->sendGain(gainVal);
-            } else {
-                ui->sbCCDGain->setValue(0);
-                ui->sbCCDGain->setEnabled(false);
-            }
+            ui->leCam1Name->setText(camera_client->getINDIName(0)->toLatin1());
+            ui->leCam2Name->setText(camera_client->getINDIName(1)->toLatin1());
             ui->pbDisconnectFromServer->setEnabled(true);
+            ui->rbMainCCD->setEnabled(true);
+            ui->rbGuiderCCD->setEnabled(true);
         } else {
             ui->pbConnectToServer->setEnabled(true);
             ui->pbExpose->setEnabled(false);
             ui->cbIndiIsUp->setChecked(false);
             ui->cbStoreGuideCamImgs->setEnabled(false);
+            ui->rbMainCCD->setEnabled(true);
+            ui->rbGuiderCCD->setEnabled(true);
             noCamBoxMsg.setWindowTitle("Critical INDI error");
             noCamBoxMsg.setText("Camera not available - is it connected?");
             noCamBoxMsg.exec();
             camera_client->sayGoodbyeToINDIServer();
-            this->disconnectGuiderFromINDIServer();
+            this->disconnectFromINDIServer();
             this->waitForNMSecs(1000);
         }
     } else {
@@ -1755,76 +1790,120 @@ void MainWindow::setINDISAddrAndPort(void) {
 }
 
 //------------------------------------------------------------------
-// read the address and port from the GUI and start connect the Main camera to the INDI server
-void MainWindow::setINDISAddrAndPortForMainCCD(void) {
-    QString saddr;
-    int sport;
-    bool isServerUp = 0;
-    QMessageBox noCamBoxMsg;
-
-    ui->pbConnectToServerMainCCD->setEnabled(false);
-    saddr=ui->leINDIServerMainCCD->text();
-    sport=ui->sbINDIPortMainCCD->value();
-    isServerUp = psMaincamera_client->setINDIServer(saddr,sport);
-    g_AllData->setINDIState(isServerUp, true);
-    // set a global flag on the server state
-    if (isServerUp==true) {
-        this->waitForNMSecs(500);
-        QCoreApplication::processEvents(QEventLoop::AllEvents,2000);   // process events before sleeping for a second
-        this->waitForNMSecs(1000);
-        isServerUp = psMaincamera_client->probeForCCD();
-        if (isServerUp == true) {
-            ui->pbTakeImagePS->setEnabled(true);
-            ui->cbIndiIsUpMainCCD->setChecked(true);
-            this->getCCDParameters(true);
-            this->storeCCDData(true);
-
-            //------------------ mods till here
-
-
-            ui->pbDisconnectFromServerMainCCD->setEnabled(true);
+// after selection of the guidecam, the proper parameters are retrieved here
+void MainWindow::selectCameraTypes(void){
+    if (((this->cam1Selected == true) && (this->cam2Selected == false)) || ((this->cam1Selected == false) && (this->cam2Selected == true))) { // only one active INDI camera, it can be main or guider
+        if (ui->rbMainCCD->isChecked() == true) {
+            this->mainCamSelected = true;
+            this->guiderCamSelected = false;
         } else {
-            ui->pbConnectToServerMainCCD->setEnabled(true);
-            ui->pbTakeImagePS->setEnabled(false);
-            ui->cbIndiIsUpMainCCD->setChecked(false);
-            noCamBoxMsg.setWindowTitle("Critical INDI error");
-            noCamBoxMsg.setText("Camera not available - is it connected?");
-            noCamBoxMsg.exec();
-            psMaincamera_client->sayGoodbyeToINDIServer();
-            this->disconnectMainCCDFromINDIServer();
-            this->waitForNMSecs(1000);
+            this->guiderCamSelected = true;
+            this->mainCamSelected = false;
         }
-    } else {
-          ui->pbConnectToServerMainCCD->setEnabled(true);
     }
+
+    if ((this->cam1Selected == true) && (this->cam2Selected == true)) {
+        this->mainCamSelected = true;
+        this->guiderCamSelected = true;
+    }
+    g_AllData->setINDIState(mainCamSelected, true);
+    g_AllData->setINDIState(guiderCamSelected, false); // storing which cameras are now connected in the global struct
+    if (ui->rbMainCCD->isChecked() == true) {
+        camera_client->setIdxOfCCDs(0,true);
+        camera_client->setIdxOfCCDs(1,false);
+        ui->pbTakeImagePS->setEnabled(true);
+        ui->gbCCDParamsMainCCD->setEnabled(true);
+        camera_client->loadINDIConfigFile(true);
+        this->getCCDParameters(true);
+        if (this->guiderCamSelected == true) {
+            camera_client->loadINDIConfigFile(false);
+            this->getCCDParameters(false);
+            ui->gbCCDParams->setEnabled(true);
+            ui->pbExpose->setEnabled(true);
+        }
+    }
+    if (ui->rbGuiderCCD->isChecked() == true) {
+        camera_client->setIdxOfCCDs(0, false);
+        camera_client->setIdxOfCCDs(1,true);
+        ui->gbCCDParams->setEnabled(true);
+        ui->pbExpose->setEnabled(true);
+        camera_client->loadINDIConfigFile(false);
+        this->getCCDParameters(false);
+        if (this->mainCamSelected == true) {
+            camera_client->loadINDIConfigFile(true);
+            this->getCCDParameters(true);
+            ui->pbTakeImagePS->setEnabled(true);
+            ui->gbCCDParamsMainCCD->setEnabled(true);
+        }
+    }
+    this->loadPropertyList();
+
 }
 
+//-------------------------------------------------------------------
+// slot that is called when new properties arrive
+void MainWindow::loadPropertyList(void) {
+    int i;
+    QString* itemName;
+
+    itemName = new QString();
+    this->resetMainCamINDIPropertyGUIElements();
+    ui->tabCamsP->setEnabled(true);
+    if (this ->mainCamSelected == true) {
+        ui->listMainCamProperties->clear();
+        for (i = 0; i < camera_client->getNoOfProperties(true); i++) {
+            itemName->clear();
+            itemName->append((camera_client->getPropertyLabel(true,i)->toLatin1()));
+            itemName->append(" (");
+            itemName->append(camera_client->getPropertyGroup(true,i)->toLatin1());
+            itemName->append(")");
+            ui->listMainCamProperties->addItem(itemName->toLatin1());
+            ui->lMainCCDPropMessage->setText("Property list changed!");
+        }
+    }
+    if (this ->guiderCamSelected == true) {
+        ui->listGuideCamProperties->clear();
+        for (i = 0; i < camera_client->getNoOfProperties(false); i++) {
+            itemName->clear();
+            itemName->append((camera_client->getPropertyLabel(false,i)->toLatin1()));
+            itemName->append(" (");
+            itemName->append(camera_client->getPropertyGroup(false,i)->toLatin1());
+            itemName->append(")");
+            ui->listGuideCamProperties->addItem(itemName->toLatin1());
+            ui->lGuideCCDPropMessage->setText("Property list changed!");
+        }
+    }
+}
 
 //------------------------------------------------------------------
 // disconnect guidecam from INDI server
-void MainWindow::disconnectGuiderFromINDIServer(void) {
+void MainWindow::disconnectFromINDIServer(void) {
 
-    if (this->ccdCameraIsAcquiring==false) {
+    if ((this->ccdGuiderCameraIsAcquiring==false) && (this->ccdMainCameraIsAcquiring== false)) {
         this->camera_client->disconnectFromServer();
         ui->pbConnectToServer->setEnabled(true);
         ui->pbDisconnectFromServer->setEnabled(false);
+        ui->pbKillINDIServer->setEnabled(true);
         ui->cbIndiIsUp->setChecked(false);
         ui->pbExpose->setEnabled(false);
         ui->pbStopExposure->setEnabled(false);
-        ui->gbStartINDI->setEnabled(true);
-    }
-}
-
-//------------------------------------------------------------------
-// disconnect main ccd for platesolving from INDI server
-void MainWindow::disconnectMainCCDFromINDIServer(void) {
-
-    if (this->mainCCDCameraIsAcquiring==false) {
-        this->psMaincamera_client->disconnectFromServer();
-        ui->pbConnectToServerMainCCD->setEnabled(true);
-        ui->pbDisconnectFromServerMainCCD->setEnabled(false);
-        ui->cbIndiIsUpMainCCD->setChecked(false);
-        ui->pbTakeImagePS->setEnabled(false);
+        ui->gbStartGuiderCCDINDI->setEnabled(true);
+        ui->gbStartMainCCDINDI->setEnabled(true);
+        ui->tabCamsP->setEnabled(false);
+        ui->listMainCamProperties->clear();
+        ui->listGuideCamProperties->clear();
+        ui->leFrameSizeXMainCCD->clear();
+        ui->leFrameSizeYMainCCD->clear();
+        ui->leFrameSizeX->clear();
+        ui->leFrameSizeY->clear();
+        ui->lePixelSizeX->clear();
+        ui->lePixelSizeY->clear();
+        ui->lePixelSizeXMainCCD->clear();
+        ui->lePixelSizeYMainCCD->clear();
+        ui->lcdBitDepthMainCCD->display(0);
+        ui->lcdBitDepth->display(0);
+        this->storeMainCCDData();
+        this->storeGuiderCCDData();
     }
 }
 
@@ -1854,9 +1933,30 @@ void MainWindow::killRunningINDIServer(void) {
     }
     infile.close(); // close the file
     ui->pbKillINDIServer->setEnabled(false);
-    ui->pbStartINDIServer->setEnabled(true);
-    ui->gbStartINDI->setEnabled(true);
+    ui->pbStartINDIServer->setEnabled(false);
+    ui->gbStartGuiderCCDINDI->setEnabled(true);
+    ui->gbStartMainCCDINDI->setEnabled(true);
     ui->pbConnectToServer->setEnabled(false);
+    ui->gbCCDParams->setEnabled(false);
+    ui->gbCCDParamsMainCCD->setEnabled(false);
+    ui->rbMainCCD->setEnabled(false);
+    ui->rbGuiderCCD->setEnabled(false);
+    ui->leCam1Name->clear();
+    ui->leCam2Name->clear();
+    ui->rbMainCCD->setEnabled(false);
+    ui->rbMainCCD->setEnabled(false);
+    ui->rbMainCCD->setAutoExclusive(false);
+    ui->rbGuiderCCD->setAutoExclusive(false);
+    ui->rbMainCCD->setChecked(false);
+    ui->rbGuiderCCD->setChecked(false);
+    ui->rbMainCCD->setAutoExclusive(true);
+    ui->rbGuiderCCD->setAutoExclusive(true);
+    this->mainCamDriverName->clear();
+    this->guideCamDriverName->clear();
+    this->cam1Selected = false;
+    this->cam2Selected = false;
+    this->mainCamSelected = false;
+    this->guiderCamSelected = false;
     this->setINDIrbuttons(true);
 }
 
@@ -1876,58 +1976,25 @@ void MainWindow::handleServerMessage(void) {
 // type of server is defined by radiobuttons ...
 void MainWindow::deployINDICommand(void) {
     int retval = 0;
+    QString *indiServerCommand;
 
-
-    ui->sbCCDGain->setEnabled(true);
-    ui->sbExposureTime->setEnabled(true);
-    if (ui->rbApogee->isChecked()== true) {
-        retval = system("indiserver -v indi_apogee_ccd &");
+    if ((this->cam1Selected == false) && (this->cam2Selected==false)) {
+        qDebug() << "No Cameras selected ...";
+        return;
     }
-    if (ui->rbATIK->isChecked()== true) {
-        retval = system("indiserver -v indi_atik_ccd &");
+    indiServerCommand = new QString("indiserver -v ");
+    if (this->mainCamDriverName->compare(this->guideCamDriverName) == 0) {
+        if (this->mainCamDriverName->isEmpty() == false) {
+            indiServerCommand->append(this->mainCamDriverName);
+            indiServerCommand->append(" &");
+        }
+    } else {
+        indiServerCommand->append(this->mainCamDriverName);
+        indiServerCommand->append(" ");
+        indiServerCommand->append(this->guideCamDriverName);
+        indiServerCommand->append(" &");
     }
-    if (ui->rbFLI->isChecked()== true) {
-        retval = system("indiserver -v indi_fli_ccd &");
-    }
-    if (ui->rbINova->isChecked()== true) {
-        retval = system("indiserver -v indi_nova_ccd &");
-    }
-    if (ui->rbMeadeDSI->isChecked()== true) {
-        retval = system("indiserver -v indi_dsi_ccd &");
-    }
-    if (ui->rbQSI->isChecked()== true) {
-        retval = system("indiserver -v indi_qsi_ccd &");
-    }
-    if (ui->rbSBIG->isChecked()== true) {
-        retval = system("indiserver -v indi_sbig_ccd &");
-    }
-    if (ui->rbQHYINDI->isChecked()== true) {
-        retval = system("indiserver -v indi_qhy_ccd &");
-    }
-    if (ui->rbZWOINDI->isChecked()== true) {
-        retval = system("indiserver -v indi_asi_ccd &");
-    }
-    if (ui->rbV4L2INDI->isChecked()== true) {
-        retval = system("indiserver -v indi_v4l2_ccd &");
-        ui->sbCCDGain->setEnabled(false);
-        ui->sbExposureTime->setEnabled(false);
-    }
-    if (ui->rbMoravian->isChecked()== true) {
-        retval = system("indiserver -v indi_mi_ccd &");
-    }
-    if (ui->rbSLXPress->isChecked() == true) {
-        retval = system("indiserver -v indi_sx_ccd &");
-    }
-    if (ui->rbToUpTek->isChecked() == true) {
-        retval = system("indiserver -v indi_toupcam_ccd &");
-    }
-    if (ui->rbNightscape->isChecked() == true) {
-        retval = system("indiserver -v indi_nightscape_ccd &");
-    }
-    if (ui->rbAltair->isChecked() == true) {
-        retval = system("indiserver -v indi_altair_ccd &");
-    }
-
+    retval = system(indiServerCommand->toLatin1());
     if (retval == 0) {
         ui->pbStartINDIServer->setEnabled(false);
         ui->pbKillINDIServer->setEnabled(true);
@@ -1936,7 +2003,100 @@ void MainWindow::deployINDICommand(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents,2000);   // process events before sleeping for a second
     }
     this->waitForNMSecs(1000);
+    qDebug() << "Command to start INDIServer: " << indiServerCommand->toLatin1();
+    delete indiServerCommand;
     this->findOutAboutINDIServerPID(); // store the PID in a file
+}
+
+//------------------------------------------------------------------
+// a slot for selecting a guider camera
+void MainWindow::selectGuiderCamDriverName(void) {
+    if (ui->rbGuiderCamNone->isChecked() == false) {
+        if (ui->rbApogee->isChecked()== true) {
+            this->guideCamDriverName->append("indi_apogee_ccd");
+        }
+        if (ui->rbATIK->isChecked()== true) {
+            this->guideCamDriverName->append("indi_atik_ccd");
+        }
+        if (ui->rbFLI->isChecked()== true) {
+            this->guideCamDriverName->append("indi_fli_ccd");
+        }
+        if (ui->rbINova->isChecked()== true) {
+            this->guideCamDriverName->append("indi_nova_ccd");
+        }
+        if (ui->rbMeadeDSI->isChecked()== true) {
+            this->guideCamDriverName->append("indi_dsi_ccd");
+        }
+        if (ui->rbQSI->isChecked()== true) {
+            this->guideCamDriverName->append("indi_qsi_ccd");
+        }
+        if (ui->rbSBIG->isChecked()== true) {
+            this->guideCamDriverName->append("indi_sbig_ccd");
+        }
+        if (ui->rbQHYINDI->isChecked()== true) {
+            this->guideCamDriverName->append("indi_qhy_ccd");
+        }
+        if (ui->rbZWOINDI->isChecked()== true) {
+            this->guideCamDriverName->append("indi_asi_ccd");
+        }
+        if (ui->rbV4L2INDI->isChecked()== true) {
+            this->guideCamDriverName->append("indi_v4l2_ccd");
+        }
+        if (ui->rbMoravian->isChecked()== true) {
+            this->guideCamDriverName->append("indi_mi_ccd");
+        }
+        if (ui->rbSLXPress->isChecked() == true) {
+            this->guideCamDriverName->append("indi_sx_ccd");
+        }
+        if (ui->rbToUpTek->isChecked() == true) {
+            this->guideCamDriverName->append("indi_toupcam_ccd");
+        }
+        if (ui->rbNightscape->isChecked() == true) {
+            this->guideCamDriverName->append("indi_nightscape_ccd");
+        }
+        if (ui->rbAltair->isChecked() == true) {
+            this->guideCamDriverName->append("indi_altair_ccd");
+        }
+        this->cam1Selected = true;
+        ui->gbStartGuiderCCDINDI->setEnabled(false);
+    } else {
+        this->cam1Selected = false;
+        this->guideCamDriverName->clear();
+        ui->gbStartGuiderCCDINDI->setEnabled(false);
+    }
+    if ((ui->gbStartGuiderCCDINDI->isEnabled() == false) && (ui->gbStartMainCCDINDI->isEnabled() == false)) {
+        ui->pbStartINDIServer->setEnabled(true); // in this case, both selection buttons were already pressed ...
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::selectMainCamDriverName(void) {
+    if (ui->rbMainCCDNone->isChecked() == false) {
+        if (ui->rbZwoMainCCD->isChecked()== true) {
+            this->mainCamDriverName->append("indi_asi_ccd");
+        }
+        if (ui->rbDSLR->isChecked()==true) {
+            this->mainCamDriverName->append("indi_gphoto_ccd");
+        }
+        if (ui->rbATIKMainCCD->isChecked() == true) {
+            this->mainCamDriverName->append("indi_atik_ccd");
+        }
+        if (ui->rbMoravianMainCCD->isChecked() == true) {
+            this->mainCamDriverName->append("indi_mi_ccd");
+        }
+        if (ui->rbQHYMainCCD->isChecked() == true) {
+            this->mainCamDriverName->append("indi_qhy_ccd");
+        }
+        this->cam2Selected = true;
+        ui->gbStartMainCCDINDI->setEnabled(false);
+    } else {
+        this->cam2Selected = false;
+        this->mainCamDriverName->clear();
+        ui->gbStartMainCCDINDI->setEnabled(false);
+    }
+    if ((ui->gbStartGuiderCCDINDI->isEnabled() == false) && (ui->gbStartMainCCDINDI->isEnabled() == false)) {
+        ui->pbStartINDIServer->setEnabled(true); // in this case, both selection buttons were already pressed ...
+    }
 }
 
 //------------------------------------------------------------------
@@ -1946,29 +2106,625 @@ void MainWindow::clearINDILog(void) {
 }
 
 //------------------------------------------------------------------
+// slots to set INDI properties from the main list widget on properties
+void MainWindow::mainCamPropertySelected(void) {
+    int idx, i;
+    INDI_PROPERTY_TYPE ipt;
+
+    qDebug() << "Selecting property ...";
+    QCoreApplication::processEvents(QEventLoop::AllEvents,1000);
+    this->resetMainCamINDIPropertyGUIElements();
+    idx = ui->listMainCamProperties->currentRow();
+    ipt = camera_client->getPropertyType(true,idx);
+    switch(ipt) {
+    case INDI_NUMBER:
+        if (camera_client->getRWPermission(true,idx,true) == true) { // ask for permission to read value
+            ui->lwMainCCDNumberNames->setEnabled(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(true,idx); i++) {
+                ui->lwMainCCDNumberNames->addItem(camera_client->getNumberPropertyItemLabel(true, idx, i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_TEXT:
+        if (camera_client->getRWPermission(true,idx,true) == true) { // ask for permission to read value
+            ui->lwMainCCDTextNames->setEnabled(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(true,idx); i++) {
+                ui->lwMainCCDTextNames->addItem(camera_client->getTextPropertyItemLabel(true, idx, i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_SWITCH:
+        if ((camera_client->getRWPermission(true,idx,true) == true)) { // as for permission to read value; discconnecting is not possible
+            ui->lwMainCCDSwitchNames->setEnabled(true);
+            this->getINDISwitchRules(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(true,idx); i++) {
+                ui->lwMainCCDSwitchNames->addItem(camera_client->getSwitchPropertyItemLabel(true, idx, i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_LIGHT:
+        if (camera_client->getRWPermission(true,idx,true) == true) { // as for permission to read value
+            ui->lwMainCCDLightNames->setEnabled(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(true,idx); i++) {
+                ui->lwMainCCDLightNames->addItem(camera_client->getLightPropertyItemLabel(true, idx,i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_BLOB:
+        if (camera_client->getRWPermission(true,idx,true) == true) { // as for permission to read value
+            ui->cbMainCCDIsBLOB->setChecked(true);
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_UNKNOWN:
+        qDebug() << "Selected an unknown property...";
+        break;
+    }
+}
+
+//------------------------------------------------------------------
+// slots to set INDI properties from the main list widget on properties
+void MainWindow::guideCamPropertySelected(void) {
+    int idx, i;
+    INDI_PROPERTY_TYPE ipt;
+
+    QCoreApplication::processEvents(QEventLoop::AllEvents,1000);
+    this->resetGuideCamINDIPropertyGUIElements();
+    idx = ui->listGuideCamProperties->currentRow();
+    ipt = camera_client->getPropertyType(false,idx);
+    switch(ipt) {
+    case INDI_NUMBER:
+        if (camera_client->getRWPermission(false,idx,true) == true) { // ask for permission to read value
+            ui->lwGuideCCDNumberNames->setEnabled(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(false,idx); i++) {
+                ui->lwGuideCCDNumberNames->addItem(camera_client->getNumberPropertyItemLabel(false, idx, i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_TEXT:
+        if (camera_client->getRWPermission(false,idx,true) == true) { // ask for permission to read value
+            ui->lwGuideCCDTextNames->setEnabled(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(false,idx); i++) {
+                ui->lwGuideCCDTextNames->addItem(camera_client->getTextPropertyItemLabel(false, idx, i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_SWITCH:
+        if ((camera_client->getRWPermission(false,idx,true) == true)) { // as for permission to read value; discconnecting is not possible
+            ui->lwGuideCCDSwitchNames->setEnabled(true);
+            this->getINDISwitchRules(false);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(false,idx); i++) {
+                ui->lwGuideCCDSwitchNames->addItem(camera_client->getSwitchPropertyItemLabel(false, idx, i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_LIGHT:
+        if (camera_client->getRWPermission(false,idx,true) == true) { // as for permission to read value
+            ui->lwGuideCCDLightNames->setEnabled(true);
+            for (i=0; i < camera_client->getNoOfValuesInProperty(false,idx); i++) {
+                ui->lwMainCCDLightNames->addItem(camera_client->getLightPropertyItemLabel(false, idx,i)->toLatin1());
+            }
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_BLOB:
+        if (camera_client->getRWPermission(false,idx,true) == true) { // as for permission to read value
+            ui->cbGuideCCDIsBLOB->setChecked(true);
+        } else {
+            qDebug() << "cannot read value ...";
+        }
+        break;
+    case INDI_UNKNOWN:
+        qDebug() << "Selected an unknown property...";
+        break;
+    }
+}
+
+//------------------------------------------------------------------
+// slots to select single INDI Property values for changing and display
+void MainWindow::mainCamSetINDINumberProperties(void) {
+    int idx, cnt;
+    double dispval, hmax, hmin, hstep;
+    INumber np;
+
+    ui->sbMainCCDINDINumberSet->setEnabled(false);
+    ui->pbMainCCDNumberValueSet->setEnabled(false);
+    idx = ui->listMainCamProperties->currentRow();
+    cnt = ui->lwMainCCDNumberNames->currentRow();
+    np = camera_client->getCurrentNumber(true, idx, cnt);
+    dispval = np.value;
+    ui->lcdMainCCDNumberValue->display(dispval);
+    if (camera_client->getRWPermission(true,idx,false) == true) { // as for permission to set value
+        ui->sbMainCCDINDINumberSet->setEnabled(true);
+        ui->pbMainCCDNumberValueSet->setEnabled(true);
+        hmax = np.max;
+        hmin = np.min;
+        if (np.step > 0) {
+            hstep = np.step;
+        } else {
+            hstep = 0.01;
+        }
+        ui->sbMainCCDINDINumberSet->setMaximum(hmax);
+        ui->sbMainCCDINDINumberSet->setMinimum(hmin);
+        ui->sbMainCCDINDINumberSet->setSingleStep(hstep);
+        ui->sbMainCCDINDINumberSet->setValue(dispval);
+    }
+}
+
+//------------------------------------------------------------------
+// slots to select single INDI Property values for changing and display
+void MainWindow::guideCamSetINDINumberProperties(void) {
+    int idx, cnt;
+    double dispval, hmax, hmin, hstep;
+    INumber np;
+
+    ui->sbGuideCCDINDINumberSet->setEnabled(false);
+    ui->pbGuideCCDNumberValueSet->setEnabled(false);
+    idx = ui->listGuideCamProperties->currentRow();
+    cnt = ui->lwGuideCCDNumberNames->currentRow();
+    np = camera_client->getCurrentNumber(false, idx, cnt);
+    dispval = np.value;
+    ui->lcdGuideCCDNumberValue->display(dispval);
+    if (camera_client->getRWPermission(false,idx,false) == true) { // as for permission to set value
+        ui->sbGuideCCDINDINumberSet->setEnabled(true);
+        ui->pbGuideCCDNumberValueSet->setEnabled(true);
+        hmax = np.max;
+        hmin = np.min;
+        if (np.step > 0) {
+            hstep = np.step;
+        } else {
+            hstep = 0.01;
+        }
+        ui->sbGuideCCDINDINumberSet->setMaximum(hmax);
+        ui->sbGuideCCDINDINumberSet->setMinimum(hmin);
+        ui->sbGuideCCDINDINumberSet->setSingleStep(hstep);
+        ui->sbGuideCCDINDINumberSet->setValue(dispval);
+    }
+}
+
+//------------------------------------------------------------------
+// slot that actively sets a number to the INDI server propertyvector
+void MainWindow::mainCamSendINDINumber(void) {
+    int idx, cnt;
+    double val;
+    INumber np;
+
+    idx = ui->listMainCamProperties->currentRow();
+    cnt = ui->lwMainCCDNumberNames->currentRow();
+    val = ui->sbMainCCDINDINumberSet->value();
+    if (camera_client->getRWPermission(true,idx,false) == true) { // as for permission to set value
+        camera_client->setCurrentNumberValue(true, idx, cnt, val);
+    }
+    np = camera_client->getCurrentNumber(true, idx, cnt);
+    val = np.value;
+    ui->lcdMainCCDNumberValue->display(val);
+    ui->pbMainCCDNumberValueSend->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+// slot that sends the current number numberproperty vector to the server
+void MainWindow::mainCamSetINDINumberOnServer(void) {
+    camera_client->sendCurrentNumberValueCompound();
+    this->storeMainCCDData(); // if resolution or depth are changed, this has to be made known
+    this->getCCDParameters(true);
+}
+
+//------------------------------------------------------------------
+// slot that actively sends a number to the INDI server
+void MainWindow::guideCamSendINDINumber(void) {
+    int idx, cnt;
+    double val;
+    INumber np;
+
+    idx = ui->listGuideCamProperties->currentRow();
+    cnt = ui->lwGuideCCDNumberNames->currentRow();
+    val = ui->sbGuideCCDINDINumberSet->value();
+    if (camera_client->getRWPermission(false,idx,false) == true) { // as for permission to set value
+        camera_client->setCurrentNumberValue(false, idx, cnt, val);
+    }
+    np = camera_client->getCurrentNumber(false, idx, cnt);
+    val = np.value;
+    ui->lcdGuideCCDNumberValue->display(val);
+    ui->pbGuideCCDNumberValueSend->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+// slot that sends the current number numberproperty vector to the server
+void MainWindow::guideCamSetINDINumberOnServer(void) {
+    camera_client->sendCurrentNumberValueCompound();
+    this->storeGuiderCCDData(); // if resolution or depth are changed, this has to be made known
+    this->getCCDParameters(false);
+}
+
+//------------------------------------------------------------------
+void MainWindow::mainCamSetINDITextProperties(void) {
+    int idx, cnt;
+    QString *dispText;
+
+    ui->leMainCCDTextValue->setEnabled(false);
+    ui->leMainCCDTextValueSet->setEnabled(false);
+    idx = ui->listMainCamProperties->currentRow();
+    cnt = ui->lwMainCCDTextNames->currentRow();
+    if (camera_client->getRWPermission(true,idx,true) == true) { // as for permission to read value
+        dispText = new QString(camera_client->getCurrentText(true, idx, cnt)->toLatin1());
+        ui->leMainCCDTextValue->setText(dispText->toLatin1());
+        delete dispText;
+        if (camera_client->getRWPermission(true,idx,false) == true) { // as for permission to set value
+            ui->leMainCCDTextValueSet->setEnabled(true);
+            ui->pbMainCCDTextValueSet->setEnabled(true);
+        }
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::guideCamSetINDITextProperties(void) {
+    int idx, cnt;
+    QString *dispText;
+
+    ui->leGuideCCDTextValue->setEnabled(false);
+    ui->leGuideCCDTextValueSet->setEnabled(false);
+    idx = ui->listGuideCamProperties->currentRow();
+    cnt = ui->lwGuideCCDTextNames->currentRow();
+    if (camera_client->getRWPermission(false,idx,true) == true) { // as for permission to read value
+        dispText = new QString(camera_client->getCurrentText(false, idx, cnt)->toLatin1());
+        ui->leGuideCCDTextValue->setText(dispText->toLatin1());
+        delete dispText;
+        if (camera_client->getRWPermission(false,idx,false) == true) { // as for permission to set value
+            ui->leGuideCCDTextValueSet->setEnabled(true);
+            ui->pbGuideCCDTextValueSet->setEnabled(true);
+        }
+    }
+}
+
+//------------------------------------------------------------------
+// slot that actively sends a text to the INDI server
+void MainWindow::mainCamSendINDIText(void) {
+    int idx, cnt;
+    QString* txt;
+
+    idx = ui->listMainCamProperties->currentRow();
+    cnt = ui->lwMainCCDTextNames->currentRow();
+    if (camera_client->getRWPermission(true,idx,false) == true) { // as for permission to set value
+        txt = new QString(ui->leMainCCDTextValueSet->text().toLatin1());
+        camera_client->setCurrentTextValue(true, idx, cnt, *txt);
+        delete txt;
+        this->mainCamSetINDITextProperties();
+    }
+    ui->leMainCCDTextValue->clear();
+}
+
+//------------------------------------------------------------------
+// slot that actively sends a text to the INDI server
+void MainWindow::guideCamSendINDIText(void) {
+    int idx, cnt;
+    QString* txt;
+
+    idx = ui->listGuideCamProperties->currentRow();
+    cnt = ui->lwGuideCCDTextNames->currentRow();
+    if (camera_client->getRWPermission(false,idx,false) == true) { // as for permission to set value
+        txt = new QString(ui->leGuideCCDTextValueSet->text().toLatin1());
+        camera_client->setCurrentTextValue(false, idx, cnt, *txt);
+        delete txt;
+        this->guideCamSetINDITextProperties();
+    }
+    ui->leGuideCCDTextValue->clear();
+}
+//------------------------------------------------------------------
+void MainWindow::getINDISwitchRules(bool isMainCCD) {
+    int idx = 0;
+    ISRule possibilities;
+
+    if (isMainCCD == true) {
+        idx = ui->listMainCamProperties->currentRow();
+    } else {
+        idx = ui->listGuideCamProperties->currentRow();
+    }
+    if (camera_client->getRWPermission(isMainCCD,idx,true) == true) { // as for permission to read value
+       possibilities = camera_client->getSwitchRules(isMainCCD,idx);
+       switch (possibilities) {
+       case ISR_1OFMANY:
+            if (isMainCCD == true) {
+                ui->lMainCCDINDISwitchType->setText("One switch has to be ON!");
+            } else {
+                ui->lGuideCCDINDISwitchType->setText("One switch has to be ON!");
+            }
+            break;
+       case ISR_ATMOST1:
+            if (isMainCCD == true) {
+                ui->lMainCCDINDISwitchType->setText("One or no switch can be ON!");
+            } else {
+                ui->lGuideCCDINDISwitchType->setText("One or no switch can be ON!");
+            }
+            break;
+       case ISR_NOFMANY:
+            if (isMainCCD == true) {
+                ui->lMainCCDINDISwitchType->setText("Many switches can be ON!");
+            } else {
+                ui->lGuideCCDINDISwitchType->setText("Many switches can be ON!");
+            }
+           break;
+        }
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::mainCamSetINDISwitchProperties(void) {
+    int idx, cnt;
+    ISState status;
+    bool isOn;
+
+    ui->cbMainCCDINDISwitchOn->setEnabled(false);
+    ui->cbMainCCDSwitchReceived->setChecked(false);
+    idx = ui->listMainCamProperties->currentRow();
+    cnt = ui->lwMainCCDSwitchNames->currentRow();
+    if (camera_client->getRWPermission(true,idx,true) == true) { // as for permission to read value
+        status = camera_client->getCurrentSwitch(true, idx, cnt);
+        if (status == ISS_ON) {
+            isOn=true;
+        } else {
+            isOn=false;
+        }
+        ui->cbMainCCDINDISwitchOn->setEnabled(true);
+        ui->pbMainCCDSetINDISwitch->setEnabled(true);
+        ui->cbMainCCDINDISwitchOn->setChecked(isOn);
+        if (camera_client->getRWPermission(true,idx,false) == true) { // as for permission to write value
+        }
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::guideCamSetINDISwitchProperties(void) {
+    int idx, cnt;
+    ISState status;
+    bool isOn;
+
+    ui->cbGuideCCDINDISwitchOn->setEnabled(false);
+    ui->cbGuideCCDSwitchReceived->setChecked(false);
+    idx = ui->listGuideCamProperties->currentRow();
+    cnt = ui->lwGuideCCDSwitchNames->currentRow();
+    if (camera_client->getRWPermission(false,idx,true) == true) { // as for permission to read value
+        status = camera_client->getCurrentSwitch(false, idx, cnt);
+        if (status == ISS_ON) {
+            isOn=true;
+        } else {
+            isOn=false;
+        }
+        ui->cbGuideCCDINDISwitchOn->setEnabled(true);
+        ui->pbGuideCCDSetINDISwitch->setEnabled(true);
+        ui->cbGuideCCDINDISwitchOn->setChecked(isOn);
+        if (camera_client->getRWPermission(false,idx,false) == true) { // as for permission to write value
+        }
+    }
+}
+//------------------------------------------------------------------
+// slot that actively sends a switch to the INDI server
+void MainWindow::mainCamSendINDISwitch(void) {
+    int idx, cnt;
+    bool status;
+
+    idx = ui->listMainCamProperties->currentRow();
+    cnt = ui->lwMainCCDSwitchNames->currentRow();
+    if (camera_client->getRWPermission(true,idx,false) == true) { // as for permission to set value
+        if (ui->cbMainCCDINDISwitchOn->isChecked() == true) {
+            status = true;
+        } else {
+            status = false;
+        }
+        camera_client->setCurrentSwitch(true, idx, cnt, status);
+    } else {
+        qDebug() << "cannot set switch value...";
+    }
+}
+
+//------------------------------------------------------------------
+// slot that actively sends a switch to the INDI server
+void MainWindow::guideCamSendINDISwitch(void) {
+    int idx, cnt;
+    bool status;
+
+    idx = ui->listGuideCamProperties->currentRow();
+    cnt = ui->lwGuideCCDSwitchNames->currentRow();
+    if (camera_client->getRWPermission(false,idx,false) == true) { // as for permission to set value
+        if (ui->cbGuideCCDINDISwitchOn->isChecked() == true) {
+            status = true;
+        } else {
+            status = false;
+        }
+        camera_client->setCurrentSwitch(false, idx, cnt, status);
+    } else {
+        qDebug() << "cannot set switch value...";
+    }
+}
+
+//------------------------------------------------------------------
+void MainWindow::resetMainCamINDIPropertyGUIElements(void) {
+    ui->lwMainCCDTextNames->clear();
+    ui->lwMainCCDTextNames->setEnabled(false);
+    ui->leMainCCDTextValue->clear();
+    ui->leMainCCDTextValueSet->clear();
+    ui->leMainCCDTextValueSet->setEnabled(false);
+    ui->pbMainCCDTextValueSet->setEnabled(false);
+    ui->cbMainCCDTextReceived->setChecked(false);
+    ui->cbMainCCDTextReceived->setEnabled(false);
+    ui->lMainCCDINDITextOK->setEnabled(false);
+
+    ui->lwMainCCDNumberNames->clear();
+    ui->lwMainCCDNumberNames->setEnabled(false);
+    ui->lcdMainCCDNumberValue->display(0);
+    ui->sbMainCCDINDINumberSet->setValue(0);
+    ui->sbMainCCDINDINumberSet->setEnabled(false);
+    ui->pbMainCCDNumberValueSet->setEnabled(false);
+    ui->pbMainCCDNumberValueSend->setEnabled(false);
+    ui->cbMainCCDNumberReceived->setChecked(false);
+    ui->cbMainCCDNumberReceived->setEnabled(false);
+    ui->lMainCCDINDINumberOK->setEnabled(false);
+
+    ui->lwMainCCDSwitchNames->clear();
+    ui->lwMainCCDSwitchNames->setEnabled(false);
+    ui->lMainCCDINDISwitchType->clear();
+    ui->cbMainCCDINDISwitchOn->setChecked(false);
+    ui->cbMainCCDINDISwitchOn->setEnabled(false);
+    ui->pbMainCCDSetINDISwitch->setEnabled(false);
+    ui->cbMainCCDSwitchReceived->setChecked(false);
+    ui->cbMainCCDSwitchReceived->setEnabled(false);
+    ui->lMainCCDINDISwitchOK->setEnabled(false);
+
+    ui->lwMainCCDLightNames->clear();
+    ui->lwMainCCDLightNames->setEnabled(false);
+    ui->cbMainCCDLightOn->setChecked(false);
+
+    ui->cbMainCCDIsBLOB->setChecked(false);
+
+    ui->lMainCCDPropMessage->clear();
+}
+
+//------------------------------------------------------------------
+void MainWindow::resetGuideCamINDIPropertyGUIElements(void) {
+    ui->lwGuideCCDTextNames->clear();
+    ui->lwGuideCCDTextNames->setEnabled(false);
+    ui->leGuideCCDTextValue->clear();
+    ui->leGuideCCDTextValueSet->clear();
+    ui->leGuideCCDTextValueSet->setEnabled(false);
+    ui->pbGuideCCDTextValueSet->setEnabled(false);
+    ui->cbGuideCCDTextReceived->setChecked(false);
+    ui->cbGuideCCDTextReceived->setEnabled(false);
+    ui->lGuideCCDINDITextOK->setEnabled(false);
+
+    ui->lwGuideCCDNumberNames->clear();
+    ui->lwGuideCCDNumberNames->setEnabled(false);
+    ui->lcdGuideCCDNumberValue->display(0);
+    ui->sbGuideCCDINDINumberSet->setValue(0);
+    ui->sbGuideCCDINDINumberSet->setEnabled(false);
+    ui->pbGuideCCDNumberValueSet->setEnabled(false);
+    ui->pbGuideCCDNumberValueSend->setEnabled(false);
+    ui->cbGuideCCDNumberReceived->setChecked(false);
+    ui->cbGuideCCDNumberReceived->setEnabled(false);
+    ui->lGuideCCDINDINumberOK->setEnabled(false);
+
+    ui->lwGuideCCDSwitchNames->clear();
+    ui->lwGuideCCDSwitchNames->setEnabled(false);
+    ui->lGuideCCDINDISwitchType->clear();
+    ui->cbGuideCCDINDISwitchOn->setChecked(false);
+    ui->cbGuideCCDINDISwitchOn->setEnabled(false);
+    ui->pbGuideCCDSetINDISwitch->setEnabled(false);
+    ui->cbGuideCCDSwitchReceived->setChecked(false);
+    ui->cbGuideCCDSwitchReceived->setEnabled(false);
+    ui->lGuideCCDINDISwitchOK->setEnabled(false);
+
+    ui->lwGuideCCDLightNames->clear();
+    ui->lwGuideCCDLightNames->setEnabled(false);
+    ui->cbGuideCCDLightOn->setChecked(false);
+
+    ui->cbGuideCCDIsBLOB->setChecked(false);
+
+    ui->lGuideCCDPropMessage->clear();
+}
+//------------------------------------------------------------------
+void MainWindow::indicateNumberOnINDIServerMainCCD(void) {
+    ui->cbMainCCDNumberReceived->setChecked(true);
+    ui->lMainCCDINDINumberOK->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::indicateTextOnINDIServerMainCCD(void) {
+    ui->cbMainCCDTextReceived->setChecked(true);
+    ui->lMainCCDINDITextOK->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::indicateSwitchOnINDIServerMainCCD(void) {
+    ui->cbMainCCDSwitchReceived->setChecked(true);
+    ui->lMainCCDINDISwitchOK->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::indicateNumberOnINDIServerGuiderCCD(void) {
+    ui->cbGuideCCDNumberReceived->setChecked(true);
+    ui->lGuideCCDINDINumberOK->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::indicateTextOnINDIServerGuiderCCD(void) {
+    ui->cbGuideCCDTextReceived->setChecked(true);
+    ui->lGuideCCDINDITextOK->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::indicateSwitchOnINDIServerGuiderCCD(void) {
+    ui->cbGuideCCDSwitchReceived->setChecked(true);
+    ui->lGuideCCDINDISwitchOK->setEnabled(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::deployINDIMsgDlg(void) {
+    QMessageBox noSaveBoxMsg;
+
+    noSaveBoxMsg.setWindowTitle("INDI Server message");
+    noSaveBoxMsg.setText("Server cannot store configuration - functionality not available.");
+    noSaveBoxMsg.exec();
+}
+
+//------------------------------------------------------------------
+void MainWindow::saveMainCCDConfig(void) {
+    camera_client->saveINDIConfigFile(true);
+    this->storeMainCCDData(); // if resolution or depth are changed, this has to be made known
+    this->getCCDParameters(true);
+}
+
+//------------------------------------------------------------------
+void MainWindow::saveGuideCCDConfig(void) {
+    camera_client->saveINDIConfigFile(false);
+    this->storeGuiderCCDData(); // if resolution or depth are changed, this has to be made known
+    this->getCCDParameters(false);
+}
+//------------------------------------------------------------------
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 // routines for handling the ccd - camera
 //------------------------------------------------------------------
 //------------------------------------------------------------------
-//------------------------------------------------------------------
 // send an exposure time to the camera and tell INDI to take an image
 // an event is triggered once these data were received
-void MainWindow::takeSingleCamShot(void) {
+void MainWindow::takeSingleGuiderCamShot(void) {
    int exptime;
    exptime = ui->sbExposureTime->value();
-   camera_client->takeExposure(exptime);
+   camera_client->takeExposure(exptime,false);
    this->waitForNMSecs(250);
+}
 
+//------------------------------------------------------------------
+// send an exposure time to the camera and tell INDI to tak    void changeCCDGain(void);e an image
+// an event is triggered once these data were received
+void MainWindow::takeSingleMainCamShot(void) {
+   int exptime;
+   exptime = ui->sbExposureTime->value();
+   camera_client->takeExposure(exptime,true);
+   this->waitForNMSecs(250);
 }
 //------------------------------------------------------------------
 // prepare GUI for taking images; once an image was received, a
 // new one is requested in "displayGuideCamImage"
 void MainWindow::startCCDAcquisition(void) {
-    this->ccdCameraIsAcquiring=true;
+    this->ccdGuiderCameraIsAcquiring=true;
     ui->pbExpose->setEnabled(false);
     ui->pbStopExposure->setEnabled(true);
-    this->takeSingleCamShot();
+    this->takeSingleGuiderCamShot();
     this->waitForNMSecs(200);
     ui->pbSelectGuideStar->setEnabled(true);
     ui->pbDisconnectFromServer->setEnabled(false);
@@ -1978,7 +2734,8 @@ void MainWindow::startCCDAcquisition(void) {
 //------------------------------------------------------------------
 // set a flag so that no new image is requested in "displayGuideCamImage"
 void MainWindow::stopCCDAcquisition(void) {
-    this->ccdCameraIsAcquiring=false;
+
+    this->ccdGuiderCameraIsAcquiring=false;
     ui->pbStopExposure->setEnabled(false);
     ui->pbDisconnectFromServer->setEnabled(true);
     this->camImageWasReceived=false;
@@ -2000,7 +2757,7 @@ bool MainWindow::abortCCDAcquisition(void) {
     QElapsedTimer *timeElapsedLocal;
     long maxTime;
 
-    this->ccdCameraIsAcquiring=false;
+    this->ccdGuiderCameraIsAcquiring=false;
     ui->pbStopExposure->setEnabled(false);
     ui->pbDisconnectFromServer->setEnabled(true);
     this->camImageWasReceived=false;
@@ -2029,15 +2786,6 @@ void MainWindow::enableCamImageStorage(void) {
 }
 
 //------------------------------------------------------------------
-// slot for changing the gain settings of the guidecamera
-void MainWindow::changeCCDGain(void) {
-    int gainSet;
-
-    gainSet = ui->sbCCDGain->value();
-    camera_client->sendGain(gainSet);
-}
-
-//------------------------------------------------------------------
 // does a lot - stores the camera image in the mainwindow class,
 // displays the bigger image, but if a guidestar is selected, it also
 // takes care of processing the preview image. also polls new images
@@ -2062,9 +2810,9 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
         if (this->guidingState.calibrationIsRunning == true) { // autoguider is calibrating
             this->guidingState.calibrationImageReceived=true; // in calibration, this camera image is to be used
         } // we only take a single shot here
-        if ((this->ccdCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
+        if ((this->ccdGuiderCameraIsAcquiring==true) && (this->guidingState.guidingIsOn==false)) { // if the flag for taking another one is true ...
             this->waitForNMSecs(100);
-            this->takeSingleCamShot(); // ... request another one from INDI
+            this->takeSingleGuiderCamShot(); // ... request another one from INDI
             this->waitForNMSecs(500);
         } else {
             ui->pbExpose->setEnabled(true); // if acquisition is disabled, set the GUI so that it can be enabled
@@ -2091,12 +2839,14 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
 
     if (isMainCCD == false) {
         retrievalSuccess = camera_client->getCCDParameters(isMainCCD);
-        if (retrievalSuccess==1) {
-            psx=g_AllData->getCameraPixelSize(0,false);
-            psy=g_AllData->getCameraPixelSize(1,false);
-            fsx=(int)g_AllData->getCameraChipPixels(0,false);
-            fsy=(int)g_AllData->getCameraChipPixels(1,false);
-            bd = g_AllData->getCameraBitDepth(false);
+        if (retrievalSuccess==true) {
+            qDebug() << "Getting data for guider...";
+            psx=g_AllData->getCameraPixelSize(0,isMainCCD);
+            psy=g_AllData->getCameraPixelSize(1,isMainCCD);
+            fsx=(int)g_AllData->getCameraChipPixels(0,isMainCCD);
+            fsy=(int)g_AllData->getCameraChipPixels(1,isMainCCD);
+            qDebug() << fsx << "/" << fsy;
+            bd = g_AllData->getCameraBitDepth(isMainCCD);
             letxt=QString::number((double)psx,'g',2);
             ui->lePixelSizeX->setText(letxt);
             letxt=QString::number((double)psy,'g',2);
@@ -2108,13 +2858,15 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
             ui->lcdBitDepth->display(bd);
         }
     } else {
-        retrievalSuccess = psMaincamera_client->getCCDParameters(isMainCCD);
-        if (retrievalSuccess==1) {
-            psx=g_AllData->getCameraPixelSize(0,true);
-            psy=g_AllData->getCameraPixelSize(1,true);
-            fsx=(int)g_AllData->getCameraChipPixels(0,true);
-            fsy=(int)g_AllData->getCameraChipPixels(1,true);
-            bd = g_AllData->getCameraBitDepth(true);
+        retrievalSuccess = camera_client->getCCDParameters(isMainCCD);
+        if (retrievalSuccess==true) {
+            qDebug() << "Getting data for main ccd...";
+            psx=g_AllData->getCameraPixelSize(0,isMainCCD);
+            psy=g_AllData->getCameraPixelSize(1,isMainCCD);
+            fsx=(int)g_AllData->getCameraChipPixels(0,isMainCCD);
+            fsy=(int)g_AllData->getCameraChipPixels(1,isMainCCD);
+            qDebug() << fsx << "/" << fsy;
+            bd = g_AllData->getCameraBitDepth(isMainCCD);
             letxt=QString::number((double)psx,'g',2);
             ui->lePixelSizeXMainCCD->setText(letxt);
             letxt=QString::number((double)psy,'g',2);
@@ -2130,48 +2882,56 @@ void MainWindow::displayGuideCamImage(QPixmap *camPixmap) {
 }
 
  //------------------------------------------------------------------
- // store data on the ccd from the GUI to the global data and to the .tsp file ...
- void MainWindow::storeCCDData(bool isMainCCD)  {
+ // store data on the guider ccd from the GUI to the global data and to the .tsp file ...
+ void MainWindow::storeGuiderCCDData(void)  {
      float psx,psy;
      int ccdw, ccdh;
      QString *leEntry;
 
-     if (isMainCCD == false) {
-         leEntry = new QString(ui->lePixelSizeX->text());
-         leEntry->replace(",",".");
-         psx=leEntry->toFloat();
-         leEntry->clear();
-         leEntry->append(ui->lePixelSizeY->text());
-         leEntry->replace(",",".");
-         psy=leEntry->toFloat();
-         leEntry->clear();
-         leEntry->append(ui->leFrameSizeX->text());
-         leEntry->replace(",",".");
-         ccdw=leEntry->toInt();
-         leEntry->clear();
-         leEntry->append(ui->leFrameSizeY->text());
-         leEntry->replace(",",".");
-         ccdh=leEntry->toInt();
-         delete leEntry;
-     } else {
-         leEntry = new QString(ui->lePixelSizeXMainCCD->text());
-         leEntry->replace(",",".");
-         psx=leEntry->toFloat();
-         leEntry->clear();
-         leEntry->append(ui->lePixelSizeYMainCCD->text());
-         leEntry->replace(",",".");
-         psy=leEntry->toFloat();
-         leEntry->clear();
-         leEntry->append(ui->leFrameSizeXMainCCD->text());
-         leEntry->replace(",",".");
-         ccdw=leEntry->toInt();
-         leEntry->clear();
-         leEntry->append(ui->leFrameSizeYMainCCD->text());
-         leEntry->replace(",",".");
-         ccdh=leEntry->toInt();
-         delete leEntry;
-     }
-     g_AllData->setCameraParameters(psx,psy,ccdw,ccdh,isMainCCD);
+     leEntry = new QString(ui->lePixelSizeX->text());
+     leEntry->replace(",",".");
+     psx=leEntry->toFloat();
+     leEntry->clear();
+     leEntry->append(ui->lePixelSizeY->text());
+     leEntry->replace(",",".");
+     psy=leEntry->toFloat();
+     leEntry->clear();
+     leEntry->append(ui->leFrameSizeX->text());
+     leEntry->replace(",",".");
+     ccdw=leEntry->toInt();
+     leEntry->clear();
+     leEntry->append(ui->leFrameSizeY->text());
+     leEntry->replace(",",".");
+     ccdh=leEntry->toInt();
+     delete leEntry;
+     g_AllData->setCameraParameters(psx,psy,ccdw,ccdh,false);
+     g_AllData->storeGlobalData();
+}
+
+ //------------------------------------------------------------------
+ // store data on the guider ccd from the GUI to the global data and to the .tsp file ...
+ void MainWindow::storeMainCCDData(void)  {
+     float psx,psy;
+     int ccdw, ccdh;
+     QString *leEntry;
+
+     leEntry = new QString(ui->lePixelSizeXMainCCD->text());
+     leEntry->replace(",",".");
+     psx=leEntry->toFloat();
+     leEntry->clear();
+     leEntry->append(ui->lePixelSizeYMainCCD->text());
+     leEntry->replace(",",".");
+     psy=leEntry->toFloat();
+     leEntry->clear();
+     leEntry->append(ui->leFrameSizeXMainCCD->text());
+     leEntry->replace(",",".");
+     ccdw=leEntry->toInt();
+     leEntry->clear();
+     leEntry->append(ui->leFrameSizeYMainCCD->text());
+     leEntry->replace(",",".");
+     ccdh=leEntry->toInt();
+     delete leEntry;
+     g_AllData->setCameraParameters(psx,psy,ccdw,ccdh,true);
      g_AllData->storeGlobalData();
  }
 
@@ -2247,7 +3007,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         this->guidingState.rmsDevInArcSecSum = 0.0;
         this->guidingState.maxDevInArcSec = 0;
         ui->leMaxGuideErr->setText("0/0");
-        this->takeSingleCamShot();
+        this->takeSingleGuiderCamShot();
         this->waitForNMSecs(250);
         return 0.0;
     } // when called for the first time, make the current centroid the reference ...
@@ -2421,7 +3181,7 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
         ui->lePulseDeclMS->setText("0");
     }
     this->waitForDriveStop(false,false);
-    this->takeSingleCamShot();
+    this->takeSingleGuiderCamShot();
     this->waitForNMSecs(250);
     return 0.0;
 }
@@ -2460,6 +3220,162 @@ void MainWindow::terminateGuiderCalibration(void) {
 // a coordinate system defined by ra/decl movement and by the x/y frame
 // coordinate system is defined. a log displays status messages ...
 void MainWindow::calibrateAutoGuider(void) {
+    int pulseDuration;
+    double currentCentroid[2],initialCentroid[2],slewVector[4][2],lengthOfTravel[4],alot,
+        alotdecl, travelTimeInMSForOnePixRA, relativeAngle[4],avrgAngle, sdevAngle,
+        avrgDeclBacklashInPixel;
+    float alpha;
+    int thrshld,beta;
+    bool medianOn, lpOn;
+    short slewCounter;
+
+    this->raState = guideTrack;
+    this->deState = guideTrack;
+    this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->guidingState.calibrationIsRunning=true;
+    this->guidingState.systemIsCalibrated=false;
+    ui->teCalibrationStatus->clear();
+    this->calibrationToBeTerminated = false;
+    ui->pbTerminateCal->setEnabled(true);
+    this->displayCalibrationStatus("Entering calibration...");
+    if (this->abortCCDAcquisition() == true) {
+        this->displayCalibrationStatus("CCD acquisition stopped...");
+    } else {
+        this->displayCalibrationStatus("CCD acquisition timeout - image acquired ...");
+    } // stopping the stream of images from the ccd ...
+
+    setControlsForAutoguiderCalibration(false);
+    thrshld = ui->hsThreshold->value();
+    alpha = ui->hsIContrast->value()/100.0;
+    beta = ui->hsIBrightness->value();
+    lpOn = ui->cbLowPass->isChecked();
+    medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
+    if (this->calibrationToBeTerminated == true) {
+        this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+        this->calibrationTerminationStuffToBeDone();
+        return;
+    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
+    // now start a first calibration run
+    this->displayCalibrationStatus("Calibration run:");
+    pulseDuration = 2000; // slew for two seconds
+    ui->lcdPulseGuideDuration->display(pulseDuration);
+
+    // calibration starts here
+    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
+        this->displayCalibrationStatus("RA calibration # ",(float)slewCounter, "");
+        this->displayCalibrationStatus("Waiting for first image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->waitForNMSecs(250);
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        this->displayCalibrationStatus("2 second travel in RA...");
+        this->raPGFwd(); // carry out travel
+        this->waitForDriveStop(true, true);
+        this->displayCalibrationStatus("Waiting for second image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->waitForNMSecs(250);
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3);
+        slewVector[slewCounter][0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[slewCounter][1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
+        lengthOfTravel[slewCounter]=sqrt(slewVector[slewCounter][0]*slewVector[slewCounter][0]+slewVector[slewCounter][1]*slewVector[slewCounter][1]); // length of vector
+        relativeAngle[slewCounter]=acos((slewVector[slewCounter][0])/(lengthOfTravel[slewCounter])); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
+        this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        this->displayCalibrationStatus("2 second travel back in RA to initial position...");
+        this->raPGBwd(); // carry out travel
+    }
+    alot = (lengthOfTravel[0]+lengthOfTravel[1]+lengthOfTravel[2]+lengthOfTravel[3])/4.0;
+    travelTimeInMSForOnePixRA=pulseDuration/alot;
+    this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
+    this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixRA;
+    avrgAngle=(relativeAngle[0]+relativeAngle[1]+relativeAngle[2]+relativeAngle[3])/4.0;
+    sdevAngle=sqrt(1/3.0*((relativeAngle[0]-avrgAngle)*(relativeAngle[0]-avrgAngle)+
+                          (relativeAngle[1]-avrgAngle)*(relativeAngle[1]-avrgAngle)+
+                          (relativeAngle[2]-avrgAngle)*(relativeAngle[2]-avrgAngle)+
+                          (relativeAngle[3]-avrgAngle)*(relativeAngle[3]-avrgAngle))); // compute the standard deviation
+    this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
+    this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
+    // rotation angle determined
+    // now determine the rotation matrix from ccd x/y to ra/decl
+    this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
+    this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
+    this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
+    this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
+
+    // now do backlash calibration for declination - mirror check is missing here for the time being
+    this->displayCalibrationStatus("Backlash calibration");
+    this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
+    this->waitForDriveStop(false,true);
+    if (this->calibrationToBeTerminated == true) {
+        this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+        this->calibrationTerminationStuffToBeDone();
+        return;
+    }
+
+    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
+        this->displayCalibrationStatus("Decl backlash calibration # ",(float)slewCounter, "");
+        this->displayCalibrationStatus("Waiting for first image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->waitForNMSecs(250);
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
+        this->displayCalibrationStatus("2 second travel in Decl...");
+        this->declPGPlus(); // carry out travel
+        this->waitForDriveStop(true, true);
+        this->displayCalibrationStatus("Waiting for second image...");
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        this->waitForNMSecs(250);
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3);
+        slewVector[slewCounter][0] = currentCentroid[0]-initialCentroid[0];
+        slewVector[slewCounter][1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
+        lengthOfTravel[slewCounter]=sqrt(slewVector[slewCounter][0]*slewVector[slewCounter][0]+slewVector[slewCounter][1]*slewVector[slewCounter][1]); // length of vector
+        this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        this->displayCalibrationStatus("2 second travel back in Declination to initial position...");
+        this->declPGMinus(); // carry out travel
+    }
+    alotdecl = (lengthOfTravel[0]+lengthOfTravel[1]+lengthOfTravel[2]+lengthOfTravel[3])/4.0;
+    avrgDeclBacklashInPixel = fabs(alot-alotdecl); // backlash is the difference of tracel in RA vs. travel in declination for the same time
+    this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
+    this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
+    setControlsForAutoguiderCalibration(true);
+    this->guidingState.rotationAngle=avrgAngle;
+    this->displayCalibrationStatus("Calibration is finished...");
+    this->displayCalibrationStatus("Travel time RA: ", this->guidingState.travelTime_ms_RA, "[ms/pix]");
+    this->displayCalibrationStatus("Travel time Decl: ", this->guidingState.travelTime_ms_Decl, "[ms/pix]");
+    ui->pbTerminateCal->setEnabled(false);
+    this->calibrationToBeTerminated = false;
+    ui->pbGuiding->setEnabled(true);
+    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+    QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+}
+
+/*void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
     double currentCentroid[2],initialCentroid[2],slewVector[2],arcsecPPix[2],
         travelPerMSInRACorr, travelPerMSInDeclCorr, travelTimeInMSForOnePixRA,
@@ -2655,7 +3571,8 @@ void MainWindow::calibrateAutoGuider(void) {
     this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
     this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
 
-    // mirror check in decl is missing here ...
+
+
 
     //-------------------------------------------------------------------------------------------------
     // now do declination travel to compensate for backlash when reversing declination travel direction
@@ -2668,8 +3585,10 @@ void MainWindow::calibrateAutoGuider(void) {
     this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
     this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
     this->waitForNMSecs(250);
-
     for (slewCounter = 0; slewCounter < 5; slewCounter++) {
+
+
+
         if (slewCounter !=0 ) {
             this->displayCalibrationStatus("Backlash calibration run: ", (float)(slewCounter), "/4 ...");
         } else {
@@ -2744,13 +3663,14 @@ void MainWindow::calibrateAutoGuider(void) {
         slewVector[0] = currentCentroid[0]-initialCentroid[0];
         slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
         lengthOfTravelDeclMinus=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of travel
+
+
         if (slewCounter !=0 ) {
             this->displayCalibrationStatus("Travel in - dir.: ", lengthOfTravelDeclMinus, "[pix]");
             declBacklashInPixel[slewCounter-1] = lengthOfTravelDeclPlus-lengthOfTravelDeclMinus;
             this->displayCalibrationStatus("Backlash: ",declBacklashInPixel[slewCounter-1],"[pix]");
         }
     }
-
     avrgDeclBacklashInPixel=(declBacklashInPixel[0]+declBacklashInPixel[1]+declBacklashInPixel[2]+declBacklashInPixel[3])/4.0;
     sdevBacklashPix=sqrt(1/3.0*((declBacklashInPixel[0]-avrgDeclBacklashInPixel)*(declBacklashInPixel[0]-avrgDeclBacklashInPixel)+
                                 (declBacklashInPixel[1]-avrgDeclBacklashInPixel)*(declBacklashInPixel[1]-avrgDeclBacklashInPixel)+
@@ -2758,7 +3678,6 @@ void MainWindow::calibrateAutoGuider(void) {
                                 (declBacklashInPixel[3]-avrgDeclBacklashInPixel)*(declBacklashInPixel[3]-avrgDeclBacklashInPixel)));
     this->guidingState.backlashCompensationInMS=fabs(avrgDeclBacklashInPixel)*travelTimeInMSForOnePixDecl; // determine length of travel for backlash compensation
     this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
-    this->displayCalibrationStatus("Standard deviation: ", sdevBacklashPix,"[ms]");
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
     setControlsForAutoguiderCalibration(true);
     this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
@@ -2772,7 +3691,8 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->pbGuiding->setEnabled(true);
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-}
+}*/
+
 
 //------------------------------------------------------------------
 // a few things to be done when calibration is terminated - just to keep the code more compact
@@ -2868,7 +3788,7 @@ void MainWindow::waitForCalibrationImage(void) {
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.calibrationImageReceived=false;
     this->waitForNMSecs(500);
-    this->takeSingleCamShot();
+    this->takeSingleGuiderCamShot();
     while (this->guidingState.calibrationImageReceived == false) {
         QCoreApplication::processEvents(QEventLoop::AllEvents,100);
         if (this->calibrationToBeTerminated == true) { // if the "Terminate calibration" button is pressed, this one is set to true ...
@@ -2986,7 +3906,7 @@ void MainWindow::selectGuideStar(void) {
     bool medianOn, lpOn;
     float alpha;
 
-    if ((this->ccdCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
+    if ((this->ccdGuiderCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
         if (this->mountMotion.RATrackingIsOn==false) {
             this->startRATracking();
         } // turn on tracking if it is not running when a guide star is selected
@@ -2999,10 +3919,18 @@ void MainWindow::selectGuideStar(void) {
         alpha = ui->hsIContrast->value()/100.0;
         beta = ui->hsIBrightness->value(); // get image processing parameters
         this->guidingState.guideStarSelected=true;
+
+        qDebug() << "doing processing...";
+
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         this->waitForNMSecs(250);
         guideStarPosition.centrX = g_AllData->getInitialStarPosition(2);
         guideStarPosition.centrY = g_AllData->getInitialStarPosition(3); // "doGuideStarImgProcessing" stores a position in g_AllData
+
+        qDebug() << "retrieved position now: " << guideStarPosition.centrX << "/" << g_AllData->getInitialStarPosition(3);
+
+        qDebug() << "doing processing...";
+
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true);
         this->waitForNMSecs(250);
         ui->tabCCDCal->setEnabled(true);
@@ -3017,7 +3945,7 @@ void MainWindow::confirmGuideStar(void) {
     bool medianOn, lpOn;
     float alpha;
 
-    if ((this->ccdCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
+    if ((this->ccdGuiderCameraIsAcquiring==true) && (this->camImageWasReceived==true)) {
         if (this->mountMotion.RATrackingIsOn==false) {
             this->startRATracking();
         } // turn on tracking if it is not running when a guide star is selected
@@ -4182,6 +5110,8 @@ void MainWindow::handleST4State(void) {
         if (this->st4State.wActive != wUp) {
             if (wUp == true) {
                 this->StepperDriveRA->travelForNSteps(+1,(float)(1+ui->sbGuidingRate->value()));
+                //weird aggressiveness factor up there
+                qDebug() << "West is up with speed " << 1+ui->sbGuidingRate->value();
                 this->st4State.raCorrTime->start();
             } else {
                 this->StepperDriveRA->stopDrive();
@@ -4195,6 +5125,7 @@ void MainWindow::handleST4State(void) {
         if (this->st4State.eActive != eUp) {
             if (eUp == true) {
                 this->StepperDriveRA->travelForNSteps(+1,(float)(1-ui->sbGuidingRate->value()));
+                qDebug() << "East is up with speed " << 1-ui->sbGuidingRate->value();
                 this->st4State.raCorrTime->start();
             } else {
                 this->StepperDriveRA->stopDrive();
@@ -4889,7 +5820,7 @@ void MainWindow::handleHandbox(void) {
     bool isFocuser1, isForward, CCDWasOn;
     QChar focuserValue;
 
-    if (this->ccdCameraIsAcquiring == true) {
+    if (this->ccdGuiderCameraIsAcquiring == true) {
         CCDWasOn = true;
         this->stopCCDAcquisition();
     } else {
@@ -5920,18 +6851,17 @@ void MainWindow::setTimeFromLX200Flag(void) {
 // plate solving routines -------------------------------------------------
 // this is a dummy by now ...
 void MainWindow::psTakeImage(void) {
-   // QImage *solveImage;
-    QString *pth;
 
     ui->pbSolveFieldPS->setEnabled(false);
     ui->pbSyncPS->setEnabled(false);
+    ui->cbImageReceived->setChecked(false);
+    ui->cbPSImageInTransfer->setChecked(false);
     if (g_AllData->getPathToImages().length() != 0) {
-        pth = new QString(g_AllData->getPathToImages().toLatin1());
-        pth->append("bubble.fits");
-        g_AllData->setPathToImageToBeSolved(pth->toLatin1());
-        delete pth;
-        ui->pbSolveFieldPS->setEnabled(true);
-
+        this->camera_client->takeExposure((ui->sbPSExposureTime->value()), true);
+        this->ccdMainCameraIsAcquiring=true;
+        ui->sbPSExposureTime->setEnabled(false);
+        ui->pbTakeImagePS->setEnabled(false);
+        this->elapsedPS->restart();
     } else {
         qDebug() << "no path to images available";
     }
@@ -5983,8 +6913,8 @@ void MainWindow::psStartSolving(void) {
         dsFact = 4;
     }
     this->waitForNMSecs(250);
-    fieldSize = 2*this->psComputeFOVForMainCCD();
-    slow = fieldSize/3.0;
+    fieldSize = 3*this->psComputeFOVForMainCCD();
+    slow = fieldSize/5.0;
     solveCommand = new QString("solve-field --ra ");
     solveCommand->append(QString::number((double)g_AllData->getActualScopePosition(2),'g',6));
     solveCommand->append(" --dec ");
@@ -6029,6 +6959,7 @@ void MainWindow::psHandleEndOfAstronomyNetProcess(int code , QProcess::ExitStatu
     QDir *psDirectory;
     QStringList solvedFiles;
 
+    qDebug() << "Astrometry.net code: " << code;
     this->waitForNMSecs(1000); // just take a little breath
     psDirectory = new QDir(g_AllData->getPathToImages().toLatin1());
     solvedFiles = psDirectory->entryList(nameFilter);
@@ -6060,8 +6991,8 @@ double MainWindow::psComputeFOVForMainCCD(void) {
     } else {
         maxSize = (g_AllData->getCameraChipPixels(1,true) * g_AllData->getCameraPixelSize(1,true))/1000.0; // find the maximum chip dimension in mm
     }
-    fov = 53.26*maxSize/(g_AllData->getMainScopeFocalLength());
-    qDebug() << "Field of View is: " << fov;
+    fov = 34.60*maxSize/(g_AllData->getMainScopeFocalLength());
+    qDebug() << "Field of View [°] is: " << fov;
     qDebug() << "Max. Chip Size: " << maxSize;
     return fov;
 }
@@ -6111,11 +7042,12 @@ void MainWindow::psreadCoordinatesFromFITS(void) {
     QStringList wcsResults;
     int idx;
 
+    qDebug() << "Reading Platesolver coordinates...";
     newFileName = new QString(g_AllData->getPathToImageToBeSolved().toLatin1());
     wcsProcess = new QString("wcsinfo ");
     datastring = new QString();
     if (newFileName->isEmpty() == false) {
-        newFileName->chop(4);
+        newFileName->chop(3);
         newFileName->append("new");
 
         wcsProcess->append(newFileName);
@@ -6151,11 +7083,11 @@ void MainWindow::psreadCoordinatesFromFITS(void) {
                 declRadians=solvedDec/180.0*3.141592653589793;
                 deltaRA = meeusM+meeusN*sin(raRadians)*tan(declRadians);
                 deltaDecl = meeusN*cos(raRadians);
-                corrRA= solvedRA+deltaRA*((double)(this->UTDate->year()-equinox));
+                corrRA= solvedRA+deltaRA*((double)(this->UTDate->year()-2000));
                 if (corrRA > 360) {
                     corrRA-=360;
                 } // that one is clear,right - avoid more than 24h RA ...
-                corrDecl=solvedDec+deltaDecl*((double)(this->UTDate->year()-equinox));
+                corrDecl=solvedDec+deltaDecl*((double)(this->UTDate->year()-2000));
                 if (corrDecl > 90) {
                     corrDecl = 90; // don't know what else to do here
                 }
@@ -6192,3 +7124,26 @@ void MainWindow::syncPSCoordinates(void) {
         ui->pbSyncPS->setEnabled(false);
     }
 }
+
+//------------------------------------------------------------------
+// this slot receives a pixmap from the camera client from the MainCamera and uses it for
+// display in the Plate Solving tab
+void MainWindow::displayMainCamImage(QPixmap *camPixmap) {
+
+    if (g_AllData->getINDIState(true) == true) { // ... if the main camera is connected to the INDI server ...
+        delete mainCamImg;
+        this->mainCamImg = new QPixmap(*camPixmap);
+        ui->lDisplayPSCam->setPixmap(*mainCamImg); // receive the pixmap from the camera ...
+        ui->pbSolveFieldPS->setEnabled(true);
+        ui->cbImageReceived->setChecked(true);
+        ui->cbPSImageInTransfer->setChecked(false);
+        ui->sbPSExposureTime->setEnabled(true);
+        this->ccdMainCameraIsAcquiring=false;
+        ui->pbTakeImagePS->setEnabled(true);
+        this->psImageAcquisionTimeRemaining = 0;
+        ui->lcdETAOfPSImage->display(0);
+    }
+}
+
+//------------------------------------------------------------------
+

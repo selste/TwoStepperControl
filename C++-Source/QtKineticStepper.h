@@ -60,6 +60,7 @@ public:
     bool getStopped(void); // check whether the motor is active or not ...
     void stopDrive(void); // halt the motor
     void resetSteppersAfterStop(void);
+    void hwResetDriver(void);
     //void setDriveToStopped(void); // necessary to convey the AMIS that they were stopped
     //void engageDrive(void); // set motor to "engaged" stae without driving it
     void changeSpeedForGearChange(void); // a callback that changes speeds if the gear ratios change

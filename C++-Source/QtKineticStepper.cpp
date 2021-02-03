@@ -185,6 +185,11 @@ bool QtKineticStepper::getErrorFromDriver(void) {
 }
 
 //-----------------------------------------------------------------------------
+void QtKineticStepper::hwResetDriver(void) {
+
+    this->sendCommandToAMIS("r");
+}
+//-----------------------------------------------------------------------------
 
 void QtKineticStepper::setStepperParams(double val, short whichOne) {
 

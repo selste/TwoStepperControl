@@ -31,17 +31,17 @@ TSC_GlobalData::TSC_GlobalData() {
     cameraDisplaySize.scalingFactor=1;
     cameraParameters.pixelSizeMicronsX=5.2;
     cameraParameters.pixelSizeMicronsY=5.2;
-    cameraParameters.chipWidth=1280;
-    cameraParameters.chipHeight=1024;
+    cameraParameters.chipWidth=0;
+    cameraParameters.chipHeight=0;
     cameraParameters.bitDepth = 8;
     mainCameraDisplaySize.width=400;
     mainCameraDisplaySize.height=300;
     mainCameraDisplaySize.scalingFactor=1;
     mainCCDParamsPS.pixelSizeMicronsX=3.8;
     mainCCDParamsPS.pixelSizeMicronsY=3.8;
-    mainCCDParamsPS.chipWidth=4656;
-    mainCCDParamsPS.chipHeight=3520;
-    mainCCDParamsPS.bitDepth = 16;
+    mainCCDParamsPS.chipWidth=0;
+    mainCCDParamsPS.chipHeight=0;
+    mainCCDParamsPS.bitDepth = 8;
 
     this->currentCameraImage = new QImage();
     this->monotonicGlobalTimer=new QElapsedTimer();
@@ -611,7 +611,7 @@ int TSC_GlobalData::getCameraDisplaySize(short what,bool isMainCCD) {
         if (isMainCCD == false) {
             retval = this->cameraDisplaySize.height;
         } else {
-            retval = this->mainCameraDisplaySize.width;
+            retval = this->mainCameraDisplaySize.height;
         }
         break;
     default:

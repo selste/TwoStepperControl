@@ -32,8 +32,6 @@ ocv_guiding::ocv_guiding(void) {
         this->myVec->insert(i, cval);
     }
     // setting colortable for grayscale QImages
-    this->maxX = g_AllData->getCameraChipPixels(0,false);
-    this->maxY = g_AllData->getCameraChipPixels(1,false); // get the chip size
     this->gScopeFL = 1000;
     this->arcsecPerPixX=1.07276;
     this->arcsecPerPixY=1.07276;
@@ -124,6 +122,8 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool l
         this->currentImageQImg = new QImage(*g_AllData->getCameraImage());
         clicx = round(g_AllData->getInitialStarPosition(2));
         clicy = round(g_AllData->getInitialStarPosition(3));
+        this->maxX = g_AllData->getCameraChipPixels(0,false);
+        this->maxY = g_AllData->getCameraChipPixels(1,false); // get the chip size
         convertQImgToMat();
         tLeft.x=clicx-(90*FOVfact);
         tLeft.y=clicy-(90*FOVfact);
@@ -162,6 +162,7 @@ void ocv_guiding::doGuideStarImgProcessing(int gsThreshold,bool medianOn, bool l
             centroidX=(cvmoms.m10/(float)cvmoms.m00);
             centroidY=(cvmoms.m01/(float)cvmoms.m00);
             scaleFact=g_AllData->getCameraImageScalingFactor(false);
+
             if (updateCentroid == true) {
                 g_AllData->setInitialStarPosition(((tLeft.x+centroidX)*scaleFact),((tLeft.y+centroidY)*scaleFact));
                 // this is tricky - correct the position of the manually selected guide star,

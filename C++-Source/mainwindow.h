@@ -57,16 +57,16 @@ private slots: // callbacks for (mainly) GUI widgets
     void setMaxStepperCurrentRA(void);
     void setMaxStepperCurrentDecl(void);
     void setINDISAddrAndPort(void);
-    void setINDISAddrAndPortForMainCCD(void);
-    void disconnectGuiderFromINDIServer(void);
-    void disconnectMainCCDFromINDIServer(void);
+    void disconnectFromINDIServer(void);
     void clearINDILog(void);
     void findOutAboutINDIServerPID(void);
     void killRunningINDIServer(void);
+    void selectGuiderCamDriverName(void);
+    void selectMainCamDriverName(void);
     void startCCDAcquisition(void);
     void stopCCDAcquisition(void);
-    void changeCCDGain(void);
-    void storeCCDData(bool);
+    void storeMainCCDData(void);
+    void selectCameraTypes(void);
     void syncMount(void);
     void syncMount(float, float, bool);
     void syncMountFromGoTo(void);
@@ -201,6 +201,33 @@ private slots: // callbacks for (mainly) GUI widgets
     void psDisplayAstrometryNetOutput(void);
     void psReadWCSInfoOutput(void);
     void syncPSCoordinates(void);
+    void displayMainCamImage(QPixmap*);
+    void mainCamPropertySelected(void);
+    void guideCamPropertySelected(void);
+    void mainCamSetINDINumberProperties(void);
+    void guideCamSetINDINumberProperties(void);
+    void mainCamSendINDINumber(void);
+    void guideCamSendINDINumber(void);
+    void mainCamSetINDITextProperties(void);
+    void guideCamSetINDITextProperties(void);
+    void mainCamSendINDIText(void);
+    void guideCamSendINDIText(void);
+    void mainCamSetINDISwitchProperties(void);
+    void guideCamSetINDISwitchProperties(void);
+    void mainCamSendINDISwitch(void);
+    void guideCamSendINDISwitch(void);
+    void loadPropertyList(void);
+    void indicateNumberOnINDIServerMainCCD(void);
+    void indicateTextOnINDIServerMainCCD(void);
+    void indicateSwitchOnINDIServerMainCCD(void);
+    void indicateNumberOnINDIServerGuiderCCD(void);
+    void indicateTextOnINDIServerGuiderCCD(void);
+    void indicateSwitchOnINDIServerGuiderCCD(void);
+    void mainCamSetINDINumberOnServer(void);
+    void guideCamSetINDINumberOnServer(void);
+    void deployINDIMsgDlg(void);
+    void saveMainCCDConfig(void);
+    void saveGuideCCDConfig(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
@@ -300,13 +327,22 @@ private:
     double julianDay;
     lx200_communication *lx200Comm;
     QPixmap *camImg;
+    QPixmap *mainCamImg;
     QPixmap *guideStarPrev;
     currentObjectCatalog *objCatalog;
     QDisplay2D *camView;
     QElapsedTimer *elapsedGoToTime;
+    QElapsedTimer *elapsedPS;
+    long psImageAcquisionTimeRemaining;
     ocv_guiding *guiding; // the class that does image processing for guiding
     ccd_client *camera_client;
-    ccd_client *psMaincamera_client;
+    QString* guideCamDriverName;
+    QString* mainCamDriverName;
+    bool cam1Selected = false;
+    bool cam2Selected = false;
+    bool guiderCamSelected = false;
+    bool mainCamSelected = false;
+    bool camSelectionFinished = false;
     QTcpServer *LXServer;
     QTcpServer *HBServer;
     QTcpSocket *LXSocket;
@@ -324,8 +360,8 @@ private:
     bool LX200SerialPortIsUp;
     bool camImageWasReceived; // a flag set to true if a cam image came in
     bool lx200IsOn;
-    bool ccdCameraIsAcquiring = false;
-    bool mainCCDCameraIsAcquiring = false;
+    bool ccdGuiderCameraIsAcquiring = false;
+    bool ccdMainCameraIsAcquiring = false;
     bool auxBoardIsAvailable = 0;
     bool tcpHandboxIsConnected = 0;
     bool trackingBeforeHandboxMotionStarted = false; // a flag that indicates what was the RA motion before a handbox motion started
@@ -371,7 +407,8 @@ private:
     void setControlsForAutoguiderCalibration(bool);
     void setAuxDriveControls(bool);
     void terminateAllMotion(void);
-    void takeSingleCamShot(void);
+    void takeSingleGuiderCamShot(void);
+    void takeSingleMainCamShot(void);
     double correctGuideStarPosition(float, float);
     void waitForCalibrationImage(void);
     void waitForDriveStop(bool,bool);
@@ -423,6 +460,10 @@ private:
     short checkForFlip(bool, float, float, float, float);
     double psComputeFOVForMainCCD(void);
     void psreadCoordinatesFromFITS(void);
+    void resetMainCamINDIPropertyGUIElements(void);
+    void resetGuideCamINDIPropertyGUIElements(void);
+    void getINDISwitchRules(bool);
+    void storeGuiderCCDData(void);
 
 signals:
     void dslrExposureDone(void);

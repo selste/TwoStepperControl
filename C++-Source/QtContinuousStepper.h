@@ -55,6 +55,7 @@ public:
     bool getErrorFromDriver(void); // return the state of the error pin
     void setStepperParams(double, short); // set acceleration, speed and current and convey it to the controller
     void shutDownDrive(void); // set motor to "unengaged state" - no more current is applied
+    void hwResetDriver(void);
     bool getStopped(void); // check whether the motor is active or not ...
     void resetSteppersAfterStop(void);
     void setDriveToStopped(void); // necessary to convey the AMIS that they were stopped

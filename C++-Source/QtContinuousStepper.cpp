@@ -203,6 +203,11 @@ bool QtContinuousStepper::getErrorFromDriver(void) {
 
 }
 //-----------------------------------------------------------------------------
+void QtContinuousStepper::hwResetDriver(void) {
+
+    this->sendCommandToAMIS("r");
+}
+//-----------------------------------------------------------------------------
 
 void QtContinuousStepper::setStepperParams(double val, short whichOne) {
 
