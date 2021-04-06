@@ -13,10 +13,9 @@ steppers are used
 - Support for two additional focuser motors.
 - Free customization of drives and gears with microstepping ratios between 1/128 and 1/4.
 - Image acquisition and autoguiding from guiding cameras via INDI.
-- ST4 is also supported
-
-Currently unde re-development:
+- Integrated plate solving via local instalation of Astrometry.net
 - Autoguiding integrated on the controller.
+- ST4 is also supported
 
 ## Documentation
 Because we - not intentionally - messed this up a bit in the past we're setting up a dedicated repository/site for documentation:
