@@ -1,7 +1,7 @@
 # TwoStepperControl
 
 ## Introduction
-TSC (TwoStepperControl) is a software project by Wolfgang Birkfellner and Steffen Elste to realize an open integrated control system for large and heavy astronomical telescopes. The basic idea is to use a Raspberry Pi to control a telescope and to provide basic autoguiding functionality without additional external computers. As Raspian is not an RTOS, it cannot control stepper drivers directly like a microcontroller; therefore, extra hardware is necessary which receives basic parameters (number of steps, velocity, acceleration) from the software. We are currently using AMIS 30543 bipolar driver boards with 3A maximum current per coil and a maximum voltage of 30 V.
+TSC (TwinStepperControl) is a software project by Wolfgang Birkfellner and Steffen Elste to realize an open integrated control system for large and heavy astronomical telescopes. The basic idea is to use a Raspberry Pi to control a telescope and to provide basic autoguiding functionality without additional external computers. As Raspian is not an RTOS, it cannot control stepper drivers directly like a microcontroller; therefore, extra hardware is necessary which receives basic parameters (number of steps, velocity, acceleration) from the software. We are currently using AMIS 30543 bipolar driver boards with 3A maximum current per coil and a maximum voltage of 30 V.
 
 ## Features
 TSC basically provides the following functionality
