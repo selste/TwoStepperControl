@@ -1589,7 +1589,7 @@ void MainWindow::shutDownProgram() {
 //---------------------------------------------------------------------
 // called to check whether the error flag on the AMIS drivers is up ...
 void MainWindow::getDriveError(void) {
-    bool isError;
+/*    bool isError;
 
     isError = this->StepperDriveRA->getErrorFromDriver();
     if (isError == true) {
@@ -1603,7 +1603,7 @@ void MainWindow::getDriveError(void) {
         this->StepperDriveDecl->hwResetDriver();
         this->waitForNMSecs(500);
 
-    }
+    }*/
 }
 
 //---------------------------------------------------------------------
@@ -3856,6 +3856,7 @@ void MainWindow::resetGuidingCalibration(void) {
 void MainWindow::doAutoGuiding(void) {
 
     if (this->guidingState.guidingIsOn == false) {
+
         this->raState = guideTrack;
         this->deState = guideTrack;
         this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
@@ -3866,6 +3867,7 @@ void MainWindow::doAutoGuiding(void) {
         this->guidingState.declErrs[2] = 0;
         ui->rbSiderealSpeed->setChecked(true); // make sure that sidereal speed is set...
         this->setTrackingRate();
+        this->startRATracking();
         this->guidingState.maxDevInArcSec=0.0;
         this->guidingState.rmsDevInArcSec=0.0;
         this->guidingState.guidingIsOn = true;
@@ -3893,6 +3895,7 @@ void MainWindow::doAutoGuiding(void) {
         g_AllData->setGuidingState(this->guidingState.guidingIsOn); // this has to be known in other classes, so every "guidingIsOn" state is copied
         ui->pbGuiding->setText("Guide");
         this->setControlsForGuiding(true);
+        this->startRATracking();
         ui->pbExpose->setEnabled(true);
         // enable the GUI here again ...
     }
@@ -4972,6 +4975,7 @@ void MainWindow::startST4Guiding(void) {
     this->guidingState.st4IsActive = true;
     this->guidingState.guidingIsOn = true;
     g_AllData->setGuidingState(true);
+    sleep(1);
     this->st4State.nActive = false;
     this->st4State.eActive = false;
     this->st4State.sActive = false;
@@ -4999,9 +5003,10 @@ void MainWindow::startST4Guiding(void) {
     this->commSPIParams.guiData->append("g");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
     this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
-    this->st4Timer->start(10); // if ST4 is active, the interface is read every 20 ms
+    this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
     ui->lcdDEST4Lms->display(0);
     ui->lcdRAST4Lms->display(0);
+    sleep(1);
 }
 
 //--------------------------------------------------------------

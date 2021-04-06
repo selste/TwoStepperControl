@@ -205,7 +205,7 @@ bool QtContinuousStepper::getErrorFromDriver(void) {
 //-----------------------------------------------------------------------------
 void QtContinuousStepper::hwResetDriver(void) {
 
-    this->sendCommandToAMIS("r");
+    //this->sendCommandToAMIS("r");
 }
 //-----------------------------------------------------------------------------
 
