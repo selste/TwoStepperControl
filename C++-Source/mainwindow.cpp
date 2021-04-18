@@ -3221,10 +3221,10 @@ void MainWindow::terminateGuiderCalibration(void) {
 // coordinate system is defined. a log displays status messages ...
 void MainWindow::calibrateAutoGuider(void) {
     int pulseDuration;
-    double currentCentroid[2],initialCentroid[2],slewVector[4][2],lengthOfTravel[4],alot,
-        alotdecl, travelTimeInMSForOnePixRA, relativeAngle[4],avrgAngle, sdevAngle,
-        avrgDeclBacklashInPixel;
-    float alpha;
+    double currentCentroid[2],initialCentroid[2], lastCentroid[2],slewVector[2],lengthOfTravel,
+        travelTimeInMSForOnePixRA, travelTimeInMSForOnePixDec,
+        avrgAngle, avrgDeclBacklashInPixel;
+    float alpha, travelTimeInMSec;
     int thrshld,beta;
     bool medianOn, lpOn;
     short slewCounter;
@@ -3233,6 +3233,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->deState = guideTrack;
     this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
     this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
+    this->startRATracking();
     this->guidingState.calibrationIsRunning=true;
     this->guidingState.systemIsCalibrated=false;
     ui->teCalibrationStatus->clear();
@@ -3258,431 +3259,199 @@ void MainWindow::calibrateAutoGuider(void) {
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     // now start a first calibration run
     this->displayCalibrationStatus("Calibration run:");
-    pulseDuration = 2000; // slew for two seconds
+    pulseDuration = 250; // slew for two seconds
     ui->lcdPulseGuideDuration->display(pulseDuration);
 
-    // calibration starts here
+    // RA calibration starts here
+    initialCentroid[0] = 0;
+    initialCentroid[1] = 0;
     for (slewCounter = 0; slewCounter < 4; slewCounter++) {
-        this->displayCalibrationStatus("RA calibration # ",(float)slewCounter, "");
-        this->displayCalibrationStatus("Waiting for first image...");
+        this->displayCalibrationStatus("RA initial position # ",(float)slewCounter+1, "/4");
         this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         this->waitForNMSecs(250);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        initialCentroid[0] += g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] += g_AllData->getInitialStarPosition(3); // first centroid before slew
         if (this->calibrationToBeTerminated == true) {
             this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
             this->calibrationTerminationStuffToBeDone();
             return;
         }
-        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-        this->displayCalibrationStatus("2 second travel in RA...");
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+    initialCentroid[0]/=4.0;
+    initialCentroid[1]/=4.0;
+    currentCentroid[0] = initialCentroid[0];
+    currentCentroid[1] = initialCentroid[1];
+    this->displayCalibrationStatus("Initial position x: ", initialCentroid[0], "[pix]");
+    this->displayCalibrationStatus("Initial position y: ", initialCentroid[1], "[pix]");
+    travelTimeInMSec = 0;
+    travelTimeInMSForOnePixRA = 0;
+    lengthOfTravel=0;
+    for (slewCounter = 0; slewCounter < 20; slewCounter++) {
+        this->displayCalibrationStatus("Cal-travel in RA: ", (float)slewCounter+1, "/20");
         this->raPGFwd(); // carry out travel
-        this->waitForDriveStop(true, true);
-        this->displayCalibrationStatus("Waiting for second image...");
+        travelTimeInMSec += (float)pulseDuration;
+        this->waitForDriveStop(true, false);
         this->waitForCalibrationImage();
+        lastCentroid[0] = currentCentroid[0];
+        lastCentroid[1] = currentCentroid[1];
         this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
         currentCentroid[0] = g_AllData->getInitialStarPosition(2);
         currentCentroid[1] = g_AllData->getInitialStarPosition(3);
-        slewVector[slewCounter][0] = currentCentroid[0]-initialCentroid[0];
-        slewVector[slewCounter][1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravel[slewCounter]=sqrt(slewVector[slewCounter][0]*slewVector[slewCounter][0]+slewVector[slewCounter][1]*slewVector[slewCounter][1]); // length of vector
-        relativeAngle[slewCounter]=acos((slewVector[slewCounter][0])/(lengthOfTravel[slewCounter])); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
-        this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
+        slewVector[0] = currentCentroid[0]-lastCentroid[0];
+        slewVector[1] = currentCentroid[1]-lastCentroid[1];  // direction vector of slew
+        lengthOfTravel+=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
         if (this->calibrationToBeTerminated == true) {
             this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
             this->calibrationTerminationStuffToBeDone();
             return;
         }
-        this->displayCalibrationStatus("2 second travel back in RA to initial position...");
-        this->raPGBwd(); // carry out travel
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
     }
-    alot = (lengthOfTravel[0]+lengthOfTravel[1]+lengthOfTravel[2]+lengthOfTravel[3])/4.0;
-    travelTimeInMSForOnePixRA=pulseDuration/alot;
-    this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-    this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixRA;
-    avrgAngle=(relativeAngle[0]+relativeAngle[1]+relativeAngle[2]+relativeAngle[3])/4.0;
-    sdevAngle=sqrt(1/3.0*((relativeAngle[0]-avrgAngle)*(relativeAngle[0]-avrgAngle)+
-                          (relativeAngle[1]-avrgAngle)*(relativeAngle[1]-avrgAngle)+
-                          (relativeAngle[2]-avrgAngle)*(relativeAngle[2]-avrgAngle)+
-                          (relativeAngle[3]-avrgAngle)*(relativeAngle[3]-avrgAngle))); // compute the standard deviation
+    travelTimeInMSForOnePixRA = lengthOfTravel/((double)travelTimeInMSec);
+    this->displayCalibrationStatus("Travel for one pix in RA: ", travelTimeInMSForOnePixRA, " [ms]");
+    slewVector[0] = currentCentroid[0]-initialCentroid[0];
+    slewVector[1] = currentCentroid[1]-initialCentroid[1];
+    avrgAngle=acos((slewVector[0])/(sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1])));
     this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
-    this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
-    // rotation angle determined
-    // now determine the rotation matrix from ccd x/y to ra/decl
     this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
     this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
     this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
     this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
-
-    // now do backlash calibration for declination - mirror check is missing here for the time being
-    this->displayCalibrationStatus("Backlash calibration");
-    this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
-    this->waitForDriveStop(false,true);
     if (this->calibrationToBeTerminated == true) {
         this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
         this->calibrationTerminationStuffToBeDone();
         return;
     }
-
-    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
-        this->displayCalibrationStatus("Decl backlash calibration # ",(float)slewCounter, "");
-        this->displayCalibrationStatus("Waiting for first image...");
-        this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
+    this->displayCalibrationStatus("Travel back in RA to initial position...");
+    for (slewCounter = 0; slewCounter < 20; slewCounter++) {
+        this->displayCalibrationStatus("Travel back in RA: ", (float)slewCounter+1, "/20");
+        this->raPGBwd(); // carry out travel
         if (this->calibrationToBeTerminated == true) {
             this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
             this->calibrationTerminationStuffToBeDone();
             return;
-        }
-        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-        this->displayCalibrationStatus("2 second travel in Decl...");
-        this->declPGPlus(); // carry out travel
-        this->waitForDriveStop(true, true);
-        this->displayCalibrationStatus("Waiting for second image...");
-        this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
-        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-        currentCentroid[1] = g_AllData->getInitialStarPosition(3);
-        slewVector[slewCounter][0] = currentCentroid[0]-initialCentroid[0];
-        slewVector[slewCounter][1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravel[slewCounter]=sqrt(slewVector[slewCounter][0]*slewVector[slewCounter][0]+slewVector[slewCounter][1]*slewVector[slewCounter][1]); // length of vector
-        this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
-        if (this->calibrationToBeTerminated == true) {
-            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
-            this->calibrationTerminationStuffToBeDone();
-            return;
-        }
-        this->displayCalibrationStatus("2 second travel back in Declination to initial position...");
-        this->declPGMinus(); // carry out travel
-    }
-    alotdecl = (lengthOfTravel[0]+lengthOfTravel[1]+lengthOfTravel[2]+lengthOfTravel[3])/4.0;
-    avrgDeclBacklashInPixel = fabs(alot-alotdecl); // backlash is the difference of tracel in RA vs. travel in declination for the same time
-    this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
-    this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
-    setControlsForAutoguiderCalibration(true);
-    this->guidingState.rotationAngle=avrgAngle;
-    this->displayCalibrationStatus("Calibration is finished...");
-    this->displayCalibrationStatus("Travel time RA: ", this->guidingState.travelTime_ms_RA, "[ms/pix]");
-    this->displayCalibrationStatus("Travel time Decl: ", this->guidingState.travelTime_ms_Decl, "[ms/pix]");
-    ui->pbTerminateCal->setEnabled(false);
-    this->calibrationToBeTerminated = false;
-    ui->pbGuiding->setEnabled(true);
-    this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
-    QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-}
-
-/*void MainWindow::calibrateAutoGuider(void) {
-    int pulseDuration;
-    double currentCentroid[2],initialCentroid[2],slewVector[2],arcsecPPix[2],
-        travelPerMSInRACorr, travelPerMSInDeclCorr, travelTimeInMSForOnePixRA,
-        travelTimeInMSForOnePixDecl,tTimeOnePix[4],lengthOfTravel, lengthOfTravelDeclPlus,
-        lengthOfTravelDeclMinus,relativeAngle[4],avrgAngle, sdevAngle,
-        avrgDeclBacklashInPixel, sdevBacklashPix, declBacklashInPixel[4];
-    float alpha;
-    int thrshld,beta,imgProcWindowSize;
-    bool medianOn, lpOn;
-    short slewCounter;
-
-    this->raState = guideTrack;
-    this->deState = guideTrack;
-    this->StepperDriveRA->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
-    this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
-    this->guidingState.calibrationIsRunning=true;
-    this->guidingState.systemIsCalibrated=false;
-    ui->teCalibrationStatus->clear();
-    this->calibrationToBeTerminated = false;
-    ui->pbTerminateCal->setEnabled(true);
-    this->displayCalibrationStatus("Entering calibration...");
-    if (this->abortCCDAcquisition() == true) {
-        this->displayCalibrationStatus("CCD acquisition stopped...");
-    } else {
-        this->displayCalibrationStatus("CCD acquisition timeout - image acquired ...");
-    } // stopping the stream of images from the ccd ...
-
-    setControlsForAutoguiderCalibration(false);
-    thrshld = ui->hsThreshold->value();
-    alpha = ui->hsIContrast->value()/100.0;
-    beta = ui->hsIBrightness->value();
-    lpOn = ui->cbLowPass->isChecked();
-    medianOn=ui->cbMedianFilter->isChecked(); // get parameters for guidestar-processing from GUI
-    arcsecPPix[0] = this->guiding->getArcSecsPerPix(0);
-    arcsecPPix[1] = this->guiding->getArcSecsPerPix(1); // get the ratio "/pixel from the guiding class
-    travelPerMSInRACorr=0.001*(3600.0)*g_AllData->getDriveParams(0,0)*(g_AllData->getGearData(3 )/g_AllData->getMicroSteppingRatio(2))/
-        (g_AllData->getGearData(0 )*g_AllData->getGearData(1 )*g_AllData->getGearData(2 ));
-    travelPerMSInDeclCorr=0.001*(3600.0)*g_AllData->getDriveParams(1,0)*(g_AllData->getGearData(7 )/g_AllData->getMicroSteppingRatio(2))/
-        (g_AllData->getGearData(4 )*g_AllData->getGearData(5 )*g_AllData->getGearData(6 ));
-
-    if ((travelPerMSInRACorr == 0) || (travelPerMSInRACorr > 1000)) {
-        travelPerMSInRACorr = 1000;
-    }
-    if ((travelPerMSInDeclCorr == 0) || (travelPerMSInDeclCorr > 1000)) {
-        travelPerMSInDeclCorr = 1000;
-    }
-    travelTimeInMSForOnePixRA=arcsecPPix[0]/travelPerMSInRACorr; // travel time for one pix in ra direction in milliseconds
-    travelTimeInMSForOnePixDecl=travelTimeInMSForOnePixRA;
-    this->displayCalibrationStatus("Time for 1 pix in RA: ",travelTimeInMSForOnePixRA," ms");
-    this->displayCalibrationStatus("Time for 1 pix in Decl: ",travelTimeInMSForOnePixDecl," ms");
-    if (this->calibrationToBeTerminated == true) {
-        this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-        this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-        this->calibrationTerminationStuffToBeDone();
-        return;
-    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-
-    // now determine the direction of RA+ Travel as a unit vector; travel for "imgProcWindowSize" pix and
-    // determine the relative angle between ccd x/y and ra/decl. first, a run is carried out with the
-    // pulse guide duration as computed from guide scope fl and camera pixels; the time and travel in pixels
-    // is used to update "travelTimeInMSForOnePix"
-
-    // now start a first calibration run
-    this->displayCalibrationStatus("Calibration run:");
-    this->displayCalibrationStatus("0/4 ...");
-    imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
-    pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixRA; // that gives the pulse duration in RA
-
-    // calibration starts here
-    this->waitForCalibrationImage(); // small subroutine - waits for 2 images
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-    this->waitForNMSecs(250);
-    initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-    initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew
-    this->pulseGuideDuration=pulseDuration;
-    if (this->calibrationToBeTerminated == true) {
-        this->calibrationTerminationStuffToBeDone();
-        this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-        return;
-    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-    this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize, "");
-    this->raPGFwd(); // carry out travel
-    if (this->calibrationToBeTerminated == true) {
-        this->calibrationTerminationStuffToBeDone();
-        this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-        this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-        return;
-    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-    this->waitForDriveStop(true, true);
-    this->waitForCalibrationImage();
-    if (this->calibrationToBeTerminated == true) {
-        this->calibrationTerminationStuffToBeDone();
-        this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-        this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-        return;
-    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-    this->waitForNMSecs(250);
-    currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-    currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-    slewVector[0] = currentCentroid[0]-initialCentroid[0];
-    slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-    lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
-    travelTimeInMSForOnePixRA=pulseDuration/lengthOfTravel; // replace estimated "travelTimeInMSForOnePix" by a measured value
-    travelTimeInMSForOnePixDecl=travelTimeInMSForOnePixRA;
-    this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-    this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl; // speeds are now stored in the global struct
-    pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixRA; // that gives the pulse duration
-    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew in RA
-    this->pulseGuideDuration=pulseDuration;
-    if (this->calibrationToBeTerminated == true) {
-        this->calibrationTerminationStuffToBeDone();
-        this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-        this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-        return;
-    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-    this->displayCalibrationStatus("Slewing back...");
-    this->raPGBwd(); // going back to initial position
-    this->waitForDriveStop(true, true);
-    if (this->calibrationToBeTerminated == true) {
-        this->calibrationTerminationStuffToBeDone();
-        this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-        this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-        return;
-    } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-
-    // now repeat this procedure 4 times to get a better estimate of "travelTimeInMSForOnePix" and the relative angle of the ccd and telescope coordinate system
-    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
-        this->displayCalibrationStatus("Calibration run: ", (float)(slewCounter+1), "/4 ...");
-        imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
-        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // first centroid before slew
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        this->displayCalibrationStatus("RA+ slew (pix): ",(float)imgProcWindowSize,"");
-        this->raPGFwd(); // carry out travel
-        this->waitForDriveStop(true,true);
-        this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
-        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-        slewVector[0] = currentCentroid[0]-initialCentroid[0];
-        slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravel=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
-        this->displayCalibrationStatus("Travel in RA: ",lengthOfTravel,"[pix].");
-        relativeAngle[slewCounter]=acos((slewVector[0])/(lengthOfTravel)); // the angle between the RA/Decl coordinate system and the x/y coordinate system of the cam is given by the inner product ...
-        this->displayCalibrationStatus("Relative angle: ",(float)relativeAngle[slewCounter]*(180.0/3.14159),"°.");
-        tTimeOnePix[slewCounter]=pulseDuration/lengthOfTravel;
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        this->displayCalibrationStatus("Slewing back...");
-        this->raPGBwd(); // going back to initial position
-        this->waitForDriveStop(true,true);
-    }
-    travelTimeInMSForOnePixRA+=tTimeOnePix[0]+tTimeOnePix[1]+tTimeOnePix[2]+tTimeOnePix[3];
-    travelTimeInMSForOnePixRA/=5.0; // compute the average travel time
-    this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-    travelTimeInMSForOnePixDecl=travelTimeInMSForOnePixRA;
-    this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl; // better speeds are now stored in the global struct
-    this->displayCalibrationStatus("Travel time for 1 pix in RA: ", travelTimeInMSForOnePixRA,"ms.");
-    this->displayCalibrationStatus("Travel time for 1 pix in Decl: ", travelTimeInMSForOnePixDecl,"ms.");
-    avrgAngle=(relativeAngle[0]+relativeAngle[1]+relativeAngle[2]+relativeAngle[3])/4.0;
-    sdevAngle=sqrt(1/3.0*((relativeAngle[0]-avrgAngle)*(relativeAngle[0]-avrgAngle)+
-                          (relativeAngle[1]-avrgAngle)*(relativeAngle[1]-avrgAngle)+
-                          (relativeAngle[2]-avrgAngle)*(relativeAngle[2]-avrgAngle)+
-                          (relativeAngle[3]-avrgAngle)*(relativeAngle[3]-avrgAngle))); // compute the standard deviation
-    this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
-    this->displayCalibrationStatus("Standard deviation: ", (sdevAngle*(180.0/3.14159)),"°.");
-    // rotation angle determined
-
-    // now determine the rotation matrix from ccd x/y to ra/decl
-    this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
-    this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
-    this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
-    this->rotMatrixGuidingXToRA[1][1]=cos(avrgAngle);
-
-
-
-
-    //-------------------------------------------------------------------------------------------------
-    // now do declination travel to compensate for backlash when reversing declination travel direction
-    pulseDuration = imgProcWindowSize*travelTimeInMSForOnePixDecl; // that gives the pulse duration in decl
-    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew
-    this->pulseGuideDuration=pulseDuration;
-    this->displayCalibrationStatus("Backlash calibration");
-    this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
-    this->waitForDriveStop(false,true);
-    this->waitForCalibrationImage(); // small subroutine - waits for 1 new image
-    this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-    this->waitForNMSecs(250);
-    for (slewCounter = 0; slewCounter < 5; slewCounter++) {
-
-
-
-        if (slewCounter !=0 ) {
-            this->displayCalibrationStatus("Backlash calibration run: ", (float)(slewCounter), "/4 ...");
-        } else {
-            this->displayCalibrationStatus("Putting tension on drive");
         }
         QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-        this->waitForCalibrationImage(); // small subroutine - waits for image
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);            // now get a position
-        initialCentroid[0] = g_AllData->getInitialStarPosition(2);
-        initialCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid before slew
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        if (slewCounter !=0 ) {
-            this->displayCalibrationStatus("Decl+ slew (pix): ",(float)imgProcWindowSize,"");
-        }
-        this->guidingState.declinationDriveDirection=1; // remember that we travel forward in decl
-        this->declPGPlus(); // carry out travel
-        this->waitForDriveStop(false,true);
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn, lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixRA;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-        slewVector[0] = currentCentroid[0]-initialCentroid[0];
-        slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravelDeclPlus=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of travel
-        if (slewCounter !=0 ) {
-            this->displayCalibrationStatus("Initial travel in + dir.: ", lengthOfTravelDeclPlus, "[pix]");
-        }
-        initialCentroid[0] = currentCentroid[0];
-        initialCentroid[1] = currentCentroid[1]; // now travel back
-        if (slewCounter !=0 ) {
-            this->displayCalibrationStatus("Decl- slew (pix): ",(float)imgProcWindowSize,"");
-        }
-        this->guidingState.declinationDriveDirection=-1; // remember that we travel backward in decl
-        this->declPGMinus(); // carry out travel
-        this->waitForDriveStop(false,true);
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixDecl;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        this->waitForCalibrationImage();
-        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
-        this->waitForNMSecs(250);
-        if (this->calibrationToBeTerminated == true) {
-            this->calibrationTerminationStuffToBeDone();
-            this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-            this->guidingState.travelTime_ms_Decl=travelTimeInMSForOnePixRA;
-            return;
-        } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
-        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
-        currentCentroid[1] = g_AllData->getInitialStarPosition(3); // centroid after slew
-        slewVector[0] = currentCentroid[0]-initialCentroid[0];
-        slewVector[1] = currentCentroid[1]-initialCentroid[1];  // direction vector of slew
-        lengthOfTravelDeclMinus=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of travel
-
-
-        if (slewCounter !=0 ) {
-            this->displayCalibrationStatus("Travel in - dir.: ", lengthOfTravelDeclMinus, "[pix]");
-            declBacklashInPixel[slewCounter-1] = lengthOfTravelDeclPlus-lengthOfTravelDeclMinus;
-            this->displayCalibrationStatus("Backlash: ",declBacklashInPixel[slewCounter-1],"[pix]");
-        }
     }
-    avrgDeclBacklashInPixel=(declBacklashInPixel[0]+declBacklashInPixel[1]+declBacklashInPixel[2]+declBacklashInPixel[3])/4.0;
-    sdevBacklashPix=sqrt(1/3.0*((declBacklashInPixel[0]-avrgDeclBacklashInPixel)*(declBacklashInPixel[0]-avrgDeclBacklashInPixel)+
-                                (declBacklashInPixel[1]-avrgDeclBacklashInPixel)*(declBacklashInPixel[1]-avrgDeclBacklashInPixel)+
-                                (declBacklashInPixel[2]-avrgDeclBacklashInPixel)*(declBacklashInPixel[2]-avrgDeclBacklashInPixel)+
-                                (declBacklashInPixel[3]-avrgDeclBacklashInPixel)*(declBacklashInPixel[3]-avrgDeclBacklashInPixel)));
-    this->guidingState.backlashCompensationInMS=fabs(avrgDeclBacklashInPixel)*travelTimeInMSForOnePixDecl; // determine length of travel for backlash compensation
-    this->displayCalibrationStatus("Backlash compensation: ", (float)this->guidingState.backlashCompensationInMS,"[ms]");
+
+    this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
+    this->waitForDriveStop(false,false);
+    this->displayCalibrationStatus("Put tension on Dec-drive...");
+
+    initialCentroid[0] = 0; // get an accurate estimate for the position again
+    initialCentroid[1] = 0;
+    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
+        this->displayCalibrationStatus("Dec initial position # ",(float)slewCounter+1, "/4");
+        this->waitForCalibrationImage();
+        this->waitForNMSecs(250);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        initialCentroid[0] += g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] += g_AllData->getInitialStarPosition(3); // first centroid before slew
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+    initialCentroid[0]/=4.0;
+    initialCentroid[1]/=4.0;
+    this->displayCalibrationStatus("Declination calibration");
+
+    currentCentroid[0] = initialCentroid[0];
+    currentCentroid[1] = initialCentroid[1];
+    this->displayCalibrationStatus("Initial position x: ", initialCentroid[0], "[pix]");
+    this->displayCalibrationStatus("Initial position y: ", initialCentroid[1], "[pix]");
+    travelTimeInMSec = 0;
+    travelTimeInMSForOnePixDec = 0;
+    lengthOfTravel=0;
+    for (slewCounter = 0; slewCounter < 20; slewCounter++) {
+        this->displayCalibrationStatus("Travel in Dec: ", (float)slewCounter+1, "/20");
+        this->declPGPlus(); // carry out travel
+        travelTimeInMSec += (float)pulseDuration;
+        this->waitForDriveStop(false, false);
+        this->waitForNMSecs(250);
+        this->waitForCalibrationImage();
+        lastCentroid[0] = currentCentroid[0];
+        lastCentroid[1] = currentCentroid[1];
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        currentCentroid[0] = g_AllData->getInitialStarPosition(2);
+        currentCentroid[1] = g_AllData->getInitialStarPosition(3);
+        slewVector[0] = currentCentroid[0]-lastCentroid[0];
+        slewVector[1] = currentCentroid[1]-lastCentroid[1];  // direction vector of slew
+        lengthOfTravel+=sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1]); // length of vector
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+    travelTimeInMSForOnePixDec = lengthOfTravel/((double)travelTimeInMSec);
+    this->displayCalibrationStatus("Travel for one pix in Dec: ", travelTimeInMSForOnePixDec, " [ms]");
+
+    initialCentroid[0] = 0; // get an accurate estimate for the position again
+    initialCentroid[1] = 0;
+    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
+        this->displayCalibrationStatus("Dec position # ",(float)slewCounter+1, "/4");
+        this->waitForCalibrationImage();
+        this->waitForNMSecs(250);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        initialCentroid[0] += g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] += g_AllData->getInitialStarPosition(3); // first centroid before slew
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+    initialCentroid[0]/=4.0;
+    initialCentroid[1]/=4.0;
+    currentCentroid[0] = initialCentroid[0];
+    currentCentroid[1] = initialCentroid[1];
+
+    this->displayCalibrationStatus("Travel back in Decl to initial position...");
+    for (slewCounter = 0; slewCounter < 20; slewCounter++) {
+        this->displayCalibrationStatus("Travel back Decl: ", (float)slewCounter+1, "/20");
+        this->raPGBwd(); // carry out travel
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+
+    initialCentroid[0] = 0; // get an accurate estimate for the position again
+    initialCentroid[1] = 0;
+    for (slewCounter = 0; slewCounter < 4; slewCounter++) {
+        this->displayCalibrationStatus("Dec position # ",(float)slewCounter+1, "/4");
+        this->waitForCalibrationImage();
+        this->waitForNMSecs(250);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
+        initialCentroid[0] += g_AllData->getInitialStarPosition(2);
+        initialCentroid[1] += g_AllData->getInitialStarPosition(3); // first centroid before slew
+        if (this->calibrationToBeTerminated == true) {
+            this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
+            this->calibrationTerminationStuffToBeDone();
+            return;
+        }
+        QCoreApplication::processEvents(QEventLoop::AllEvents,100);
+    }
+    initialCentroid[0]/=4.0;
+    initialCentroid[1]/=4.0;
+    avrgDeclBacklashInPixel=sqrt((initialCentroid[0]-currentCentroid[0])*(initialCentroid[0]-currentCentroid[0])+
+                                 (initialCentroid[1]-currentCentroid[1])*(initialCentroid[1]-currentCentroid[1]));
+
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
     setControlsForAutoguiderCalibration(true);
-    this->guidingState.travelTime_ms_RA=travelTimeInMSForOnePixRA;
-    this->guidingState.travelTime_ms_Decl=this->guidingState.travelTime_ms_RA;
     this->guidingState.rotationAngle=avrgAngle;
+    this->guidingState.travelTime_ms_RA = travelTimeInMSForOnePixRA;
+    this->guidingState.travelTime_ms_Decl = travelTimeInMSForOnePixDec;
+    this->guidingState.backlashCompensationInMS = avrgDeclBacklashInPixel/travelTimeInMSForOnePixDec;
     this->displayCalibrationStatus("Calibration is finished...");
     this->displayCalibrationStatus("Travel time RA: ", this->guidingState.travelTime_ms_RA, "[ms/pix]");
     this->displayCalibrationStatus("Travel time Decl: ", this->guidingState.travelTime_ms_Decl, "[ms/pix]");
@@ -3691,8 +3460,8 @@ void MainWindow::calibrateAutoGuider(void) {
     ui->pbGuiding->setEnabled(true);
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
     QCoreApplication::processEvents(QEventLoop::AllEvents,100);
-}*/
 
+}
 
 //------------------------------------------------------------------
 // a few things to be done when calibration is terminated - just to keep the code more compact
@@ -4122,7 +3891,6 @@ void MainWindow::disconnectHandboxFromIPSocket(void) {
     ui->pbTCPHBDisable->setEnabled(false);
     this->tcpHandboxIsConnected = false;
 }
-
 
 //------------------------------------------------------------------
 // a routine that reads data from the TCP/IP handbox
@@ -4968,6 +4736,7 @@ void MainWindow::startST4Guiding(void) {
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();
     } // if tracking is not active - start it ...
+    this->timer->setInterval(10);
     this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
     this->deState = guideTrack; // set the declination drive to guiding speed
     this->tempUpdateTimer->stop(); // no temperature updates during ST4 guiding - SPI channel 0 is only available for ST4
@@ -5015,6 +4784,7 @@ void MainWindow::stopST4Guiding(void) {
     this->guidingState.st4IsActive=false;
     this->guidingState.guidingIsOn=false;
     g_AllData->setGuidingState(false);
+    this->timer->setInterval(100);
     this->st4State.nActive = false;
     this->st4State.eActive = false;
     this->st4State.sActive = false;
@@ -5052,7 +4822,7 @@ void MainWindow::stopST4Guiding(void) {
 void MainWindow::handleST4State(void) {
     char stateCharFromSPI;
     bool nUp, eUp, sUp, wUp;
-    int raTime, deTime;
+    int raTime, deTime, currentSpeed;
 
     if ((this->guidingState.st4IsActive == true)) { // poll data if ST4 is active and not correcting
         this->commSPIParams.guiData->clear();
@@ -5114,13 +4884,15 @@ void MainWindow::handleST4State(void) {
 
         if (this->st4State.wActive != wUp) {
             if (wUp == true) {
-                this->StepperDriveRA->travelForNSteps(+1,(float)(1+ui->sbGuidingRate->value()));
-                //weird aggressiveness factor up there
+                currentSpeed=this->StepperDriveRA->getKineticsFromController(3);
+             //   this->StepperDriveRA->travelForNSteps(+1,(float)(1+ui->sbGuidingRate->value()));
+                this->StepperDriveRA->setStepperParams((float)(currentSpeed*(1+ui->sbGuidingRate->value())),2); // alternatively, we just speed up the drive here
                 qDebug() << "West is up with speed " << 1+ui->sbGuidingRate->value();
                 this->st4State.raCorrTime->start();
             } else {
-                this->StepperDriveRA->stopDrive();
-                this->StepperDriveRA->resetSteppersAfterStop();
+             //   this->StepperDriveRA->stopDrive();
+             //   this->StepperDriveRA->resetSteppersAfterStop();
+             //   this->StepperDriveRA->setStepperParams((float)(cu),2); // setting back to tracking speed
                 this->startRATracking();
                 raTime = this->st4State.raCorrTime->elapsed();
                 ui->lcdRAST4Lms->display(raTime);
@@ -5129,12 +4901,15 @@ void MainWindow::handleST4State(void) {
 
         if (this->st4State.eActive != eUp) {
             if (eUp == true) {
-                this->StepperDriveRA->travelForNSteps(+1,(float)(1-ui->sbGuidingRate->value()));
+                currentSpeed=this->StepperDriveRA->getKineticsFromController(3);
+             //   this->StepperDriveRA->travelForNSteps(+1,(float)(1-ui->sbGuidingRate->value()));
+                 this->StepperDriveRA->setStepperParams((float)(currentSpeed*(1-ui->sbGuidingRate->value())),2); // alternatively, we just slow down the drive here
                 qDebug() << "East is up with speed " << 1-ui->sbGuidingRate->value();
                 this->st4State.raCorrTime->start();
             } else {
-                this->StepperDriveRA->stopDrive();
-                this->StepperDriveRA->resetSteppersAfterStop();
+             //   this->StepperDriveRA->stopDrive();
+             //   this->StepperDriveRA->resetSteppersAfterStop();
+             //   this->StepperDriveRA->setStepperParams((float)(1),2); // setting back to tracking speed
                 this->startRATracking();
                 raTime = this->st4State.raCorrTime->elapsed();
                 ui->lcdRAST4Lms->display(raTime);
@@ -5265,14 +5040,14 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) { // to b
     raTimer = new QElapsedTimer();
 
     if (direction > 0) {
-        this->StepperDriveDecl->travelForNSteps(1,(float)(1+ui->sbGuidingRate->value()));
+        this->StepperDriveRA->travelForNSteps(1,(float)(1+ui->sbGuidingRate->value()));
     } else {
-        this->StepperDriveDecl->travelForNSteps(1,(float)(1-ui->sbGuidingRate->value()));
+        this->StepperDriveRA->travelForNSteps(1,(float)(1-ui->sbGuidingRate->value()));
     }
     raTimer->start();
     while (raTimer->elapsed() < pulseDurationInMS);
-    this->StepperDriveDecl->stopDrive();
-    this->StepperDriveDecl->resetSteppersAfterStop();
+    this->StepperDriveRA->stopDrive();
+    this->StepperDriveRA->resetSteppersAfterStop();
     delete raTimer;
 
     this->mountMotion.RADriveIsMoving=false;
