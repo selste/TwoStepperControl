@@ -145,7 +145,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->guidingState.st4IsActive = false;
     this->guidingState.raErrs[0] = this->guidingState.raErrs[1] = this->guidingState.raErrs[2] = 0;
     this->guidingState.declErrs[0] = this->guidingState.declErrs[1] = this->guidingState.declErrs[2] = 0;
-    this->pulseGuideDuration = 500;
+    this->pulseGuideDuration = 250;
     this->dslrStates.dslrExposureIsRunning = false;
     this->dslrStates.dslrSeriesRunning = false;
     this->dslrStates.ditherTravelInMSRA = 0;
@@ -608,7 +608,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->astroMetryProcess, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(psHandleEndOfAstronomyNetProcess(int, QProcess::ExitStatus))); // handle the end of platesolving
     connectLX200Events(true); // call all connects for LX200 functions
     this->killRunningINDIServer(); // find out about running INDI servers and kill them
-    ui->lcdPulseGuideDuration->display(pulseGuideDuration);
+    ui->sbPGDuration->setValue(pulseGuideDuration);
+
     ui->cbLowPass->setEnabled(true); // this is probably a real bug in qtdesigner ... no way to enable that checkbox ...
     ui->fSwitchMainCCD->setEnabled(true);
     ui->fNumberMainCCD->setEnabled(true);
@@ -3080,7 +3081,6 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
             this->guidingLog->write(logString.toLatin1(),logString.length());
             logString.clear();
         }
-        ui->lcdPulseGuideDuration->display(pgduration); // set the duration for the slew in RA - this value is used in the pulseguideroutine
         this->pulseGuideDuration=pgduration;
         ui->lePulseRAMS->setText(textEntry->number(pgduration));
         if (devRA > 0) {
@@ -3135,7 +3135,6 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                             logString.clear();
                         }
                 }
-                ui->lcdPulseGuideDuration->display(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 this->pulseGuideDuration=pgduration;
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
@@ -3161,7 +3160,6 @@ double MainWindow::correctGuideStarPosition(float cx, float cy) {
                             logString.clear();
                         }
                 }
-                ui->lcdPulseGuideDuration->display(pgduration); // set the duration for the slew in Decl - this value is used in the pulseguideroutine
                 this->pulseGuideDuration=pgduration;
             }
             ui->lePulseDeclMS->setText(textEntry->number(pgduration));
@@ -3259,8 +3257,8 @@ void MainWindow::calibrateAutoGuider(void) {
     } // if the button "pbTerminateCal" is pressed, the variable "calibrationToBeTerminated" is set to true, and this function exits
     // now start a first calibration run
     this->displayCalibrationStatus("Calibration run:");
-    pulseDuration = 250; // slew for two seconds
-    ui->lcdPulseGuideDuration->display(pulseDuration);
+    pulseDuration = ui->sbPGDuration->value(); // slew duration
+    this->pulseGuideDuration = pulseDuration;
 
     // RA calibration starts here
     initialCentroid[0] = 0;
@@ -3336,9 +3334,11 @@ void MainWindow::calibrateAutoGuider(void) {
         QCoreApplication::processEvents(QEventLoop::AllEvents,100);
     }
 
+    this->pulseGuideDuration *= 4;
+    this->displayCalibrationStatus("Put tension on Dec-drive...");
     this->declPGPlus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
     this->waitForDriveStop(false,false);
-    this->displayCalibrationStatus("Put tension on Dec-drive...");
+    this->pulseGuideDuration=ui->sbPGDuration->value();
 
     initialCentroid[0] = 0; // get an accurate estimate for the position again
     initialCentroid[1] = 0;
@@ -3416,7 +3416,7 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Travel back in Decl to initial position...");
     for (slewCounter = 0; slewCounter < 20; slewCounter++) {
         this->displayCalibrationStatus("Travel back Decl: ", (float)slewCounter+1, "/20");
-        this->raPGBwd(); // carry out travel
+        this->declPGMinus(); // carry out travel
         if (this->calibrationToBeTerminated == true) {
             this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
             this->calibrationTerminationStuffToBeDone();
@@ -3445,7 +3445,10 @@ void MainWindow::calibrateAutoGuider(void) {
     initialCentroid[1]/=4.0;
     avrgDeclBacklashInPixel=sqrt((initialCentroid[0]-currentCentroid[0])*(initialCentroid[0]-currentCentroid[0])+
                                  (initialCentroid[1]-currentCentroid[1])*(initialCentroid[1]-currentCentroid[1]));
-
+    this->pulseGuideDuration *= 4;
+    this->declPGMinus(); // carry out a slew in + direction to apply tension to the worm prior to another "+" -slew
+    this->waitForDriveStop(false,false);
+    this->displayCalibrationStatus("Returned Dec-drive home ...");
     this->guidingState.systemIsCalibrated=true; // "systemIsCalibrated" - flag set to true
     setControlsForAutoguiderCalibration(true);
     this->guidingState.rotationAngle=avrgAngle;
@@ -3505,7 +3508,7 @@ void MainWindow::skipCalibration(void) {
         this->displayCalibrationStatus("Time for 1 pix in Decl: ",this->guidingState.travelTime_ms_Decl," ms");
     imgProcWindowSize=round(90*this->guidingFOVFactor*0.5); // 1/4 size of the image processing window is the travel in RA+ ...
     pulseDuration = imgProcWindowSize*this->guidingState.travelTime_ms_RA; // that gives the pulse duration
-    ui->lcdPulseGuideDuration->display(pulseDuration); // set the duration for the slew
+    ui->sbPGDuration->setValue(pulseDuration); // set the duration for the slew
     this->pulseGuideDuration=pulseDuration;
     avrgAngle=0.0;
     this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
@@ -5214,6 +5217,7 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
 //---------------------------------------------------------------------
 void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->cbAutoguiderIsCalibrated->setChecked(false);
+    ui->sbPGDuration->setEnabled(isEnabled);
     ui->ctrlTab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);

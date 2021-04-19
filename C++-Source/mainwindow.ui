@@ -7537,8 +7537,8 @@
          <rect>
           <x>10</x>
           <y>40</y>
-          <width>162</width>
-          <height>33</height>
+          <width>201</width>
+          <height>34</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_16">
@@ -7548,12 +7548,40 @@
             <string>Pulse [ms]:</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLCDNumber" name="lcdPulseGuideDuration"/>
+          <widget class="QSpinBox" name="sbPGDuration">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>90</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="minimum">
+            <number>100</number>
+           </property>
+           <property name="maximum">
+            <number>2500</number>
+           </property>
+           <property name="singleStep">
+            <number>10</number>
+           </property>
+           <property name="value">
+            <number>250</number>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -8115,7 +8143,7 @@
          <rect>
           <x>2</x>
           <y>127</y>
-          <width>199</width>
+          <width>211</width>
           <height>58</height>
          </rect>
         </property>
@@ -8140,13 +8168,13 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>80</width>
+             <width>70</width>
              <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>80</width>
+             <width>70</width>
              <height>25</height>
             </size>
            </property>
@@ -8178,13 +8206,13 @@
            </property>
            <property name="minimumSize">
             <size>
-             <width>80</width>
+             <width>70</width>
              <height>25</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>80</width>
+             <width>70</width>
              <height>25</height>
             </size>
            </property>
@@ -9665,7 +9693,7 @@
        <attribute name="title">
         <string>AMIS M4</string>
        </attribute>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>4</x>
