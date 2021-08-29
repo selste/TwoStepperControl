@@ -1,0 +1,42 @@
+Communications protocol for the Stepper Drivers of TSC
+W. Birkfellner, Aug. 2021, V. 0.1
+
+The stepperboards communicate via USB between the host computer and 
+the Teensy 4.0 running the steppers with the AccelStepper library.
+so far the commands are transmitted as characters, following the convention:
+xyzzzzzz...
+where x is a character denoting the action to be taken, y is a number between
+0 and 1, and zzzzzz... is a string of bytes that is converted to a long integer. 
+
+An example:
+"a1200" sets the acceleration (denoted by 'a') of the second drive ('1' instead 
+of '0') to 200 microsteps per second. 
+
+Commands that apply to all drives (such as the request for the drive state) are given without additional bytes
+
+In general, parameters have to be set, then the drive is enabled, and then ist should start. 
+Once a motion is finished, the drive is being automatically disabled.
+
+Command set:
+0x06 or <ACK>	... responds with an identifier for the drive addressed. Replies are either "TSC_DE" or "TSC_RA". No further parameters are given.
+a 		... sets acceleration in msteps/(s*s)
+c 		... sets current
+e 		... enables the drive; it is automatically activated when an "start drive" command (= 'o') is sent
+f		... reports drive conditions. Possible parameters are
+			0 = is drive moving
+			1 = error on AMIS board reported
+			2 = error on SPI settings
+			5 = steps carried out so far
+			6 = microstepping ratio
+			7 = maximum speed in msteps/s 
+			8 = acceleration in msteps/(s*s) 
+			9 = maximum current per coil in milliAmpere
+			10 = number of steps set
+m 		... sets microstepping mode for a given drive: 1, 2, 4, 8, 16, 32, 64 and 128 are permitted    
+o 		... engages the drive to carry out a defined number of microsteps     
+r 		... resets the AMIS via its CLR pin
+s 		... sets the number of steps to be carried out
+v 		... sets maximum speed in msteps/s      
+x 		... stops drive
+z		... sets position of stepper to zero
+ 
