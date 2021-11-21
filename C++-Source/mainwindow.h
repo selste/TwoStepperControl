@@ -274,6 +274,7 @@ private:
         bool st4IsActive; // true if ST4 is active
         float raErrs[3];
         float declErrs[3];
+        long trackingSpeedRA;
     };
 
     struct DSLRStateStruct {

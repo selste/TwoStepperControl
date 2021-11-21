@@ -149,6 +149,16 @@ void QtContinuousStepper::travelForNSteps(short direction, float factor) {
 }
 
 //-----------------------------------------------
+void QtContinuousStepper::travelForGuide(float speed, bool startCorrMotion) {
+    if (startCorrMotion == true) {
+        this->speedMax = speed;
+    } else {
+        this->speedMax = round(g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps));
+    }
+    this->sendCommandToAMIS("v",this->speedMax);
+}
+
+//-----------------------------------------------
 void QtContinuousStepper::resetSteppersAfterStop(void) { // this function is called once it was detected that the steppers stopped moving
     this->stopped = true;
     this->speedMax=g_AllData->getCelestialSpeed()*(this->gearRatio)*(this->microsteps);

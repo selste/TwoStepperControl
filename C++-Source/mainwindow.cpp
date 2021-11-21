@@ -15,7 +15,7 @@
 // device - driven actions. these are timing tasks, management of the GUI and
 // operations such as goto, guiding, reacting to user inputs and handboxes and
 // interaction with external programs via ST4 and LX200.
-// w. birkfellner, 2017-20
+// w. birkfellner, 2017-21
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -3307,12 +3307,11 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         QCoreApplication::processEvents(QEventLoop::AllEvents,100);
     }
-    travelTimeInMSForOnePixRA = lengthOfTravel/((double)travelTimeInMSec);
+    travelTimeInMSForOnePixRA = travelTimeInMSec/((double)lengthOfTravel);
     this->displayCalibrationStatus("Travel for one pix in RA: ", travelTimeInMSForOnePixRA, " [ms]");
     slewVector[0] = currentCentroid[0]-initialCentroid[0];
     slewVector[1] = currentCentroid[1]-initialCentroid[1];
     avrgAngle=acos((slewVector[0])/(sqrt(slewVector[0]*slewVector[0]+slewVector[1]*slewVector[1])));
-    this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
     this->rotMatrixGuidingXToRA[0][0]=cos(avrgAngle);
     this->rotMatrixGuidingXToRA[0][1]=sin(avrgAngle);
     this->rotMatrixGuidingXToRA[1][0]=-sin(avrgAngle);
@@ -3326,6 +3325,9 @@ void MainWindow::calibrateAutoGuider(void) {
     for (slewCounter = 0; slewCounter < 20; slewCounter++) {
         this->displayCalibrationStatus("Travel back in RA: ", (float)slewCounter+1, "/20");
         this->raPGBwd(); // carry out travel
+        this->waitForDriveStop(true, false);
+        this->waitForCalibrationImage();
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         if (this->calibrationToBeTerminated == true) {
             this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
             this->calibrationTerminationStuffToBeDone();
@@ -3389,7 +3391,7 @@ void MainWindow::calibrateAutoGuider(void) {
         }
         QCoreApplication::processEvents(QEventLoop::AllEvents,100);
     }
-    travelTimeInMSForOnePixDec = lengthOfTravel/((double)travelTimeInMSec);
+    travelTimeInMSForOnePixDec = travelTimeInMSec/((double)lengthOfTravel);
     this->displayCalibrationStatus("Travel for one pix in Dec: ", travelTimeInMSForOnePixDec, " [ms]");
 
     initialCentroid[0] = 0; // get an accurate estimate for the position again
@@ -3417,6 +3419,9 @@ void MainWindow::calibrateAutoGuider(void) {
     for (slewCounter = 0; slewCounter < 20; slewCounter++) {
         this->displayCalibrationStatus("Travel back Decl: ", (float)slewCounter+1, "/20");
         this->declPGMinus(); // carry out travel
+        this->waitForCalibrationImage();
+        this->waitForNMSecs(250);
+        this->guiding->doGuideStarImgProcessing(thrshld,medianOn,lpOn,alpha,beta,this->guidingFOVFactor,this->guidingState.guideStarSelected, true); // ... process the guide star subimage
         if (this->calibrationToBeTerminated == true) {
             this->guidingState.travelTime_ms_RA=this->guidingState.travelTime_ms_Decl=100;
             this->calibrationTerminationStuffToBeDone();
@@ -3458,10 +3463,13 @@ void MainWindow::calibrateAutoGuider(void) {
     this->displayCalibrationStatus("Calibration is finished...");
     this->displayCalibrationStatus("Travel time RA: ", this->guidingState.travelTime_ms_RA, "[ms/pix]");
     this->displayCalibrationStatus("Travel time Decl: ", this->guidingState.travelTime_ms_Decl, "[ms/pix]");
+    this->displayCalibrationStatus("Rotation Angle: ", (avrgAngle*(180.0/3.14159)),"°.");
+    this->displayCalibrationStatus("Declination Backlash [pix]: ",avrgDeclBacklashInPixel, "");
     ui->pbTerminateCal->setEnabled(false);
     this->calibrationToBeTerminated = false;
     ui->pbGuiding->setEnabled(true);
     this->guidingState.calibrationIsRunning=false; // "calibrationIsRunning" - flag set to false
+    this->guidingState.trackingSpeedRA = this->StepperDriveRA->getKineticsFromController(3); // retrieve the base tracking speed
     QCoreApplication::processEvents(QEventLoop::AllEvents,100);
 
 }
@@ -3724,6 +3732,7 @@ void MainWindow::confirmGuideStar(void) {
         if (this->mountMotion.RATrackingIsOn==false) {
             this->startRATracking();
         } // turn on tracking if it is not running when a guide star is selected
+        ui->sbPGDuration->setEnabled(true);
         medianOn=ui->cbMedianFilter->isChecked();
         lpOn = ui->cbLowPass->isChecked();
         thrshld = ui->hsThreshold->value();
@@ -4675,7 +4684,6 @@ void MainWindow::RAMoveHandboxBwd(void) {
         maxRASteps=180/g_AllData->getGearData(3)*g_AllData->getMicroSteppingRatio((short)this->raState)*
                 g_AllData->getGearData(0)*g_AllData->getGearData(1 )*
                 g_AllData->getGearData(2); // travel 180° at most
-
         this->mountMotion.RADriveDirection=-1;
         bwdFactor=this->mountMotion.RASpeedFactor-1; // backward motion means stop at tracking speeds
         this->StepperDriveRA->travelForNSteps(maxRASteps, this->mountMotion.RADriveDirection,bwdFactor,true);
@@ -5018,6 +5026,7 @@ void MainWindow::raPGBwdGd(long duration) {
 //---------------------------------------------------------------------
 void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) { // to be revised
     QElapsedTimer *raTimer;
+    float corrspeed;
 
     this->setControlsForRATravel(false);
     ui->pbStartTracking->setEnabled(0);
@@ -5029,9 +5038,9 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) { // to b
     this->setCorrectionSpeed();
     ui->rbCorrSpeed->setChecked(true); // switch to correction speed
 
-    if (this->mountMotion.RATrackingIsOn) {
-        this->stopRATracking();
-    }
+    //if (this->mountMotion.RATrackingIsOn) {
+    //    this->stopRATracking();
+    //}
     if (this->mountMotion.RADriveIsMoving==true){
         this->mountMotion.RADriveIsMoving=false;
         this->StepperDriveRA->stopDrive();
@@ -5042,19 +5051,21 @@ void MainWindow::raPulseGuide(long pulseDurationInMS, short direction) { // to b
 
     raTimer = new QElapsedTimer();
 
-    if (direction > 0) {
-        this->StepperDriveRA->travelForNSteps(1,(float)(1+ui->sbGuidingRate->value()));
+    if (direction == 1) {
+        corrspeed = 1+ui->sbGuidingRate->value();
     } else {
-        this->StepperDriveRA->travelForNSteps(1,(float)(1-ui->sbGuidingRate->value()));
+        corrspeed = 1-ui->sbGuidingRate->value();
+        if (corrspeed < 0) {
+            corrspeed = 0;
+        }
     }
     raTimer->start();
+    this->StepperDriveRA->travelForGuide(corrspeed, true);
     while (raTimer->elapsed() < pulseDurationInMS);
-    this->StepperDriveRA->stopDrive();
+    this->StepperDriveRA->travelForGuide(corrspeed, false);
     this->StepperDriveRA->resetSteppersAfterStop();
     delete raTimer;
-
     this->mountMotion.RADriveIsMoving=false;
-    this->startRATracking();
     ui->pbRAMinus->setEnabled(1);
     ui->pbRAPlus->setEnabled(1);
     ui->pbDeclDown->setEnabled(1);
@@ -5217,7 +5228,6 @@ void MainWindow::setControlsForDeclTravel(bool isEnabled) {
 //---------------------------------------------------------------------
 void MainWindow::setControlsForAutoguiderCalibration(bool isEnabled) {
     ui->cbAutoguiderIsCalibrated->setChecked(false);
-    ui->sbPGDuration->setEnabled(isEnabled);
     ui->ctrlTab->setEnabled(isEnabled);
     ui->catTab->setEnabled(isEnabled);
     ui->photoTab->setEnabled(isEnabled);

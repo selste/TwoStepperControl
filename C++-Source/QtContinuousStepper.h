@@ -45,6 +45,7 @@ public:
     void startTracking(void); // start continuous motion to compensate for earth's rotation
     void travelForNSteps(long,short,int,bool);
     void travelForNSteps(short,float);
+    void travelForGuide(float, bool); // quick changes in speed for guiding
     void setRADirection(short); // switch "RADirection"
     void setGearRatioAndMicrosteps(double, double); // the product of the gears divided by the step size and the number of microsteps is stored here
     void changeMicroSteps(double); // switches the microstepping ratio for variable drivers
