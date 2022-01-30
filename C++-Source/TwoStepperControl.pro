@@ -50,6 +50,7 @@ HEADERS  += \
 # INCLUDEPATH += /home/pi/libindi/
 INCLUDEPATH += /usr/local/include/opencv2
 INCLUDEPATH += /usr/include/libindi
+INCLUDEPATH += /usr/include/opencv2
 
 FORMS    += mainwindow.ui
 
@@ -96,6 +97,9 @@ unix:!macx: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_core
 
 INCLUDEPATH += $$PWD/../../../usr/local/include
 DEPENDPATH += $$PWD/../../../usr/local/include
+
+INCLUDEPATH += $$PWD/../../../usr/include
+DEPENDPATH += $$PWD/../../../usr/include
 
 unix:!macx: LIBS += -L$$PWD/../../../usr/local/lib/ -lopencv_imgproc
 

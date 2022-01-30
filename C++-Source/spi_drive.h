@@ -22,7 +22,7 @@ class SPI_Drive {
 public:
     SPI_Drive(short);
     int spidrGetFD(void);
-    void spidrReceiveCommand(QString);
+    bool spidrReceiveCommand(QString);
     char getResponse(void);
 
 private:

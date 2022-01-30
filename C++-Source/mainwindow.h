@@ -228,6 +228,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void deployINDIMsgDlg(void);
     void saveMainCCDConfig(void);
     void saveGuideCCDConfig(void);
+    void checkGPSFix(void);
 
 private:
     struct mountMotionStruct { // a struct holding all relevant data ont the state of the mount
@@ -322,6 +323,7 @@ private:
     QTimer *tempUpdateTimer;
     QTimer *tcpHandBoxSendTimer;
     QTimer *checkDriveTimer;
+    QTimer *checkGPSFixTimer;
     QDate *UTDate;
     QTime *UTTime;
     QTimeZone *timeZone;
@@ -344,6 +346,7 @@ private:
     bool guiderCamSelected = false;
     bool mainCamSelected = false;
     bool camSelectionFinished = false;
+    bool GPSHasFix = false;
     QTcpServer *LXServer;
     QTcpServer *HBServer;
     QTcpSocket *LXSocket;

@@ -86,7 +86,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->LX200Timer = new QTimer();
     this->LX200Timer->start(150);
     this->auxDriveUpdateTimer = new QTimer();
-    this->auxDriveUpdateTimer->start(500);
+    this->auxDriveUpdateTimer->start(1000);
     this->tempUpdateTimer = new QTimer();
     this->tempUpdateTimer->start(30000);
     this->tcpHandBoxSendTimer = new QTimer();
@@ -366,6 +366,10 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->spiDrOnChan0 = new SPI_Drive(0);
     if (this->spiDrOnChan0->spidrGetFD() != -1) {
         this->commSPIParams.chan0IsOpen = true;
+        this->commSPIParams.guiData->append("x");
+        this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+        this->waitForNMSecs(20);
+        this->commSPIParams.guiData->clear();
     } else {
        this->commSPIParams.chan0IsOpen = false;
     }
@@ -422,12 +426,18 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     this->st4State.wActive = false; // same as above for west
     this->st4State.raCorrTime = new QElapsedTimer();
     this->st4State.deCorrTime = new QElapsedTimer();
-        // set the values for diagonal pixel size and main scope focal length in the DSLR settings
+
+    // set the values for diagonal pixel size and main scope focal length in the DSLR settings
     ui->sbDSLRPixSize->setValue((double)(g_AllData->getDSLRDiagPixSize()));
     ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
     ui->sbScopeFL->setValue(g_AllData->getMainScopeFocalLength());
     ui->sbDitherMax->setValue(g_AllData->getDitherRange(false));
     ui->sbDitherMin->setValue(g_AllData->getDitherRange(true));
+
+    // routines for GPS
+    this->GPSHasFix = false;
+    this->checkGPSFixTimer = new QTimer();
+    this->checkGPSFixTimer->start(30000);
 
     // force a few line edit fields to accept doubles or ints only ...
     ui->leLat->setValidator(new QDoubleValidator(-90, 90, 10, this));
@@ -453,6 +463,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(this->tcpHandBoxSendTimer, SIGNAL(timeout()), this, SLOT(sendDataToTCPHandboxSlot())); // send status of TSC to the TCP-IP handbox if connected
     connect(this->auxDriveUpdateTimer, SIGNAL(timeout()),this, SLOT(updateAuxDriveStatus())); // event for checking focusmotors and updating the GUI information
     connect(this->checkDriveTimer, SIGNAL(timeout()), this, SLOT(getDriveError())); // check the AMIS boards for internalk errors
+    connect(this->checkGPSFixTimer, SIGNAL(timeout()), this, SLOT(checkGPSFix())); // check whether the GPS has a fix on satellites
     connect(ui->listWidgetCatalog,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogChosen(QListWidgetItem*))); // choose an available .tsc catalog
     connect(ui->listWidgetObject,SIGNAL(itemClicked(QListWidgetItem*)),this,SLOT(catalogObjectChosen())); // catalog selection
     connect(ui->listWidgetIPAddresses,SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(IPaddressChosen())); // selection of IP address for LX 200
@@ -4747,7 +4758,7 @@ void MainWindow::startST4Guiding(void) {
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();
     } // if tracking is not active - start it ...
-    this->timer->setInterval(10);
+    this->timer->setInterval(20);
     this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
     this->deState = guideTrack; // set the declination drive to guiding speed
     this->tempUpdateTimer->stop(); // no temperature updates during ST4 guiding - SPI channel 0 is only available for ST4
@@ -4783,9 +4794,23 @@ void MainWindow::startST4Guiding(void) {
     this->commSPIParams.guiData->append("g");
     this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
     this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("o");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("o");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("o");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(50); // just make sure that nothing but ST4 responses are in the SPI register
     this->st4Timer->start(10); // if ST4 is active, the interface is read every 10 ms
     ui->lcdDEST4Lms->display(0);
     ui->lcdRAST4Lms->display(0);
+    this->checkGPSFixTimer->stop();
     sleep(1);
 }
 
@@ -4800,6 +4825,18 @@ void MainWindow::stopST4Guiding(void) {
     this->st4State.eActive = false;
     this->st4State.sActive = false;
     this->st4State.wActive = false;
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("x");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("x");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("x");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but ST4 responses are in the SPI register
     ui->ctrlTab->setEnabled(true);
     ui->catTab->setEnabled(true);
     ui->guidingTab->setEnabled(true);
@@ -4825,6 +4862,7 @@ void MainWindow::stopST4Guiding(void) {
     this->tempUpdateTimer->start(30000); // start the timer for requesting temperature again
     ui->lcdDEST4Lms->display(0);
     ui->lcdRAST4Lms->display(0);
+    this->checkGPSFixTimer->start(30000);
 }
 
 //--------------------------------------------------------------
@@ -4832,14 +4870,16 @@ void MainWindow::stopST4Guiding(void) {
 
 void MainWindow::handleST4State(void) {
     char stateCharFromSPI;
-    bool nUp, eUp, sUp, wUp;
+    bool nUp, eUp, sUp, wUp, spiOK;
     int raTime, deTime, currentSpeed;
 
     if ((this->guidingState.st4IsActive == true)) { // poll data if ST4 is active and not correcting
         this->commSPIParams.guiData->clear();
         this->commSPIParams.guiData->append("g");  // this one sets the stream of responses again to the state of ST4
-        this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
-        this->waitForNMSecs(20);
+        spiOK=this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+        if (spiOK ==false) {
+            return;
+        }
         stateCharFromSPI = this->spiDrOnChan0->getResponse();
         QCoreApplication::processEvents(QEventLoop::AllEvents,500);
         switch(stateCharFromSPI) { // translate the character from the HAT arduino into a ST4 state
@@ -4861,8 +4901,7 @@ void MainWindow::handleST4State(void) {
                         break;
             case '8':   nUp=false; eUp=false; sUp=true; wUp=true;
                         break;
-            default:    nUp=false; eUp=false; sUp=false; wUp=false;
-                        break;
+            default:    return;
         }
         ui->cbST4North->setChecked(nUp); // update the GUI
         ui->cbST4East->setChecked(eUp);
@@ -6159,11 +6198,18 @@ void MainWindow::checkDrivesForActivity(void) {
 // just checks whether an arduino is connected
 bool MainWindow::checkForController(void) {
     char reply;
+    bool spiOK;
+    short spiCnt = 0;
 
     this->commSPIParams.guiData->clear();
-    this->commSPIParams.guiData->append("ttt");
-    this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
-    this->waitForNMSecs(50);
+    this->commSPIParams.guiData->append("t");
+    spiOK = this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+    if (spiOK == false) {
+        do {
+            this->waitForNMSecs(50);
+            spiOK = this->spiDrOnChan1->spidrReceiveCommand(*commSPIParams.guiData);
+        } while ((spiOK == false) && (spiCnt < 3));
+    }
     reply = this->spiDrOnChan1->getResponse();
     if ((reply=='D') || (reply=='A')) {
         ui->cbAuxBoardIsConnected->setChecked(true);
@@ -6172,8 +6218,9 @@ bool MainWindow::checkForController(void) {
             ui->rbAuxMs32->setEnabled(false);
         }
     }
-
+    this->commSPIParams.guiData->clear();
     return this->auxBoardIsAvailable;
+    return false;
 }
 
 //-----------------------------------------------------------------------
@@ -6545,15 +6592,17 @@ void MainWindow::mvGuideAuxBwdTiny(void) {
 
 //------------------------------------------------
 void MainWindow::updateAuxDriveStatus(void) {
-    char focusMotorReply1, focusMotorReply2;
+    char focusMotorReply;
+    bool spiOK;
 
     if (this->auxBoardIsAvailable == true) { // if the motorboard is connected - display the motorstatus
-        this->spiDrOnChan1->spidrReceiveCommand("ttt");
-        focusMotorReply1 = this->spiDrOnChan1->getResponse();
-        this->spiDrOnChan1->spidrReceiveCommand("ttt");
-        focusMotorReply2 = this->spiDrOnChan1->getResponse(); // SPI is flaky - in order to make sure that the response is correct, it is called twice ...
-        if (focusMotorReply1 == focusMotorReply2) {
-            switch (focusMotorReply2) {
+        if (this->guidingState.guidingIsOn == false) {
+            spiOK = this->spiDrOnChan1->spidrReceiveCommand("t");
+            if (spiOK == false) {
+                return;
+            }
+            focusMotorReply = this->spiDrOnChan1->getResponse();
+            switch (focusMotorReply) {
                 case 'D':
                 case 'A':
                     ui->cbAuxDr1Active->setChecked(false);
@@ -6940,4 +6989,25 @@ void MainWindow::displayMainCamImage(QPixmap *camPixmap) {
 }
 
 //------------------------------------------------------------------
+//------------------------------------------------------------------
+//------------------------------------------------------------------
+// GPS routines
 
+void MainWindow::checkGPSFix(void) {
+    char reply;
+
+    this->commSPIParams.guiData->clear();
+    this->commSPIParams.guiData->append("f");
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but GPS responses are in the SPI register
+    this->spiDrOnChan0->spidrReceiveCommand(*commSPIParams.guiData);
+    this->waitForNMSecs(20); // just make sure that nothing but GPS responses are in the SPI register
+    reply = this->spiDrOnChan0->getResponse();
+    if (reply == '0') {
+        ui->cbGPSFix->setChecked(true);
+        ui->pbGetGPS->setEnabled(true);
+    } else {
+        ui->cbGPSFix->setChecked(false);
+        ui->pbGetGPS->setEnabled(false);
+    }
+}

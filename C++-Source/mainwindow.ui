@@ -10174,9 +10174,9 @@
      <widget class="QGroupBox" name="gbCoordinates">
       <property name="geometry">
        <rect>
-        <x>340</x>
+        <x>320</x>
         <y>10</y>
-        <width>341</width>
+        <width>311</width>
         <height>221</height>
        </rect>
       </property>
@@ -10334,7 +10334,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>321</width>
+        <width>301</width>
         <height>221</height>
        </rect>
       </property>
@@ -10602,6 +10602,65 @@
          <widget class="QPushButton" name="pbParkPolaris">
           <property name="text">
            <string>Set North Pole</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="gbGPS">
+      <property name="geometry">
+       <rect>
+        <x>640</x>
+        <y>20</y>
+        <width>120</width>
+        <height>201</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>GPS</string>
+      </property>
+      <widget class="QPushButton" name="pbGetGPS">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>60</y>
+         <width>99</width>
+         <height>71</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Get GPS
+Data</string>
+       </property>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>84</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_71">
+        <item>
+         <widget class="QCheckBox" name="cbGPSFix">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lGPSFix">
+          <property name="text">
+           <string>GPS Fix</string>
           </property>
          </widget>
         </item>

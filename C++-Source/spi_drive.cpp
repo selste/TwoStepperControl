@@ -29,7 +29,7 @@ SPI_Drive::SPI_Drive(short channel) {
 
 //--------------------------------------------------------------
 
-void SPI_Drive::spidrReceiveCommand(QString cmd) {
+bool SPI_Drive::spidrReceiveCommand(QString cmd) {
     int len;
     char bytecmd[32];
 
@@ -40,7 +40,13 @@ void SPI_Drive::spidrReceiveCommand(QString cmd) {
     bytecmd[len] = 0x00;
     len++;
     wiringPiSPIDataRW(this->SPIChannel, (unsigned char*)(bytecmd), len);
-    this->muprocReply=bytecmd[1];
+    qDebug() << "SPI-Command: " << cmd.toLatin1() << "-" << "Reply: " <<this->muprocReply << " on Channel: "  << this->SPIChannel;
+    if (cmd.at(0) == bytecmd[1]) {
+        return false;
+    } else {
+        this->muprocReply=bytecmd[1];
+        return true;
+    }
 }
 
 //--------------------------------------------------------------
@@ -52,5 +58,6 @@ int SPI_Drive::spidrGetFD(void) {
 //--------------------------------------------------------------
 
 char SPI_Drive::getResponse(void) {
+
     return this->muprocReply;
 }
