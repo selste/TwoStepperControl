@@ -1,6 +1,6 @@
 
 // this code is part of "TSC", a free control software for astronomical telescopes
-// Copyright (C)  2016-18, wolfgang birkfellner
+// Copyright (C)  2016-21, wolfgang birkfellner
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -16,9 +16,25 @@
 
 #include <SPI.h>
 #include <stdlib.h>
-#include <SoftwareSerial.h>
 #include <Adafruit_GPS.h>
+#include <SoftwareSerial.h>
 
+struct gpsdata {
+  String timeStr;
+  byte tsLen = 0;;
+  String dateStr;
+  byte dsLen = 0;
+  String longStr;
+  byte losLen = 0;
+  String latStr;
+  byte lasLen = 0;  
+  byte hasFix = 0;  
+};
+
+SoftwareSerial mySerial(9,8);
+Adafruit_GPS GPS(&mySerial);
+struct gpsdata gpsBytes;
+uint32_t timer = millis();
 float temp;
 int decTemp;
 int nSwitch = 1; // move north button
@@ -28,29 +44,16 @@ int wSwitch = 1;
 int northIsUp, westIsUp, eastIsUp, southIsUp; 
 int switchStateChanged = 0, tempDeg;
 char tempDeg1, tempDeg2, isPositive, st4state = '0';
-bool debuggingIsOn = false, readTemp = true;
+bool debuggingIsOn = false, readTemp = true, guidingIsOn = false;
 char reply, readCommand;
+long timeSinceRead=0, timeNow;
 String dHelper, sHelper;
 char buf[32];
 volatile byte pos;
 volatile boolean process_it;
-float VRef = 5.05; // this is important - this should be 5.0 V, but due to the diode D1 it can be less. 
+float VRef = 5.25; // this is important - this should be 5.0 V, but due to the diode D1 it can be less. 
             // temperature readings are off if one does not take this into account. measure the true voltage
-            // between + and - on the TMP socket and calibrate
-SoftwareSerial mySerial(9, 8);
-Adafruit_GPS GPS(&mySerial);
-#define PMTK_SET_NMEA_UPDATE_1HZ  "$PMTK220,1000*1F"
-#define PMTK_SET_NMEA_UPDATE_5HZ  "$PMTK220,200*2C"
-#define PMTK_SET_NMEA_UPDATE_10HZ "$PMTK220,100*2F"
-// turn on only the second sentence (GPRMC)
-#define PMTK_SET_NMEA_OUTPUT_RMCONLY "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29"
-// turn on GPRMC and GGA
-#define PMTK_SET_NMEA_OUTPUT_RMCGGA "$PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
-// turn on ALL THE DATA
-#define PMTK_SET_NMEA_OUTPUT_ALLDATA "$PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
-// turn off output
-#define PMTK_SET_NMEA_OUTPUT_OFF "$PMTK314,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28"
-#define PMTK_Q_RELEASE "$PMTK605*31"
+            // between + and - on the TMP socket and calibrate  
 
 //-----------------------------------------------------------------------
 
@@ -58,8 +61,6 @@ void setup() {
   if (debuggingIsOn == true) {
     Serial.begin(9600);
   }
-  mySerial.begin(9600);
-  delay(1000);
   pinMode(MISO, OUTPUT); // have to send on master in, *slave out*
   SPCR |= _BV(SPE);  // turn on SPI in slave mode
   SPI.attachInterrupt();   // now turn on interrupts
@@ -68,20 +69,50 @@ void setup() {
   if (debuggingIsOn) {
     Serial.println("TSC HAT Arduino Mini Pro is up...");
   }
-  mySerial.println(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  mySerial.println(PMTK_SET_NMEA_UPDATE_1HZ);
+  GPS.begin(9600);
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+  delay(500);
+  getGPSData();
 }
 
 //-----------------------------------------------------------------------
 
 void loop() {
   // reading five analog inputs, the ST4 switches and the temperature sensor
-  if (readTemp == true) { // read analog sensor only if temperature is not read out
-    temp += (analogRead(4)*VRef*0.9765625-500)*0.1;
-    temp = temp*0.5; // compute a running average
+
+  if (guidingIsOn == false) {
+    timeNow = millis();
+    if ((timeNow - timeSinceRead) > 10000) {
+      if (readTemp == true) { // read analog sensor only if temperature is not read out
+        temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
+        if (debuggingIsOn) {
+          Serial.print("Temp: ");
+          Serial.println(temp);
+        }
+      }
+        // now convert the temperature to bytes
+      if (temp > 0) {
+        isPositive = '+';
+      } else {
+        isPositive = '-';
+      }
+      tempDeg=round(abs(temp));
+      dHelper = String(tempDeg);
+      if (tempDeg < 10) {
+        tempDeg1 = '0'; 
+        tempDeg2 = dHelper[0];
+      } else {
+        tempDeg1 = dHelper[0];
+        tempDeg2 = dHelper[1];
+      }
+      getGPSData();
+      timeSinceRead = millis();
+    }
+  } else {
     if (debuggingIsOn) {
-      Serial.print("Temperature: ");
-      Serial.println(temp);
+        Serial.print("ST4: ");
+        Serial.println(st4state);
     }
   }
   
@@ -164,24 +195,8 @@ void loop() {
     }
   }
   switchStateChanged=0;
-  // now convert the temperature to bytes
-  if (temp > 0) {
-    isPositive = '+';
-  } else {
-    isPositive = '-';
-  }
-  
-  tempDeg=round(abs(temp));
-  dHelper = String(tempDeg);
-  if (tempDeg < 10) {
-    tempDeg1 = '0'; 
-    tempDeg2 = dHelper[0];
-  } else {
-    tempDeg1 = dHelper[0];
-    tempDeg2 = dHelper[1];
-  }
-  
-  if (process_it) { // got a string via SPI - process it accordingly
+
+    if (process_it) { // got a string via SPI - process it accordingly
     pos = 0;
     readCommand=buf[0];
     process_it = false;
@@ -192,10 +207,6 @@ void loop() {
       case 'p': // ask whether temperature is positive and stop temperature readings
         readTemp = false;
         reply = isPositive;
-        if (debuggingIsOn) {
-          Serial.print("Temperature: ");
-          Serial.println(temp);
-        }
         break;
       case 'b': // ask for first digit of temperature in celsius
         reply = tempDeg1;
@@ -205,10 +216,42 @@ void loop() {
         break;              
       case 'g': // this is sent when reading the temperature is terminated; reply is again set to "st4state" . temperature reading starts again with new averaging
         readTemp = true;
-        temp = (analogRead(4)*VRef*0.9765625-500)*0.1;
-        break;       
-      case 't': break;
-    } 
+        reply = st4state; 
+        break;           
+      case 'o': // turn on ST4 reading
+        guidingIsOn = true;
+        if (debuggingIsOn) {
+          Serial.print("Guiding is on!");
+        }
+        reply=st4state;
+        break;
+      case 'x': // turn off ST4 reading
+        guidingIsOn = false;
+        if (debuggingIsOn) {
+          Serial.print("Guiding is off!");
+        }
+        reply=st4state;
+        break;     
+      case 'f': // poll a GPS fix
+        if (gpsBytes.hasFix == 0) {
+          reply = '0';
+        } else {
+          reply = '1'; 
+        }
+        break;
+        case 't':
+        reply=gpsBytes.tsLen;
+        break;
+        case 'd':
+        reply=gpsBytes.dsLen;
+        break;
+        case 'u': 
+        reply=gpsBytes.lasLen;
+        break;
+        case 'v':
+        reply=gpsBytes.losLen;
+        break;
+    }
   }
 }
 
@@ -226,4 +269,83 @@ byte c = SPDR;  // grab byte from SPI Data Register
       process_it = true;
     }
   }  
-}  
+}
+
+//--------------------------------------------------------------
+bool getGPSData(void) {
+  float decLong, decLat, postComma;
+  String hStr;
+  char c;
+
+  do {
+    c = GPS.read();
+  } while (!GPS.newNMEAreceived());  
+    
+  if (!GPS.parse(GPS.lastNMEA())) {
+    return false;
+  } else {
+    gpsBytes.hasFix = (int)GPS.fix;
+    gpsBytes.timeStr=String();
+    if (GPS.hour < 10) { 
+      gpsBytes.timeStr.concat('0'); 
+    }
+    hStr = String(GPS.hour);
+    gpsBytes.timeStr.concat(hStr);
+    gpsBytes.timeStr.concat(':');
+    if (GPS.minute < 10) {
+      gpsBytes.timeStr.concat('0'); 
+    }
+    hStr=String(GPS.minute);
+    gpsBytes.timeStr.concat(hStr);
+    gpsBytes.timeStr.concat(':');
+    if (GPS.seconds < 10) { 
+      gpsBytes.timeStr.concat('0'); 
+    }  
+    hStr=String(GPS.seconds);
+    gpsBytes.timeStr.concat(hStr);  
+    gpsBytes.timeStr.concat('.'); 
+    if (GPS.milliseconds < 10) {
+      gpsBytes.timeStr.concat("00");
+    } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
+      gpsBytes.timeStr.concat('0');
+    }
+    hStr=String(GPS.milliseconds);
+    gpsBytes.timeStr.concat(hStr);
+    gpsBytes.tsLen=gpsBytes.timeStr.length();
+  
+ 
+    gpsBytes.dateStr=String();
+    gpsBytes.dateStr.concat(GPS.day);
+    gpsBytes.dateStr.concat('/');
+    gpsBytes.dateStr.concat(GPS.month);
+    gpsBytes.dateStr.concat("/20");
+    gpsBytes.dateStr.concat(GPS.year);
+    gpsBytes.dsLen=gpsBytes.dateStr.length();
+  
+    if (GPS.fix) {
+      decLat = floor(GPS.latitude/100.0);
+      postComma=((GPS.latitude/100.0-decLat)*100)/60.0;
+      decLat+=postComma;
+      if (GPS.lat != 'N') {
+        decLat *= -1;
+      }
+      gpsBytes.latStr=String(decLat,6);
+      gpsBytes.lasLen=gpsBytes.latStr.length();
+      decLong= floor(GPS.longitude/100.0);
+      postComma=((GPS.longitude/100.0-decLong)*100)/60.0;
+      decLong+=postComma;
+      if (GPS.lon != 'E') {
+        decLong *= -1;
+      }
+      gpsBytes.longStr=String(decLong,6);
+      gpsBytes.losLen=gpsBytes.longStr.length();
+      if (debuggingIsOn) {
+        Serial.println(gpsBytes.timeStr);
+        Serial.println(gpsBytes.dateStr);
+        Serial.println(gpsBytes.latStr);
+        Serial.println(gpsBytes.longStr);
+      }
+    }   
+  }
+  return true;
+}
