@@ -420,6 +420,8 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     } else {
         ui->cbSTFourIsWorking->setChecked(false);
     } // ST4 signals are measured by the HAT Arduino and conveyed vis SPI channel 0; so if this channel is open, ST4 is available
+    this->st4State.guidingAccFactor=g_AllData->getGuideAccFactor();
+    ui->sbAccFactorGuiding->setValue(this->st4State.guidingAccFactor);
     this->st4State.nActive = false; // a flag that is true when the North-line is closed
     this->st4State.eActive = false; // same as above for east
     this->st4State.sActive = false; // same as above for south
@@ -493,6 +495,7 @@ MainWindow::MainWindow(QWidget *parent):QMainWindow(parent), ui(new Ui::MainWind
     connect(ui->sbCurrMaxDecl_AMIS, SIGNAL(valueChanged(double)), this, SLOT(setMaxStepperCurrentDecl())); // process input on stepper parameters in gear-tab
     connect(ui->sbNoFlip, SIGNAL(valueChanged(int)), this, SLOT(setDecForNoFlip())); // store the maximum declination for not doing a meridian flip
     connect(ui->sbPSSearchRad, SIGNAL(valueChanged(double)), this, SLOT(psSetSearchRadiusForPS())); // store the search radius for plate solving
+    connect(ui->sbAccFactorGuiding, SIGNAL(valueChanged(double)), this, SLOT(setGuidingAccFact())); // set the multiplication factor for acceleration in guiding
     connect(ui->rbCorrSpeed,SIGNAL(released()), this, SLOT(setCorrectionSpeed())); // set speed for slow manual motion
     connect(ui->rbMoveSpeed,SIGNAL(released()), this, SLOT(setMoveSpeed())); // set speed for faster manual motion
     connect(ui->rbFOVStd, SIGNAL(released()), this, SLOT(setRegularFOV())); // guidestar window set to 180x180 pixels
@@ -738,6 +741,13 @@ void MainWindow::updateReadings() {
     qint64 topicalTime; // g_AllData contains an monotonic global timer that is reset if a sync occcurs
     double relativeTravelRA, relativeTravelDecl,totalGearRatio, hourAngleForDisplay; // a few helpers
     bool wasInGoTo = false, isInGoTo = false, isEast;
+
+    if (this->guidingState.guidingIsOn == true) {
+        if (this->isDriveActive(true) == false) {
+            qDebug() << "RA Drive stopped during guiding!";
+            this->startRATracking();
+        }
+    }
 
     isEast = g_AllData->getMFlipParams(1); // store east/west flag for GEMs in case a meridian flip occurs. after a flip,
     // the "isEast" checkbox is deactivated.
@@ -4753,14 +4763,41 @@ void MainWindow::readST4Port(void) {
 }
 
 //--------------------------------------------------------------
+// slot called to set the higher acceleration in guiding.
+// Acceleration is limited to const int maxAccPossible (ms/s^2)
+
+void MainWindow::setGuidingAccFact(void) {
+    float rawVal, maxVal;
+    double accRA, accDecl, maxAcc, compAcc;
+
+    maxAcc = accRA = g_AllData->getDriveParams(0,1);
+    accDecl = g_AllData->getDriveParams(1,1);
+    if (accDecl > accRA) {
+        maxAcc = accDecl;
+    }
+    rawVal=ui->sbAccFactorGuiding->value();
+    compAcc=maxAcc*rawVal;
+    if (compAcc > this->maxAccPossible) {
+        maxVal = (round(((2*this->maxAccPossible))/maxAcc))/2.0;
+    } else {
+        maxVal = rawVal;
+    }
+    ui->sbAccFactorGuiding->setValue(maxVal);
+    this->st4State.guidingAccFactor = maxVal;
+    g_AllData->setGuideAccFactor(maxVal);
+}
+
+//--------------------------------------------------------------
 // instantiates all variables for ST4
 void MainWindow::startST4Guiding(void) {
+    double guideAccDec, guideAccRA;
+
     if (this->mountMotion.RATrackingIsOn==false) {
         this->startRATracking();
     } // if tracking is not active - start it ...
     this->timer->setInterval(20);
     this->StepperDriveDecl->changeMicroSteps(g_AllData->getMicroSteppingRatio(0));
-    this->deState = guideTrack; // set the declination drive to guiding speed
+    this->deState = guideTrack; // set thg_AllData->getDriveParams(0,1)e declination drive to guiding speed
     this->tempUpdateTimer->stop(); // no temperature updates during ST4 guiding - SPI channel 0 is only available for ST4
     ui->lcdTemp->display("-");
     this->guidingState.st4IsActive = true;
@@ -4811,6 +4848,17 @@ void MainWindow::startST4Guiding(void) {
     ui->lcdDEST4Lms->display(0);
     ui->lcdRAST4Lms->display(0);
     this->checkGPSFixTimer->stop();
+
+    guideAccRA = g_AllData->getDriveParams(0,1)*this->st4State.guidingAccFactor;
+    if (guideAccRA > this->maxAccPossible) {
+        guideAccRA = (double)this->maxAccPossible;
+    }
+    guideAccDec = g_AllData->getDriveParams(1,1)*this->st4State.guidingAccFactor;
+    if (guideAccDec > this->maxAccPossible) {
+        guideAccDec = (double)this->maxAccPossible;
+    }
+    this->StepperDriveRA->setStepperParams(guideAccRA, 1);
+    this->StepperDriveDecl->setStepperParams(guideAccDec, 1);
     sleep(1);
 }
 
@@ -4863,6 +4911,9 @@ void MainWindow::stopST4Guiding(void) {
     ui->lcdDEST4Lms->display(0);
     ui->lcdRAST4Lms->display(0);
     this->checkGPSFixTimer->start(30000);
+    this->StepperDriveRA->setStepperParams(g_AllData->getDriveParams(0,1),1);
+    this->StepperDriveDecl->setStepperParams(g_AllData->getDriveParams(1,1),1);
+    // in order to reset the acceleration values, which were changed for guiding
 }
 
 //--------------------------------------------------------------
@@ -4871,7 +4922,7 @@ void MainWindow::stopST4Guiding(void) {
 void MainWindow::handleST4State(void) {
     char stateCharFromSPI;
     bool nUp, eUp, sUp, wUp, spiOK;
-    int raTime, deTime, currentSpeed;
+    int raTime, deTime, currentSpeed,startCount;
 
     if ((this->guidingState.st4IsActive == true)) { // poll data if ST4 is active and not correcting
         this->commSPIParams.guiData->clear();
@@ -4902,7 +4953,8 @@ void MainWindow::handleST4State(void) {
             case '8':   nUp=false; eUp=false; sUp=true; wUp=true;
                         break;
             default:    return;
-        }
+        }      
+
         ui->cbST4North->setChecked(nUp); // update the GUI
         ui->cbST4East->setChecked(eUp);
         ui->cbST4South->setChecked(sUp);
@@ -4940,11 +4992,17 @@ void MainWindow::handleST4State(void) {
                 qDebug() << "West is up with speed " << 1+ui->sbGuidingRate->value();
                 this->st4State.raCorrTime->start();
             } else {
-             //   this->StepperDriveRA->stopDrive();
-             //   this->StepperDriveRA->resetSteppersAfterStop();
+                this->StepperDriveRA->stopDrive();
+                this->StepperDriveRA->resetSteppersAfterStop();
              //   this->StepperDriveRA->setStepperParams((float)(cu),2); // setting back to tracking speed
-                this->startRATracking();
                 raTime = this->st4State.raCorrTime->elapsed();
+                startCount = 0;
+                do {
+                    this->startRATracking();
+                    qDebug() << "RA tracking started";
+                    startCount++;
+                    this->waitForNMSecs(50);
+                } while ((this->isDriveActive(true) == false) && (startCount < 3));
                 ui->lcdRAST4Lms->display(raTime);
             }
         }
@@ -4957,11 +5015,16 @@ void MainWindow::handleST4State(void) {
                 qDebug() << "East is up with speed " << 1-ui->sbGuidingRate->value();
                 this->st4State.raCorrTime->start();
             } else {
-             //   this->StepperDriveRA->stopDrive();
-             //   this->StepperDriveRA->resetSteppersAfterStop();
+                this->StepperDriveRA->stopDrive();
+                this->StepperDriveRA->resetSteppersAfterStop();
              //   this->StepperDriveRA->setStepperParams((float)(1),2); // setting back to tracking speed
-                this->startRATracking();
                 raTime = this->st4State.raCorrTime->elapsed();
+                startCount = 0;
+                do {
+                    this->startRATracking();
+                    startCount++;
+                    this->waitForNMSecs(50);
+                } while ((this->isDriveActive(true) == false) && (startCount < 3));
                 ui->lcdRAST4Lms->display(raTime);
             }
         }
@@ -5548,13 +5611,26 @@ int MainWindow::getMStepRatios(short what) { // 0 for tracking/guiding, 1 for mo
 
 //---------------------------------------------------------------------
 // store the drive data and convey this also to the drives
+// check also the acceleration factor for guiding
 void MainWindow::storeDriveData(void) {
+    float maxAcc, accRA, accDecl, newAccFact;
+
     g_AllData->storeGlobalData();
     this->StepperDriveRA->setStepperParams(g_AllData->getDriveParams(0,1),1);//acc
     this->StepperDriveRA->setStepperParams(g_AllData->getDriveParams(0,2),3);//current
     this->StepperDriveDecl->setStepperParams(g_AllData->getDriveParams(1,1),1);//acc
     this->StepperDriveDecl->setStepperParams(g_AllData->getDriveParams(1,2),3);//current
-
+    maxAcc = accRA = g_AllData->getDriveParams(0,1);
+    accDecl =  g_AllData->getDriveParams(1,1);
+    if (accDecl > maxAcc) {
+        maxAcc = accDecl;
+    }
+    newAccFact = this->st4State.guidingAccFactor;
+    if (this->st4State.guidingAccFactor*maxAcc > this->maxAccPossible) {
+        newAccFact = (round((2*this->maxAccPossible)/maxAcc))/2.0;
+    }
+    this->st4State.guidingAccFactor = newAccFact;
+    ui->sbAccFactorGuiding->setValue(this->st4State.guidingAccFactor);
 }
 
 //------------------------------------------------------------------

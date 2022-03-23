@@ -122,6 +122,8 @@ public:
     bool getBooleanPSParams(short); // see above
     void setPSSearchRad(double);
     double getPSSearchRad(void);
+    void setGuideAccFactor(double);
+    double getGuideAccFactor(void);
 
 private:
     QElapsedTimer *monotonicGlobalTimer;
@@ -147,6 +149,7 @@ private:
     bool useLX200SerialOnStartup = false;
     bool useTimeFromLX200 = true;
     bool driversAvailable = false;
+    double guideAccFactor = 1;
 
     struct initialStarPosStruct {
         float screenx;

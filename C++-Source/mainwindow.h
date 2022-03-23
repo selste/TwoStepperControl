@@ -54,6 +54,7 @@ private slots: // callbacks for (mainly) GUI widgets
     void shutDownProgram(void);
     void setMaxStepperAccRA(void);
     void setMaxStepperAccDecl(void);
+    void setGuidingAccFact(void);
     void setMaxStepperCurrentRA(void);
     void setMaxStepperCurrentDecl(void);
     void setINDISAddrAndPort(void);
@@ -303,9 +304,11 @@ private:
         bool eActive;
         bool sActive;
         bool wActive;
+        float guidingAccFactor;
     };
 
     Ui::MainWindow *ui;
+    const int maxAccPossible = 20000;
     struct mountMotionStruct mountMotion;
     struct currentGuideStarPosition guideStarPosition;
     struct guidingStateStruct guidingState;

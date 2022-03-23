@@ -108,6 +108,7 @@ TSC_GlobalData::TSC_GlobalData() {
         this->parkingDecl = 0.0;
         this->meridianFlipState.mfIsActive = false;
         this->meridianFlipState.maxDeclForNoFlip = 0;
+        this->guideAccFactor = 1.0;
     }
 }
 
@@ -118,6 +119,16 @@ TSC_GlobalData::~TSC_GlobalData(void){
     delete LX200IPAddress;
     delete psParams.pathToImages;
     delete psParams.pathToFITSToBeSolved;
+}
+
+//-----------------------------------------------
+void TSC_GlobalData::setGuideAccFactor(double accF) {
+    this->guideAccFactor = accF;
+}
+
+//-----------------------------------------------
+double TSC_GlobalData::getGuideAccFactor(void) {
+    return this->guideAccFactor;
 }
 
 //-----------------------------------------------
@@ -1107,6 +1118,10 @@ void TSC_GlobalData::storeGlobalData(void) {
     ostr.append("// Flag whether to allow for getting a time via LX200 ...\n");
     outfile << ostr.data();
     ostr.clear();
+    ostr = std::to_string(this->guideAccFactor);
+    ostr.append("// Multiplication factor for stepper acceleration during guiding.\n");
+    outfile << ostr.data();
+    ostr.clear();
     outfile.close();
 }
 
@@ -1318,6 +1333,10 @@ bool TSC_GlobalData::loadGlobalData(void) {
     } else {
         this->useTimeFromLX200 = true;
     }
+    std::getline(infile, line, '\n');
+    std::getline(infile, line, delimiter);
+    std::istringstream isGuidingAccFactor(line);
+    isGuidingAccFactor >> this->guideAccFactor;
     std::getline(infile, line, '\n');
     infile.close(); // close the reading file for preferences
     return true;

@@ -40,7 +40,7 @@ bool SPI_Drive::spidrReceiveCommand(QString cmd) {
     bytecmd[len] = 0x00;
     len++;
     wiringPiSPIDataRW(this->SPIChannel, (unsigned char*)(bytecmd), len);
-    qDebug() << "SPI-Command: " << cmd.toLatin1() << "-" << "Reply: " <<this->muprocReply << " on Channel: "  << this->SPIChannel;
+//    qDebug() << "SPI-Command: " << cmd.toLatin1() << "-" << "Reply: " <<this->muprocReply << " on Channel: "  << this->SPIChannel;
     if (cmd.at(0) == bytecmd[1]) {
         return false;
     } else {
